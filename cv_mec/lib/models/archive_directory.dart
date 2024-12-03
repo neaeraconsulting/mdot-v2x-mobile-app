@@ -1,0 +1,5 @@
+enum ArchiveDirectory {
+  DOWNLOADS,
+  APPLICATION_DOCUMENTS,
+  TEMPORARY,
+}
