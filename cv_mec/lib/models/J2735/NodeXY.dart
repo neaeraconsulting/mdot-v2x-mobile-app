@@ -6,15 +6,13 @@ import 'package:asn1_plugin/generated_bindings.dart' as C;
 
 class NodeXY {
   late NodeOffsetPointXY delta;
-  late NodeAttributeSetXY? attributes;
+  NodeAttributeSetXY? attributes;
 
-
-  NodeXY.fromC(C.NodeXY nodeXY){
+  NodeXY.fromC(C.NodeXY nodeXY) {
     delta = NodeOffsetPointXY.fromC(nodeXY.delta);
 
-    if(nodeXY.attributes.address != 0){
+    if (nodeXY.attributes.address != 0) {
       attributes = NodeAttributeSetXY.fromC(nodeXY.attributes.ref);
     }
-
   }
 }

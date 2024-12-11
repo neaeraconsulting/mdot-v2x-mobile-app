@@ -15,41 +15,42 @@ class ComputedLane extends Choice_NodeListXY {
   late Choice_OffsetAxis offsetXaxis;
   late Choice_OffsetAxis offsetYaxis;
 
-  late Angle? rotateXY;
-  late Scale_B12? scaleXaxis;
-  late Scale_B12? scaleYaxis;
+  Angle? rotateXY;
+  Scale_B12? scaleXaxis;
+  Scale_B12? scaleYaxis;
 
   List<RegionalExtension>? regional;
 
-
-  ComputedLane.fromC(C.ComputedLane computedLane){
+  ComputedLane.fromC(C.ComputedLane computedLane) {
     referenceLaneId = LaneID(computedLane.referenceLaneId);
 
-    if(computedLane.offsetXaxis.present == 1){
+    if (computedLane.offsetXaxis.present == 1) {
       offsetXaxis = DrivenLineOffsetSm(computedLane.offsetXaxis.choice.small);
-    }else if(computedLane.offsetXaxis.present == 2){
+    } else if (computedLane.offsetXaxis.present == 2) {
       offsetXaxis = DrivenLineOffsetLg(computedLane.offsetXaxis.choice.large);
-    }else{
-      print("Choice offsetXaxis ${computedLane.offsetXaxis.present} is invalid for ComputedLane");
+    } else {
+      print(
+          "Choice offsetXaxis ${computedLane.offsetXaxis.present} is invalid for ComputedLane");
     }
 
-    if(computedLane.offsetYaxis.present == 1){
+    if (computedLane.offsetYaxis.present == 1) {
       offsetYaxis = DrivenLineOffsetSm(computedLane.offsetYaxis.choice.small);
-    }else if(computedLane.offsetYaxis.present == 2){
+    } else if (computedLane.offsetYaxis.present == 2) {
       offsetYaxis = DrivenLineOffsetLg(computedLane.offsetYaxis.choice.large);
-    }else{
-      print("Choice offsetYaxis ${computedLane.offsetYaxis.present} is invalid for ComputedLane");
+    } else {
+      print(
+          "Choice offsetYaxis ${computedLane.offsetYaxis.present} is invalid for ComputedLane");
     }
 
-    if(computedLane.rotateXY.address != 0){
+    if (computedLane.rotateXY.address != 0) {
       rotateXY = Angle(computedLane.rotateXY.value);
     }
 
-    if(computedLane.scaleXaxis.address != 0){
+    if (computedLane.scaleXaxis.address != 0) {
       scaleXaxis = Scale_B12(computedLane.scaleXaxis.value);
     }
 
-    if(computedLane.scaleYaxis.address != 0){
+    if (computedLane.scaleYaxis.address != 0) {
       scaleYaxis = Scale_B12(computedLane.scaleYaxis.value);
     }
   }

@@ -12,59 +12,60 @@ import 'package:cv_mec/models/J2735/RegionalExtension.dart';
 import 'package:cv_mec/models/J2735/RoadSegmentReferenceID.dart';
 import 'package:asn1_plugin/generated_bindings.dart' as C;
 
-
 class GeographicalPath {
-  late DescriptiveName? name = null;
-  late RoadSegmentReferenceID? id = null;
-  late Position3D? anchor = null;
-  late LaneWidth? laneWidth = null;
-  late DirectionOfUse? directionality = null;
-  late bool? closedPath = null;
-  late HeadingSlice? direction = null;
-  late Choice_Description? description = null;
-  late List<RegionalExtension>? regional = null;
+  DescriptiveName? name;
+  RoadSegmentReferenceID? id;
+  Position3D? anchor;
+  LaneWidth? laneWidth;
+  DirectionOfUse? directionality;
+  bool? closedPath;
+  HeadingSlice? direction;
+  Choice_Description? description;
+  List<RegionalExtension>? regional;
 
-  GeographicalPath.fromC(C.GeographicalPath geographicalPath){
-    if(geographicalPath.name.address != 0){
+  GeographicalPath.fromC(C.GeographicalPath geographicalPath) {
+    if (geographicalPath.name.address != 0) {
       name = DescriptiveName.fromOctetString(geographicalPath.name.ref);
     }
 
-    if(geographicalPath.id.address != 0){
+    if (geographicalPath.id.address != 0) {
       id = RoadSegmentReferenceID.fromC(geographicalPath.id.ref);
     }
 
-    if(geographicalPath.anchor.address != 0){
+    if (geographicalPath.anchor.address != 0) {
       anchor = Position3D.fromC(geographicalPath.anchor.ref);
     }
 
-    if(geographicalPath.laneWidth.address != 0){
+    if (geographicalPath.laneWidth.address != 0) {
       laneWidth = LaneWidth(geographicalPath.laneWidth.value);
     }
 
-    if(geographicalPath.directionality.address != 0){
-      directionality = DirectionOfUse.values[geographicalPath.directionality.value];
+    if (geographicalPath.directionality.address != 0) {
+      directionality =
+          DirectionOfUse.values[geographicalPath.directionality.value];
     }
 
-    if(geographicalPath.closedPath.address != 0){
+    if (geographicalPath.closedPath.address != 0) {
       closedPath = geographicalPath.closedPath.value == 0;
     }
 
-    if(geographicalPath.direction.address != 0){
+    if (geographicalPath.direction.address != 0) {
       direction = HeadingSlice.fromBitString(geographicalPath.direction.ref);
     }
 
-    if(geographicalPath.description.address != 0){
+    if (geographicalPath.description.address != 0) {
       int choiceDescriptionID = geographicalPath.description.ref.present;
-      if(choiceDescriptionID == 1){
-        description = OffsetSystem.fromC(geographicalPath.description.ref.choice.path);
-      }else if(choiceDescriptionID == 2){
-        description = GeometricProjection.fromC(geographicalPath.description.ref.choice.geometry);
+      if (choiceDescriptionID == 1) {
+        description =
+            OffsetSystem.fromC(geographicalPath.description.ref.choice.path);
+      } else if (choiceDescriptionID == 2) {
+        description = GeometricProjection.fromC(
+            geographicalPath.description.ref.choice.geometry);
+      } else if (choiceDescriptionID == 3) {
+        print(
+            "Received description of type oldRegion. This is no longer recommended for use and not supported");
+        // description = ValidRegion.fromC(geographicalPath.description.ref.choice.oldRegion);
       }
-      else if(choiceDescriptionID == 3){
-        print("Received description of type oldRegion. This is no longer recommended for use and not supported");
-        // description = ValidRegion.fromC(geographicalPath.description.ref.choice.oldRegion); // Legac
-      }
-
     }
 
     // if(geographicalPath.regional.address != 0){

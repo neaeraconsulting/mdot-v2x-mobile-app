@@ -3,7 +3,7 @@ import 'package:dart_jts/dart_jts.dart';
 
 class GeometryDirection {
   late Geometry geometry;
-  late HeadingSlice? direction;
+  HeadingSlice? direction;
 
   GeometryDirection(this.geometry, this.direction);
 }

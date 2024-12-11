@@ -14,10 +14,12 @@ class Node_LLmD_64b implements Choice_NodeOffsetPointXY, Choice_NodeOffsetPointL
     lat = Latitude(nodeXY64b.lat);
   }
 
+  @override
   List<double> getOffsetMeters(){
     return [0,0];
   }
 
+  @override
   List<double> getOffsetLongLat(){
     return [0,0];
   }

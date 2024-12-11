@@ -21,31 +21,31 @@ import 'package:cv_mec/models/J2735/WorkZone.dart';
 class TravelerDataFrame {
   late TravelerInfoType frameType;
   late Choice_MsgID msgId;
-  late DYear? startYear;
+  DYear? startYear;
   late MinuteOfTheYear startTime;
   late MinutesDuration durationTime;
   late SignPriority priority;
   late List<GeographicalPath> regions;
   late Choice_Content content;
-  late URL_Short? url;
+  URL_Short? url;
 
-
-  TravelerDataFrame.fromC(C.TravelerDataFrame c_dataFrame){
+  TravelerDataFrame.fromC(C.TravelerDataFrame c_dataFrame) {
     // Set Frame Type
     frameType = TravelerInfoType.values[c_dataFrame.frameType];
 
     // Set Message Choice
     int msgChoiceID = c_dataFrame.msgId.present;
-    if(msgChoiceID == 1){
-      msgId = FurtherInfoId.fromOctetString(c_dataFrame.msgId.choice.furtherInfoID);
-    }else if(msgChoiceID == 2){
+    if (msgChoiceID == 1) {
+      msgId =
+          FurtherInfoId.fromOctetString(c_dataFrame.msgId.choice.furtherInfoID);
+    } else if (msgChoiceID == 2) {
       msgId = RoadSignID.fromC(c_dataFrame.msgId.choice.roadSignID);
-    }else {
+    } else {
       print("Tim has Invalid Choice ${c_dataFrame.msgId.present} for MsgID.");
     }
 
     // Set D Year
-    if(c_dataFrame.startYear.address != 0){
+    if (c_dataFrame.startYear.address != 0) {
       startYear = DYear(c_dataFrame.startYear.value);
     }
 
@@ -60,30 +60,28 @@ class TravelerDataFrame {
 
     // Set Geographical Paths
     regions = [];
-    for(int i=0; i< c_dataFrame.regions.list.count;i++){
-      regions.add(GeographicalPath.fromC(c_dataFrame.regions.list.array[i].ref));
+    for (int i = 0; i < c_dataFrame.regions.list.count; i++) {
+      regions
+          .add(GeographicalPath.fromC(c_dataFrame.regions.list.array[i].ref));
     }
 
     // Set Content
     int contentChoiceID = c_dataFrame.content.present;
-    if(contentChoiceID == 1){
-      content = ITIS_ITIScodesAndText.fromC(c_dataFrame.content.choice.advisory);
-    }else if(contentChoiceID == 2){
+    if (contentChoiceID == 1) {
+      content =
+          ITIS_ITIScodesAndText.fromC(c_dataFrame.content.choice.advisory);
+    } else if (contentChoiceID == 2) {
       content = WorkZone.fromC(c_dataFrame.content.choice.workZone);
-    }else if(contentChoiceID == 3){
+    } else if (contentChoiceID == 3) {
       content = GenericSignage.fromC(c_dataFrame.content.choice.genericSign);
-    }else if(contentChoiceID == 4){
+    } else if (contentChoiceID == 4) {
       content = SpeedLimit.fromC(c_dataFrame.content.choice.speedLimit);
-    }else if(contentChoiceID == 5){
+    } else if (contentChoiceID == 5) {
       content = ExitService.fromC(c_dataFrame.content.choice.exitService);
-    }else{
+    } else {}
 
-    }
-
-    if(c_dataFrame.url.address != 0){
+    if (c_dataFrame.url.address != 0) {
       url = URL_Short.fromOctetString(c_dataFrame.url.ref);
     }
   }
-
-  
 }

@@ -129,22 +129,22 @@ class MqttService extends GetxService {
   }
 
   void onSubscribed(String topic) {
-    print('EXAMPLE::Subscription confirmed for topic $topic');
+    print('CV_MEC::Subscription confirmed for topic $topic');
   }
 
   void onDisconnected() {
-    print('EXAMPLE::OnDisconnected client callback - Client disconnection');
+    print('CV_MEC::OnDisconnected client callback - Client disconnection');
     if (client!.connectionStatus!.disconnectionOrigin ==
         MqttDisconnectionOrigin.solicited) {
-      print('EXAMPLE::OnDisconnected callback is solicited, this is correct');
+      print('CV_MEC::OnDisconnected callback is solicited, this is correct');
     } else {
       print(
-          'EXAMPLE::OnDisconnected callback is unsolicited or none, this is incorrect - exiting');
+          'CV_MEC::OnDisconnected callback is unsolicited or none, this is incorrect - exiting');
     }
     if (pongCount == 3) {
-      print('EXAMPLE:: Pong count is correct');
+      print('CV_MEC:: Pong count is correct');
     } else {
-      print('EXAMPLE:: Pong count is incorrect, expected 3. actual $pongCount');
+      print('CV_MEC:: Pong count is incorrect, expected 3. actual $pongCount');
     }
   }
 

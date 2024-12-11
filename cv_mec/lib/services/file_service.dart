@@ -49,7 +49,7 @@ class FileService extends GetxService {
   }
 
   Future<String> getFileApplicationDirectoryPath(String fileName) async {
-    var directory;
+    Directory directory;
      if ( Platform.isAndroid)
       {
          directory = await getApplicationDocumentsDirectory(); //FOR ANDROID 
@@ -68,7 +68,7 @@ class FileService extends GetxService {
   }
 
   Future<String> _getDocsDir() async {
-    var directory;
+    Directory directory;
     if ( Platform.isAndroid)
       {
          directory = await getApplicationDocumentsDirectory(); //FOR ANDROID 
@@ -82,7 +82,7 @@ class FileService extends GetxService {
   }
 
   Future<String?> _getDownloadsDirectory() async {
-    var directory;
+    Directory? directory;
     if ( Platform.isAndroid)
       {
          directory =  await getDownloadsDirectory(); //FOR ANDROID 
@@ -101,7 +101,7 @@ class FileService extends GetxService {
 
   Future<String> _getTempDir() async {
     //final directory = await getTemporaryDirectory();
-   var directory;
+   Directory directory;
     if ( Platform.isAndroid)
       {
          directory = await getTemporaryDirectory();

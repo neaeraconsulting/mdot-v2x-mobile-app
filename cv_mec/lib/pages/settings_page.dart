@@ -1,6 +1,7 @@
 import 'package:cv_mec/services/file_service.dart';
 import 'package:cv_mec/services/secure_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:cv_mec/services/shared_pref.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -12,10 +13,10 @@ class SettingsController extends GetxController {
 
   Rx<bool> darkModeState = Get.isDarkMode.obs;
 
-  RxString username = ''.obs;
-  RxString password = ''.obs;
-  RxString baseUri = ''.obs;
-  RxString vendorID = ''.obs;
+  RxString username = dotenv.env['USERNAME']!.obs;
+  RxString password = dotenv.env['PASSWORD']!.obs;
+  RxString baseUri = dotenv.env['API_ENDPOINT']!.obs;
+  RxString vendorID = dotenv.env['VENDOR_ID']!.obs;
   RxBool settingsChanged = false.obs;
   RxString appVersion = ''.obs;
   Rx<bool> vzMode = false.obs;
@@ -27,8 +28,8 @@ class SettingsController extends GetxController {
     vendorID.value = await secureStorage.getVendorID();
     vzMode.value = await secureStorage.getVZMode();
 
-    print("VzMode on Init: ${vzMode.value}");    
-    
+    print("VzMode on Init: ${vzMode.value}");
+
     bool? darkMode = await sharedPrefs.getDarkModeFromPrefs();
     if (darkMode != null) {
       if (darkMode) {
@@ -42,7 +43,6 @@ class SettingsController extends GetxController {
       Get.changeThemeMode(ThemeMode.system);
       darkModeState.value = Get.isDarkMode;
     }
-
 
     PackageInfo packageInfo =
         await PackageInfo.fromPlatform(); // Fetch the app version
@@ -172,15 +172,14 @@ class SettingsPage extends StatelessWidget {
         ),
         spacer(),
         SwitchListTile(
-                title: const Text("VZ Mode"),
-                value: controller.vzMode.value,
-                onChanged: (value) {
-                  print("Old Value: ${controller.vzMode.value} New Value: ${value}");
-                  if (value != controller.vzMode.value) {
-                    controller.vzMode.value = value;
-                    controller.settingsChanged.value = true;
-                  }
-                }),
+            title: const Text("VZ Mode"),
+            value: controller.vzMode.value,
+            onChanged: (value) {
+              if (value != controller.vzMode.value) {
+                controller.vzMode.value = value;
+                controller.settingsChanged.value = true;
+              }
+            }),
         spacer(),
         Row(
           children: [
@@ -203,7 +202,8 @@ class SettingsPage extends StatelessWidget {
                         controller.vendorID.value = vendorIDController.text;
                         await controller.secureStorage
                             .setVendorID(vendorIDController.text);
-                        await controller.secureStorage.setVZMode(controller.vzMode.value);
+                        await controller.secureStorage
+                            .setVZMode(controller.vzMode.value);
                         controller.settingsChanged.value = false;
 
                         await fileService.deleteRegistration();
@@ -220,7 +220,7 @@ class SettingsPage extends StatelessWidget {
                       passwordController.text = controller.password.value;
                       baseUriController.text = controller.baseUri.value;
                       vendorIDController.text = controller.vendorID.value;
-                      
+
                       controller.settingsChanged.value = false;
                     }
                   : null,

@@ -8,6 +8,6 @@ class Latitude {
   }
 
   double getDecimalLatitude(){
-    return this.latitude / 1E7;
+    return latitude / 1E7;
   }
 }

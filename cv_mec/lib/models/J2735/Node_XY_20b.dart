@@ -11,6 +11,7 @@ class Node_XY_20b extends Choice_NodeOffsetPointXY{
     y = Offset_B10(nodeXY20b.y);
   }
 
+  @override
   List<double> getOffsetMeters(){
     return [x.offset_B10/100.0, y.offset_B10/100.0];
   }

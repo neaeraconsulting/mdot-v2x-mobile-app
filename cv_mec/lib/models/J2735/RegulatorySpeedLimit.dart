@@ -1,5 +1,4 @@
 import 'package:asn1_plugin/generated_bindings.dart' as C;
-import 'dart:ffi';
 
 import 'package:cv_mec/models/J2735/SpeedLimitType.dart';
 import 'package:cv_mec/models/J2735/Velocity.dart';

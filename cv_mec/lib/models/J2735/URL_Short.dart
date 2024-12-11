@@ -6,7 +6,7 @@ class URL_Short{
   URL_Short(this.url_Short);
 
   URL_Short.fromOctetString(OCTET_STRING string){
-    this.url_Short = string.toString();
+    url_Short = string.toString();
   }
 
 }

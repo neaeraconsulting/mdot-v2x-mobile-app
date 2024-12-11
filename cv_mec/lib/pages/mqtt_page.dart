@@ -11,6 +11,7 @@ import 'package:cv_mec/models/geoRoutedMsg.pb.dart' as protobuf;
 import 'package:cv_mec/models/itisCode.dart';
 import 'package:cv_mec/models/itisParser.dart';
 import 'package:cv_mec/models/registration.dart';
+import 'package:cv_mec/models/test_data.dart';
 import 'package:cv_mec/models/tim_manager.dart';
 import 'package:cv_mec/pages/config_page.dart';
 import 'package:cv_mec/services/asn_service.dart';
@@ -71,11 +72,6 @@ class _MQTTTestingState extends State<MQTTTesting> {
   bool isBroadcastingLocation = false;
   bool isLogging = false;
 
-  File? recLogFile;
-  File? sendLogFile;
-  File? appLogFile;
-  File? timLogFile;
-
   DataQueue? recDataQueue;
   DataQueue? pubDataQueue;
   DataQueue? appLogQueue;
@@ -102,20 +98,15 @@ class _MQTTTestingState extends State<MQTTTesting> {
 
     _positionStream = _locationService.locationStream.listen(updatePosition);
 
-    Future.delayed(Duration.zero,() async {
+    Future.delayed(Duration.zero, () async {
       DateTime logTime = timingService.getKronosTime();
-      appLogFile = await fileService.getFileForWriting(
-          "APP_LOG_${logTime.millisecondsSinceEpoch}.log");
 
-      timLogFile = await fileService.getFileForWriting(
-          "TIM_LOG_${logTime.millisecondsSinceEpoch}.csv");
-
-      appLogQueue = DataQueue(appLogFile!);
-      timDataQueue = DataQueue(timLogFile!);
+      appLogQueue = DataQueue("APP_LOG_${logTime.millisecondsSinceEpoch}.log");
+      timDataQueue = DataQueue("TIM_LOG_${logTime.millisecondsSinceEpoch}.csv");
     });
-    
   }
 
+  @override
   void dispose() {
     super.dispose();
     asn.cleanupDecoded(bsmTemplate);
@@ -163,20 +154,20 @@ class _MQTTTestingState extends State<MQTTTesting> {
     //_positionStream?.cancel();
   }
 
-  String getChoiceItemMessage(Choice_Item item){
-    if(item is ITIScodes){
-      return "ITIS: ${(item as ITIScodes).itisCode}\n";
-    }else if(item is ITIStext){
-      return "Text: ${(item as ITIStext).itisText}\n";
-    }else if(item is ITISPhrase){
-      return "Phrase: ${(item as ITISPhrase).itisPhrase}\n";
-    }else{
+  String getChoiceItemMessage(Choice_Item item) {
+    if (item is ITIScodes) {
+      return "ITIS: ${(item).itisCode}\n";
+    } else if (item is ITIStext) {
+      return "Text: ${(item).itisText}\n";
+    } else if (item is ITISPhrase) {
+      return "Phrase: ${(item).itisPhrase}\n";
+    } else {
       return "";
     }
   }
 
   void onReceieve(
-    MqttReceivedMessage<MqttMessage?> message, DateTime recTime) async {
+      MqttReceivedMessage<MqttMessage?> message, DateTime recTime) async {
     final recMess = message.payload as MqttPublishMessage;
 
     protobuf.GeoRoutedMsg decodedMessage =
@@ -184,9 +175,9 @@ class _MQTTTestingState extends State<MQTTTesting> {
 
     DateTime msgTime = timeStampToDateTime(decodedMessage.time);
 
-    
+    String hex = ASNService.bytesToHex(decodedMessage.msgBytes);
 
-    String hex = utf8.decode(decodedMessage.msgBytes);
+    // String hex = utf8.decode(decodedMessage.msgBytes);
 
     print("Hex Message Test: $hex");
 
@@ -194,10 +185,10 @@ class _MQTTTestingState extends State<MQTTTesting> {
 
     String consoleMessage = "";
 
-    if(msgType == MsgType.BSM){
-      consoleMessage = "Received BSM Time Delta (ms): ${recTime.millisecondsSinceEpoch - msgTime.millisecondsSinceEpoch}";
-    }else if(msgType == MsgType.TIM){
-
+    if (msgType == MsgType.BSM) {
+      consoleMessage =
+          "Received BSM Time Delta (ms): ${recTime.millisecondsSinceEpoch - msgTime.millisecondsSinceEpoch}";
+    } else if (msgType == MsgType.TIM) {
       String trimmedHex = asn.trimMessageHeaders(hex, asn.TIM_START_FLAG)!;
       TravelerInformation tim = asn.decodeTim(trimmedHex);
 
@@ -205,48 +196,49 @@ class _MQTTTestingState extends State<MQTTTesting> {
 
       consoleMessage = "Received TIM with Data: \n{\n";
 
-      for(int i =0; i< tim.dataFrames.travelerDataFrameList.length; i++){
-        Choice_Content content = tim.dataFrames.travelerDataFrameList[i].content;
-        if(content is WorkZone){
-          WorkZone wz = content as WorkZone;
-          for(int j=0; j< wz.item.length; j++){
+      for (int i = 0; i < tim.dataFrames.travelerDataFrameList.length; i++) {
+        Choice_Content content =
+            tim.dataFrames.travelerDataFrameList[i].content;
+        if (content is WorkZone) {
+          WorkZone wz = content;
+          for (int j = 0; j < wz.item.length; j++) {
             Choice_Item item = wz.item[j];
             consoleMessage = "$consoleMessage  ${getChoiceItemMessage(item)}";
           }
-        }else if(content is ExitService){
-          ExitService es = content as ExitService;
-          for(int j=0; j< es.item.length; j++){
+        } else if (content is ExitService) {
+          ExitService es = content;
+          for (int j = 0; j < es.item.length; j++) {
             Choice_Item item = es.item[j];
             consoleMessage = "$consoleMessage  ${getChoiceItemMessage(item)}";
           }
-        }else if(content is GenericSignage){
-          GenericSignage gs = content as GenericSignage;
-          for(int j=0; j< gs.item.length; j++){
+        } else if (content is GenericSignage) {
+          GenericSignage gs = content;
+          for (int j = 0; j < gs.item.length; j++) {
             Choice_Item item = gs.item[j];
             consoleMessage = "$consoleMessage  ${getChoiceItemMessage(item)}";
           }
-        }else if(content is SpeedLimit){
-          SpeedLimit sl = content as SpeedLimit;
-          for(int j=0; j< sl.item.length; j++){
+        } else if (content is SpeedLimit) {
+          SpeedLimit sl = content;
+          for (int j = 0; j < sl.item.length; j++) {
             Choice_Item item = sl.item[j];
             consoleMessage = "$consoleMessage  ${getChoiceItemMessage(item)}";
           }
-        }else if(content is ITIS_ITIScodesAndText){
-          ITIS_ITIScodesAndText itis = content as ITIS_ITIScodesAndText;
-          for(int j=0; j< itis.item.length; j++){
+        } else if (content is ITIS_ITIScodesAndText) {
+          ITIS_ITIScodesAndText itis = content;
+          for (int j = 0; j < itis.item.length; j++) {
             Choice_Item item = itis.item[j];
             consoleMessage = "$consoleMessage  ${getChoiceItemMessage(item)}";
           }
         }
       }
-      consoleMessage = consoleMessage + "}";
-    }else{
-      consoleMessage = "Received Unknown Message. Time Delta (ms): ${recTime.millisecondsSinceEpoch - msgTime.millisecondsSinceEpoch}";
+      consoleMessage = "$consoleMessage}";
+    } else {
+      consoleMessage =
+          "Received Unknown Message. Time Delta (ms): ${recTime.millisecondsSinceEpoch - msgTime.millisecondsSinceEpoch}";
     }
 
     setState(() {
       receivedLog.add(consoleMessage);
-          
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollRecToBottom();
@@ -255,10 +247,10 @@ class _MQTTTestingState extends State<MQTTTesting> {
     if (isLogging) {
       String netStat = "Unavailable";
       if (Platform.isAndroid) {
-        netStat = "${await getNetworkField()}";
+        netStat = await getNetworkField();
       }
       String record =
-          "${message.topic},${recTime.millisecondsSinceEpoch},${msgTime.millisecondsSinceEpoch},${recTime.millisecondsSinceEpoch - msgTime.millisecondsSinceEpoch},${decodedMessage.position.longitude},${decodedMessage.position.latitude},${netStat},$mqttConnectionURL,${utf8.decode(decodedMessage.msgBytes)}\n";
+          "${message.topic},${recTime.millisecondsSinceEpoch},${msgTime.millisecondsSinceEpoch},${recTime.millisecondsSinceEpoch - msgTime.millisecondsSinceEpoch},${decodedMessage.position.longitude},${decodedMessage.position.latitude},$netStat,$mqttConnectionURL,$hex\n";
       if (recDataQueue != null) {
         recDataQueue!.addItem(record);
       }
@@ -289,9 +281,11 @@ class _MQTTTestingState extends State<MQTTTesting> {
 
       asn.setBsmTime(bsmTemplate, sendTime);
 
-      msg.msgBytes = utf8.encode(asn.encode(bsmTemplate));
+      // msg.msgBytes = utf8.encode(asn.encode(bsmTemplate));
 
+      String hex = asn.encode(bsmTemplate);
 
+      msg.msgBytes = ASNService.hexToBytes(hex);
 
       // msg.msgBytes = utf8.encode(
       //     "0022e12d18466c65c1493800000e00e4616183e85a8f0100c000038081bc001480b8494c4c950cd8cde6e9651116579f22a424dd78fffff00761e4fd7eb7d07f7fff80005f11d1020214c1c0ffc7c016aff4017a0ff65403b0fd204c20ffccc04f8fe40c420ffe6404cefe60e9a10133408fcfde1438103ab4138f00e1eec1048ec160103e237410445c171104e26bc103dc4154305c2c84103b1c1c8f0a82f42103f34262d1123198103dac25fb12034ce10381c259f12038ca103574251b10e3b2210324c23ad0f23d8efffe0000209340d10000004264bf00");
@@ -308,11 +302,10 @@ class _MQTTTestingState extends State<MQTTTesting> {
               await ConnectionNetworkType().currentNetworkStatus();
           String netStat = "Unavailable";
           if (Platform.isAndroid) {
-            netStat = "${await getNetworkField()}";
-
+            netStat = await getNetworkField();
           }
           String record =
-              "$publishTopic,${sendTime.millisecondsSinceEpoch},${pos.longitude},${pos.latitude},${netStat},$mqttConnectionURL,${utf8.decode(msg.msgBytes)}\n";
+              "$publishTopic,${sendTime.millisecondsSinceEpoch},${pos.longitude},${pos.latitude},$netStat,$mqttConnectionURL,${utf8.decode(msg.msgBytes)}\n";
           pubDataQueue!.addItem(record);
         }
       }
@@ -321,15 +314,17 @@ class _MQTTTestingState extends State<MQTTTesting> {
 
   void updatePosition(Position position) {
     currentPosition = position;
-    List<TravelerDataFrame> newActiveTims =  timManager.getNewActiveTims(position.longitude, position.latitude, position.heading);
+    List<TravelerDataFrame> newActiveTims = timManager.getNewActiveTims(
+        position.longitude, position.latitude, position.heading);
     showTimMessage(newActiveTims);
   }
 
   void addToAppLog(String message) {
     setState(() {
       appLog.add(message);
-      if(appLogQueue!=null && appLogFile!=null){
-        String timedMessage = "${DateTime.now().toIso8601String()}, $message \n";
+      if (appLogQueue != null) {
+        String timedMessage =
+            "${DateTime.now().toIso8601String()}, $message \n";
         appLogQueue!.addItem(timedMessage);
       }
     });
@@ -338,16 +333,13 @@ class _MQTTTestingState extends State<MQTTTesting> {
     });
   }
 
-  void addToTimLog(String operation, String message){
-
+  void addToTimLog(String operation, String message) {
     // Position includePosition = Position()
     // if(currentPosition!= null){
 
     // }
 
     // timDataQueue.addItem("${DateTime.now().millisecondsSinceEpoch}, ${currentPosition!.longitude}, ${currentPosition!.latitude}")
-    
-
   }
 
   void getPermission() async {
@@ -375,10 +367,10 @@ class _MQTTTestingState extends State<MQTTTesting> {
         if (controller.geoRelevanceOrPrivate) {
           if (controller.privateDeviceID == "self") {
             publishTopic =
-                "vzimp/1/Private/${registration!.deviceID}/${controller.clientType}/${controller.clientSubtype}/${settingsController.vendorID.value}/${controller.messageFormat}/${v2xType}";
+                "vzimp/1/Private/${registration!.deviceID}/${controller.clientType}/${controller.clientSubtype}/${settingsController.vendorID.value}/${controller.messageFormat}/$v2xType";
           } else {
             publishTopic =
-                "vzimp/1/Private/${controller.privateDeviceID}/${controller.clientType}/${controller.clientSubtype}/${settingsController.vendorID.value}/${controller.messageFormat}/${v2xType}";
+                "vzimp/1/Private/${controller.privateDeviceID}/${controller.clientType}/${controller.clientSubtype}/${settingsController.vendorID.value}/${controller.messageFormat}/$v2xType";
           }
 
           subscribeTopic =
@@ -402,25 +394,21 @@ class _MQTTTestingState extends State<MQTTTesting> {
     }
   }
 
-
-
   void showTimMessage(List<TravelerDataFrame> newActiveTims) async {
-
-    for(TravelerDataFrame dataFrame in newActiveTims){
+    for (TravelerDataFrame dataFrame in newActiveTims) {
       addToAppLog("Showing Tim from ASN.1");
 
       ItisCode displayCode = await itisParser.getItisRepresentation(dataFrame);
 
       addToAppLog("Showing TIM: ${displayCode.itis}, ${displayCode.status}");
 
-
       Color borderColor = Colors.blue;
 
-      if(displayCode.status == ITIS_CODE_STATUS.VALID){
+      if (displayCode.status == ITIS_CODE_STATUS.VALID) {
         borderColor = Colors.green;
-      }else if(displayCode.status ==ITIS_CODE_STATUS.UNKNOWN){
+      } else if (displayCode.status == ITIS_CODE_STATUS.UNKNOWN) {
         borderColor = Colors.yellow;
-      }else if(displayCode.status == ITIS_CODE_STATUS.ERROR){
+      } else if (displayCode.status == ITIS_CODE_STATUS.ERROR) {
         borderColor = Colors.red;
       }
 
@@ -429,14 +417,13 @@ class _MQTTTestingState extends State<MQTTTesting> {
         context: context, // optional if you use ToastificationWrapper
         autoCloseDuration: const Duration(seconds: 5),
         alignment: Alignment.topCenter,
-        animationDuration: Duration(milliseconds: 500),
+        animationDuration: const Duration(milliseconds: 500),
         builder: (BuildContext context, ToastificationItem holder) {
           return Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
               color: Colors.white,
-              border: Border.all(color: borderColor, width:2.0),
-              
+              border: Border.all(color: borderColor, width: 2.0),
             ),
             padding: const EdgeInsets.all(16),
             margin: const EdgeInsets.all(8),
@@ -450,28 +437,30 @@ class _MQTTTestingState extends State<MQTTTesting> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                  if (displayCode.image != null)
-                  Expanded(child: Image(image: displayCode.image!, ))
-                  else 
-                  Expanded(child:
-                    Text(displayCode.description,
-                        style: TextStyle(color: Colors.black)
-                    ),
-                  )],
+                    if (displayCode.image != null)
+                      Expanded(
+                          child: Image(
+                        image: displayCode.image!,
+                      ))
+                    else
+                      Expanded(
+                        child: Text(displayCode.description,
+                            style: const TextStyle(color: Colors.black)),
+                      )
+                  ],
                 ),
-                
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
-
                   children: [
-                    Expanded(child: ToastTimerAnimationBuilder(
+                    Expanded(
+                        child: ToastTimerAnimationBuilder(
                       item: item!,
                       builder: (context, value, _) {
                         return LinearProgressIndicator(value: value);
                       },
                     )),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     ElevatedButton(
                       onPressed: () {
                         toastification.dismiss(item!);
@@ -486,7 +475,6 @@ class _MQTTTestingState extends State<MQTTTesting> {
         },
       );
     }
-    
   }
 
   void toggleConnection() {
@@ -499,22 +487,21 @@ class _MQTTTestingState extends State<MQTTTesting> {
     }
   }
 
-  void test() async{
+  void test() async {
     // final tim = asn.decodeTim(asn.testTimTemplate);
-    final tim = asn.decodeTim(asn.shopTestTim);
+    final tim = asn.decodeTim(TestData.shopTestTim);
 
-    timManager.addOrUpdate(tim, asn.shopTestTim);
+    timManager.addOrUpdate(tim, TestData.shopTestTim);
     // List<TravelerDataFrame> frames = timManager.getNewActiveTims(-104.9691448,40.4743463, 0); // Shop TIM
     // List<TravelerDataFrame> frames = timManager.getNewActiveTims(-104.6469010, 41.1530501, 0); // Archer Speed
-    // List<TravelerDataFrame> frames = timManager.getNewActiveTims(-104.6599010, 41.14733501, 0); // Archer Reduce Speed 
+    // List<TravelerDataFrame> frames = timManager.getNewActiveTims(-104.6599010, 41.14733501, 0); // Archer Reduce Speed
     // List<TravelerDataFrame> frames = timManager.getNewActiveTims(-104.6580462, 41.147105668, 0); // testRightLaneClosedAhead 41.147105668, -104.6580462
     // List<TravelerDataFrame> frames = timManager.getNewActiveTims(-104.6485760, 41.1477001, 30); // testWorkzoneTim 41.1477001,-104.6485760
- 
+
     // showTimMessage(frames);
   }
 
-
-  void toggleBroadcasting () async {
+  void toggleBroadcasting() async {
     setState(() {
       isBroadcastingLocation = !isBroadcastingLocation;
     });
@@ -544,15 +531,12 @@ class _MQTTTestingState extends State<MQTTTesting> {
       }
 
       DateTime logTime = timingService.getKronosTime();
-      recLogFile = await fileService.getFileForWriting(
-          "MQTT_SUB_LOG_${logTime.millisecondsSinceEpoch}.csv");
 
-      recDataQueue = DataQueue(recLogFile!);
-      sendLogFile = await fileService.getFileForWriting(
-          "MQTT_PUB_LOG_${logTime.millisecondsSinceEpoch}.csv");
-
-      pubDataQueue = DataQueue(sendLogFile!);
-      addToAppLog("Saving Records to ${recLogFile!.path}");
+      recDataQueue =
+          DataQueue("MQTT_SUB_LOG_${logTime.millisecondsSinceEpoch}.csv");
+      pubDataQueue =
+          DataQueue("MQTT_PUB_LOG_${logTime.millisecondsSinceEpoch}.csv");
+      addToAppLog("Saving Records to ${recDataQueue!.fileName}");
       String subHeader =
           "Topic, Receive Time ms, Send Time ms, Delta Time ms, Longitude, Latitude, Network, Broker, Msg Bytes\n";
 

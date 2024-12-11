@@ -11,6 +11,7 @@ class Node_LL_36B extends Choice_NodeOffsetPointLL {
     lat = OffsetLL_B12(nodeLL36b.lat);
   }
 
+  @override
   List<double> getOffsetLongLat(){
     return [lon.offsetLL_B12 / 1E7, lat.offsetLL_B12 / 1E7];
   }

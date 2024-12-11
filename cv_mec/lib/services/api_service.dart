@@ -53,7 +53,7 @@ class ApiService extends GetxController {
     try {
       print("Registring Device");
       // String imei = await DeviceImei().getDeviceImei() ?? "";
-      final String uri = "${settingsController.baseUri.value}/prd/v1/registration";
+      final String uri = "${settingsController.baseUri.value}/prd/v2/registration";
       final Map<String, String> headers = {
         "Content-Type": "application/json",
         "Authorization": "Bearer $token"
@@ -92,7 +92,7 @@ class ApiService extends GetxController {
     try {
       print("Registring Device");
       // String imei = await DeviceImei().getDeviceImei() ?? "";
-      final String uri = "${settingsController.baseUri.value}/prd/v1/connection";
+      final String uri = "${settingsController.baseUri.value}/prd/v2/connection";
 
       final Map<String, String> headers = {
         "Content-Type": "application/json",

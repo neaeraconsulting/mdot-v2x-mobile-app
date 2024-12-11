@@ -3,16 +3,15 @@ import 'package:cv_mec/models/J2735/NodeAttributeSetLL.dart';
 import 'package:cv_mec/models/J2735/NodeOffsetPointLL.dart';
 import 'dart:ffi';
 
-class NodeLL{
+class NodeLL {
   late NodeOffsetPointLL delta;
-  late NodeAttributeSetLL? attributes;
+  NodeAttributeSetLL? attributes;
 
-  NodeLL.fromC(C.NodeLL nodeLL){
+  NodeLL.fromC(C.NodeLL nodeLL) {
     delta = NodeOffsetPointLL.fromC(nodeLL.delta);
-    
-    if(nodeLL.attributes.address != 0){
+
+    if (nodeLL.attributes.address != 0) {
       attributes = NodeAttributeSetLL.fromC(nodeLL.attributes.ref);
     }
-
   }
 }

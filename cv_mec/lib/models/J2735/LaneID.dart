@@ -5,7 +5,7 @@ class LaneID {
   LaneID(this.laneID);
 
   LaneID.Unknown(){
-    this.laneID = 0;
+    laneID = 0;
   }
 
 }
