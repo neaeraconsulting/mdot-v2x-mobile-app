@@ -6,4 +6,8 @@ class Latitude {
   Latitude.unknown(){
     latitude = 900000001;
   }
+
+  double getDecimalLatitude(){
+    return this.latitude / 1E7;
+  }
 }

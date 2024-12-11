@@ -4,6 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:cv_mec/pages/home_page.dart';
 import 'package:native_device_orientation/native_device_orientation.dart';
+import 'package:toastification/toastification.dart';
 
 void main() async {
   await dotenv.load(fileName: ".env");
@@ -16,11 +17,13 @@ class MainApp extends StatelessWidget {
   const MainApp({super.key});
   @override
   Widget build(BuildContext context) {
-    return GetMaterialApp(
+    return ToastificationWrapper(
+      child: GetMaterialApp(
       title: 'AMP',
       theme: appThemeData,
       darkTheme: darkAppThemeData,
       home: const HomePage(),
+    ),
     );
   }
 }

@@ -27,7 +27,7 @@ class ParamController extends GetxController {
     clientSubtype.value = "PassengerCar";
     messageFormat.value = "j2735_gr";
     v2xType.value = "BSM";
-    networkType.value = "VZ";
+    networkType.value = "non-VZ";//"VZ";
     useFakePositionToggle.value = false;
     usingFakePosition = false;
     fakeLatitude.value = 34.05640313666031;

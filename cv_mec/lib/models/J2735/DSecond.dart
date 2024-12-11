@@ -1,3 +1,5 @@
 class DSecond{
-  int dSecond = 0;
+  late int dSecond;
+
+  DSecond(this.dSecond);
 }

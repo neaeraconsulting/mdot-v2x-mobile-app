@@ -10,4 +10,8 @@ class Node_XY_28b extends Choice_NodeOffsetPointXY{
     x = Offset_B14(nodeXY28b.x);
     y = Offset_B14(nodeXY28b.y);
   }
+
+  List<double> getOffsetMeters(){
+    return [x.offset_B14/100.0, y.offset_B14/100.0];
+  }
 }

@@ -10,4 +10,8 @@ class Node_LL_44B extends Choice_NodeOffsetPointLL {
     lon = OffsetLL_B12(nodeLL44b.lon);
     lat = OffsetLL_B12(nodeLL44b.lat);
   }
+
+  List<double> getOffsetLongLat(){
+    return [lon.offsetLL_B12 / 1E7, lat.offsetLL_B12 / 1E7];
+  }
 }

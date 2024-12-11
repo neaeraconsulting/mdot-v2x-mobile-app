@@ -1,5 +1,11 @@
+import 'package:cv_mec/pages/map_page.dart';
 import 'package:cv_mec/pages/mqtt_page.dart';
+import 'package:cv_mec/services/api_service.dart';
+import 'package:cv_mec/services/asn_service.dart';
+import 'package:cv_mec/services/file_service.dart';
+import 'package:cv_mec/services/geometry_service.dart';
 import 'package:cv_mec/services/location_service.dart';
+import 'package:cv_mec/services/mqtt_service.dart';
 import 'package:cv_mec/services/param_controller.dart';
 import 'package:cv_mec/services/timing.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +21,11 @@ class HomePage extends StatelessWidget {
     Get.put(Timing());
     Get.put(SettingsController());
     Get.put(ParamController());
+    Get.put(ApiService());
+    Get.put(ASNService());
+    Get.put(FileService());
+    Get.put(MqttService());
+    Get.put(GeometryService());
     return Scaffold(
         appBar: AppBar(
           leading: const Icon(Icons.traffic),
@@ -35,6 +46,12 @@ class HomePage extends StatelessWidget {
                 Get.to(() => const MQTTTesting());
               },
               child: const Text('MQTT Testing'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Get.to(() => const MapPage());
+              },
+              child: const Text('Map'),
             ),
           ],
         )));

@@ -7,17 +7,17 @@ class TravelerDataFrameList {
   late List<TravelerDataFrame> travelerDataFrameList;
 
   TravelerDataFrameList(List<TravelerDataFrame> list){
-    this.travelerDataFrameList = list;
+    travelerDataFrameList = list;
   }
 
   TravelerDataFrameList.empty() {
-    this.travelerDataFrameList = [];
+    travelerDataFrameList = [];
   }
 
   TravelerDataFrameList.fromC(C.TravelerDataFrameList c_dataFrames){
-    List<TravelerDataFrame> list = [];
+    travelerDataFrameList = [];
     for(int i =0; i< c_dataFrames.list.count; i++){
-      list.add(TravelerDataFrame.fromC(c_dataFrames.list.array[i].ref));
+      travelerDataFrameList.add(TravelerDataFrame.fromC(c_dataFrames.list.array[i].ref));
     }
   }
 }

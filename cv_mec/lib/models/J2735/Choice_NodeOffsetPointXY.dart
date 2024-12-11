@@ -1,3 +1,3 @@
-class Choice_NodeOffsetPointXY {
-
+abstract class Choice_NodeOffsetPointXY {
+  List<double> getOffsetMeters();
 }

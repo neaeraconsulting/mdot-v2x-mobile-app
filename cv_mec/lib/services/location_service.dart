@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:cv_mec/models/position_with_declination.dart';
 import 'package:flutter/material.dart';
@@ -13,8 +14,10 @@ class LocationService extends GetxService {
   // Static variables
   final Logger _logger = Logger();
   static final MockLocationService _mockLocationService = MockLocationService();
-  final LocationSettings _locationSettings = const LocationSettings(
-      accuracy: LocationAccuracy.high, distanceFilter: 0);
+  LocationSettings _locationSettings = const LocationSettings(
+      accuracy: LocationAccuracy.bestForNavigation, distanceFilter: 0);
+
+  
 
   // Variables
   bool _serviceEnabled = false;
@@ -48,6 +51,24 @@ class LocationService extends GetxService {
       double latitude = 0,
       double longitude = 0,
       Position? mockedLocation}) {
+
+    if (Platform.isAndroid) {
+      _locationSettings = AndroidSettings(
+          accuracy: LocationAccuracy.high,
+          distanceFilter: 0,
+          forceLocationManager: true,
+          intervalDuration: const Duration(seconds: 1),
+          //(Optional) Set foreground notification config to keep the app alive 
+          //when going to the background
+          // foregroundNotificationConfig: const ForegroundNotificationConfig(
+          //   notificationText:
+          //   "Example app will continue to receive your location even when you aren't using it",
+          //   notificationTitle: "Running in Background",
+          //   enableWakeLock: true,
+          // )
+      );
+    }
+
     _start(mocked, latitude, longitude, mockedLocation);
   }
 
@@ -162,7 +183,7 @@ class LocationService extends GetxService {
   }
 
   void _onPositionUpdate(Position position) {
-    print(position);
+    print("$position, ${DateTime.now()}");
     _locationController.add(position);
   }
 

@@ -25,15 +25,23 @@ class TravelerInformation{
 
     if(c_tim.timeStamp.address != 0){
       this.timestamp = MinuteOfTheYear(c_tim.timeStamp.value);
+    }else{
+      this.timestamp = null;
     }
-
+    
     if(c_tim.packetID.address != 0){
       this.packetID = UniqueMSGID.fromOctetString(c_tim.packetID.ref);
+    }else{
+      this.packetID = null;
     }
+    
 
     if(c_tim.urlB.address != 0){
       this.urlB = URL_Base.fromOctetString(c_tim.urlB.ref);
+    }else{
+      this.urlB = null;
     }
+    
 
     this.dataFrames = TravelerDataFrameList.fromC(c_tim.dataFrames);
 
