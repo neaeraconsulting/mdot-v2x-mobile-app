@@ -1,3 +1,4 @@
+import 'package:cv_mec/services/file_service.dart';
 import 'package:cv_mec/services/secure_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -17,11 +18,17 @@ class SettingsController extends GetxController {
   RxString vendorID = ''.obs;
   RxBool settingsChanged = false.obs;
   RxString appVersion = ''.obs;
+  Rx<bool> vzMode = false.obs;
 
   initialize() async {
     username.value = await secureStorage.getUsername();
     password.value = await secureStorage.getPassword();
     baseUri.value = await secureStorage.getBaseURI();
+    vendorID.value = await secureStorage.getVendorID();
+    vzMode.value = await secureStorage.getVZMode();
+
+    print("VzMode on Init: ${vzMode.value}");    
+    
     bool? darkMode = await sharedPrefs.getDarkModeFromPrefs();
     if (darkMode != null) {
       if (darkMode) {
@@ -35,6 +42,8 @@ class SettingsController extends GetxController {
       Get.changeThemeMode(ThemeMode.system);
       darkModeState.value = Get.isDarkMode;
     }
+
+
     PackageInfo packageInfo =
         await PackageInfo.fromPlatform(); // Fetch the app version
     appVersion.value = '${packageInfo.version} (${packageInfo.buildNumber})';
@@ -67,6 +76,9 @@ class SettingsPage extends StatelessWidget {
   TextEditingController passwordController = TextEditingController();
   TextEditingController baseUriController = TextEditingController();
   TextEditingController vendorIDController = TextEditingController();
+
+  FileService fileService = Get.find<FileService>();
+
   SettingsPage({super.key});
   @override
   Widget build(BuildContext context) {
@@ -118,6 +130,7 @@ class SettingsPage extends StatelessWidget {
         TextField(
           decoration: const InputDecoration(labelText: 'Username'),
           controller: usernameController,
+          obscureText: true,
           onChanged: (value) async {
             if (value != controller.username.value) {
               controller.settingsChanged.value = true;
@@ -128,6 +141,7 @@ class SettingsPage extends StatelessWidget {
         TextField(
           decoration: const InputDecoration(labelText: 'Password'),
           controller: passwordController,
+          obscureText: true,
           onChanged: (value) async {
             if (value != controller.password.value) {
               controller.settingsChanged.value = true;
@@ -138,6 +152,7 @@ class SettingsPage extends StatelessWidget {
         TextField(
           decoration: const InputDecoration(labelText: 'Base URI'),
           controller: baseUriController,
+          obscureText: true,
           onChanged: (value) async {
             if (value != controller.baseUri.value) {
               controller.settingsChanged.value = true;
@@ -148,12 +163,24 @@ class SettingsPage extends StatelessWidget {
         TextField(
           decoration: const InputDecoration(labelText: 'Vendor ID'),
           controller: vendorIDController,
+          obscureText: true,
           onChanged: (value) async {
             if (value != controller.vendorID.value) {
               controller.settingsChanged.value = true;
             }
           },
         ),
+        spacer(),
+        SwitchListTile(
+                title: const Text("VZ Mode"),
+                value: controller.vzMode.value,
+                onChanged: (value) {
+                  print("Old Value: ${controller.vzMode.value} New Value: ${value}");
+                  if (value != controller.vzMode.value) {
+                    controller.vzMode.value = value;
+                    controller.settingsChanged.value = true;
+                  }
+                }),
         spacer(),
         Row(
           children: [
@@ -176,7 +203,10 @@ class SettingsPage extends StatelessWidget {
                         controller.vendorID.value = vendorIDController.text;
                         await controller.secureStorage
                             .setVendorID(vendorIDController.text);
+                        await controller.secureStorage.setVZMode(controller.vzMode.value);
                         controller.settingsChanged.value = false;
+
+                        await fileService.deleteRegistration();
                       }
                     }
                   : null,
@@ -190,6 +220,7 @@ class SettingsPage extends StatelessWidget {
                       passwordController.text = controller.password.value;
                       baseUriController.text = controller.baseUri.value;
                       vendorIDController.text = controller.vendorID.value;
+                      
                       controller.settingsChanged.value = false;
                     }
                   : null,

@@ -179,15 +179,17 @@ class MqttService extends GetxService {
 
   void unsubsubscribe(String topicName) {
     print('EXAMPLE::Unsubscribing');
-    client!.unsubscribe(topicName);
+    if(client!=null){
+      client!.unsubscribe(topicName);
+    }
     subscriberList.remove(topicName);
   }
 
   int publish(String message, String topicName) {
     final builder = MqttClientPayloadBuilder();
     builder.addString(message);
-    if (client!.connectionStatus!.state == MqttConnectionState.connected) {
-      print('EXAMPLE::Publishing $message to topic $topicName');
+    if (client!= null && client!.connectionStatus!.state == MqttConnectionState.connected) {
+      // print('EXAMPLE::Publishing $message to topic $topicName');
       return client!
           .publishMessage(topicName, MqttQos.atMostOnce, builder.payload!);
     } else {
@@ -199,8 +201,8 @@ class MqttService extends GetxService {
   int publishBytes(Uint8Buffer message, String topicName) {
     final builder = MqttClientPayloadBuilder();
     builder.addBuffer(message);
-    if (client!.connectionStatus!.state == MqttConnectionState.connected) {
-      print('EXAMPLE::Publishing $message to topic $topicName');
+    if (client != null && client!.connectionStatus!.state == MqttConnectionState.connected) {
+      // print('EXAMPLE::Publishing $message to topic $topicName');
       return client!
           .publishMessage(topicName, MqttQos.atMostOnce, builder.payload!);
     } else {
@@ -210,7 +212,7 @@ class MqttService extends GetxService {
   }
 
   void disconnect() {
-    if (client!.connectionStatus!.state == MqttConnectionState.connected) {
+    if (client !=null && client!.connectionStatus!.state == MqttConnectionState.connected) {
       print('EXAMPLE::Disconnecting from MQTT Broker');
       client!.disconnect();
       subscriberList.clear();

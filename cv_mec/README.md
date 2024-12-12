@@ -25,15 +25,6 @@ flutter pub get
 
 \*These commands will not work unless you are inside the cv_mec directory. To avoid confusion, the proper cv_mec directory is the one with the pubspec.yaml file.
 
-### Setup required .env file
-This application requires a token for the NOAA Magnetic Declination API to help calculate more accurate position. Please create your own token here: https://www.ngdc.noaa.gov/geomag/CalcSurvey.shtml
-
-Once your token is created copy the sample.env file to the .env file. Enter the token generated above into the new .env file: 
-
-```
-cp sample.env .env
-```
-
 ### Run the app
 
 ```
@@ -82,4 +73,11 @@ This application utilizes the same ASN.1 C compiler used by the JPO-ODE and othe
 
 ```
 docker build --target=ffi --output type=local,dest=lib,source=generated_bindings.dart --output type=local,dest=src/,source=generated-files/2020 .
+```
+
+### .env file setup
+This repo uses a .env file to load sensitive keys into the application. A template sample.env file is included in the repo. Before building the application make sure to copy the sample.env file to .env and populate all keys
+
+```
+cp sample.env .env
 ```

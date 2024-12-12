@@ -66,12 +66,23 @@ class ApiService extends GetxController {
 
       var response =
           await http.post(Uri.parse(uri), headers: headers, body: body);
-      Registration registration =
-          Registration.fromJson(jsonDecode(response.body.toString()));
 
-      return registration;
+      if(response.statusCode == 200){
+        dynamic registrationDyanmic = jsonDecode(response.body.toString());
+      
+
+        Registration registration =
+            Registration.fromJson(registrationDyanmic);
+
+        return registration;
+      }else{
+        print(response.body.toString());
+      }
     } on SocketException catch (e) {
       print("Caught exception when attempting to register app with API: $e");
+      return null;
+    } catch(e){
+      print("Unable to Register app for unknown reasons");
       return null;
     }
   }

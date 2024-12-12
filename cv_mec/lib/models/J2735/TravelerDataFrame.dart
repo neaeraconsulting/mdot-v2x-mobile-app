@@ -83,9 +83,7 @@ class TravelerDataFrame {
     if(c_dataFrame.url.address != 0){
       url = URL_Short.fromOctetString(c_dataFrame.url.ref);
     }
-
-
-
-    
   }
+
+  
 }

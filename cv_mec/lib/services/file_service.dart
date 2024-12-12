@@ -2,7 +2,6 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:cv_mec/models/archive_directory.dart';
 import 'package:cv_mec/models/registration.dart';
-import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -18,8 +17,6 @@ class FileService extends GetxService {
   }
 
   Future<void> saveRegistration(Registration registration) async {
-    //String registrationPath =
-    //await _getFilePath(registrationFileName, ArchiveDirectory.DOWNLOADS);
     registrationFile = await getFileForWriting(registrationFileName);
     await registrationFile.writeAsString(jsonEncode(registration.toJson()));
   }
@@ -34,6 +31,14 @@ class FileService extends GetxService {
       return true;
     }
     return false;
+  }
+
+  Future<Registration> getRegistration() async {
+    String path = await _getFilePath(registrationFileName, ArchiveDirectory.DOWNLOADS);
+    File file = File(path);
+    String jsonData = await file.readAsString();
+    Registration registration = Registration.fromJson(jsonDecode(jsonData));
+    return registration;
   }
 
   Future<File> getFileForWriting(String filename) async {

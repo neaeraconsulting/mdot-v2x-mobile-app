@@ -1,2 +1,3 @@
-class Choice_NodeOffsetPointLL{
+abstract class Choice_NodeOffsetPointLL{
+  List<double> getOffsetLongLat();
 }

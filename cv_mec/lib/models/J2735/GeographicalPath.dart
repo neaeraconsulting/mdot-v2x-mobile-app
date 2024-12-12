@@ -14,15 +14,15 @@ import 'package:asn1_plugin/generated_bindings.dart' as C;
 
 
 class GeographicalPath {
-  late DescriptiveName? name;
-  late RoadSegmentReferenceID? id;
-  late Position3D? anchor;
-  late LaneWidth? laneWidth;
-  late DirectionOfUse? directionality;
-  late bool? closedPath;
-  late HeadingSlice? direction;
-  late Choice_Description? description;
-  late List<RegionalExtension>? regional;
+  late DescriptiveName? name = null;
+  late RoadSegmentReferenceID? id = null;
+  late Position3D? anchor = null;
+  late LaneWidth? laneWidth = null;
+  late DirectionOfUse? directionality = null;
+  late bool? closedPath = null;
+  late HeadingSlice? direction = null;
+  late Choice_Description? description = null;
+  late List<RegionalExtension>? regional = null;
 
   GeographicalPath.fromC(C.GeographicalPath geographicalPath){
     if(geographicalPath.name.address != 0){

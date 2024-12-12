@@ -30,7 +30,7 @@ class NodeAttributeSetXY{
       enabled = SegmentAttributeXYList.fromC(nodeAttributeSetXY.enabled.ref);
     }
 
-    if(nodeAttributeSetXY.data != 0){
+    if(nodeAttributeSetXY.data.address != 0){
       data = LaneDataAttributeList.fromC(nodeAttributeSetXY.data.ref);
     }
 
