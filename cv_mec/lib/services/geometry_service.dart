@@ -1,8 +1,8 @@
 import 'dart:math';
 
-import 'package:cv_mec/models/GeometryDirection.dart';
-import 'package:cv_mec/models/J2735/J2735.dart';
-import 'package:cv_mec/models/dataFrameGeometry.dart';
+import 'package:cv_mec/models/geometry_direction.dart';
+import 'package:cv_mec/models/j2735/J2735.dart';
+import 'package:cv_mec/models/data_frame_geometry.dart';
 import 'package:dart_jts/dart_jts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geodesy/geodesy.dart' as geo;

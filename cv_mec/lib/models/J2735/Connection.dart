@@ -1,10 +1,10 @@
 import 'dart:ffi';
 import 'package:asn1_plugin/generated_bindings.dart' as C;
-import 'package:cv_mec/models/J2735/ConnectingLane.dart';
-import 'package:cv_mec/models/J2735/IntersectionReferenceID.dart';
-import 'package:cv_mec/models/J2735/LaneConnectionID.dart';
-import 'package:cv_mec/models/J2735/RestrictionClassID.dart';
-import 'package:cv_mec/models/J2735/SignalGroupID.dart';
+import 'package:cv_mec/models/j2735/connecting_lane.dart';
+import 'package:cv_mec/models/j2735/intersection_reference_id.dart';
+import 'package:cv_mec/models/j2735/lane_connection_id.dart';
+import 'package:cv_mec/models/j2735/restriction_class_id.dart';
+import 'package:cv_mec/models/j2735/signal_group_id.dart';
 
 class Connection {
   late ConnectingLane connectingLane;

@@ -2,17 +2,18 @@ import 'dart:async';
 import 'dart:ffi';
 import 'dart:io';
 
+import 'package:another_telephony/telephony.dart';
 import 'package:connection_network_type/connection_network_type.dart';
-import 'package:cv_mec/models/J2735/J2735.dart';
-import 'package:cv_mec/models/J2735/TravelerInformation.dart';
-import 'package:cv_mec/models/MsgTypes.dart';
+import 'package:cv_mec/models/j2735/J2735.dart';
 import 'package:cv_mec/models/dataQueue.dart';
-import 'package:cv_mec/models/geoRoutedMsg.pb.dart' as protobuf;
-import 'package:cv_mec/models/itisCode.dart';
-import 'package:cv_mec/models/itisParser.dart';
-import 'package:cv_mec/models/registration.dart';
+import 'package:cv_mec/models/protobuf_models/geo_routed_msg.pb.dart'
+    as protobuf;
+import 'package:cv_mec/models/itis_code.dart';
+import 'package:cv_mec/models/itis_parser.dart';
+import 'package:cv_mec/models/msg_types.dart';
+import 'package:cv_mec/models/imp/registration.dart';
 import 'package:cv_mec/models/test_data.dart';
-import 'package:cv_mec/models/tim_manager.dart';
+import 'package:cv_mec/models/message_managers/tim_manager.dart';
 import 'package:cv_mec/pages/config_page.dart';
 import 'package:cv_mec/services/asn_service.dart';
 import 'package:cv_mec/services/file_service.dart';
@@ -22,7 +23,7 @@ import 'package:cv_mec/services/mqtt_service.dart';
 import 'package:cv_mec/services/api_service.dart';
 import 'package:cv_mec/services/param_controller.dart';
 import 'package:cv_mec/services/timing.dart';
-import 'package:device_info/device_info.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:fixnum/src/int64.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -33,8 +34,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:toastification/toastification.dart';
 import 'dart:convert';
 import 'package:typed_data/typed_data.dart';
-import 'package:telephony/telephony.dart';
-import 'package:cv_mec/models/J2735/TravelerDataFrame.dart';
 
 class MQTTTesting extends StatefulWidget {
   const MQTTTesting({super.key});

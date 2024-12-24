@@ -22,7 +22,6 @@ dependencies:
   shared_preferences: ^2.2.3
   native_device_orientation: ^2.0.3
   mqtt_client: ^10.2.1
-  device_info: ^2.0.3
   flutter_kronos: ^0.1.0+1
   ntp: ^2.0.0
   protobuf: ^3.1.0
@@ -34,7 +33,6 @@ dependencies:
   fixnum: any
   flutter_secure_storage: ^9.2.2
   connection_network_type: ^0.0.1
-  telephony: ^0.2.0
 
   asn1_plugin:
     path: asn1_plugin
@@ -49,6 +47,8 @@ dependencies:
   flutter_map: ^7.0.2
   carousel_slider: ^5.0.0
   flutter_spinkit: ^5.2.1
+  device_info_plus: ^11.2.0
+  another_telephony: ^0.3.0
 
 dev_dependencies:
   flutter_test:
@@ -63,6 +63,7 @@ flutter:
     - assets/images/cvmec_logo.png
     - assets/images/ITIS/
     - assets/fonts/
+    - assets/images/Lights/
 
   # fonts:
   #   - family: HighwayGothic

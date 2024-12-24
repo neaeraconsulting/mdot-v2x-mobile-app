@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:cv_mec/models/registration.dart';
+import 'package:cv_mec/models/imp/registration.dart';
 import 'package:cv_mec/services/timing.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
@@ -91,6 +91,7 @@ class MqttService extends GetxService {
         .listen((List<MqttReceivedMessage<MqttMessage?>>? receivedMessages) {
       DateTime recTime = timingService.getKronosTime();
       for (MqttReceivedMessage<MqttMessage?> message in receivedMessages!) {
+        print("DEBUG: Checking matches: ${DateTime.now()} ${message.topic}");
         for (String key in subscriberList.keys) {
           if (matchTopic(message.topic, key)) {
             subscriberList[key]!(message, recTime);
@@ -179,7 +180,7 @@ class MqttService extends GetxService {
 
   void unsubsubscribe(String topicName) {
     print('EXAMPLE::Unsubscribing');
-    if(client!=null){
+    if (client != null) {
       client!.unsubscribe(topicName);
     }
     subscriberList.remove(topicName);
@@ -188,7 +189,8 @@ class MqttService extends GetxService {
   int publish(String message, String topicName) {
     final builder = MqttClientPayloadBuilder();
     builder.addString(message);
-    if (client!= null && client!.connectionStatus!.state == MqttConnectionState.connected) {
+    if (client != null &&
+        client!.connectionStatus!.state == MqttConnectionState.connected) {
       // print('EXAMPLE::Publishing $message to topic $topicName');
       return client!
           .publishMessage(topicName, MqttQos.atMostOnce, builder.payload!);
@@ -201,7 +203,8 @@ class MqttService extends GetxService {
   int publishBytes(Uint8Buffer message, String topicName) {
     final builder = MqttClientPayloadBuilder();
     builder.addBuffer(message);
-    if (client != null && client!.connectionStatus!.state == MqttConnectionState.connected) {
+    if (client != null &&
+        client!.connectionStatus!.state == MqttConnectionState.connected) {
       // print('EXAMPLE::Publishing $message to topic $topicName');
       return client!
           .publishMessage(topicName, MqttQos.atMostOnce, builder.payload!);
@@ -212,7 +215,8 @@ class MqttService extends GetxService {
   }
 
   void disconnect() {
-    if (client !=null && client!.connectionStatus!.state == MqttConnectionState.connected) {
+    if (client != null &&
+        client!.connectionStatus!.state == MqttConnectionState.connected) {
       print('EXAMPLE::Disconnecting from MQTT Broker');
       client!.disconnect();
       subscriberList.clear();

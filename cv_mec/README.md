@@ -1,6 +1,6 @@
 # CV_MEC
 
-This folder contains the source code for building out the CV_MEC mobile application. The Mobile application is built using flutter and currently only supports the Android platform. If you are just trying to get a copy of this application for testing, please consider downloading the app from the google play store instead.
+This folder contains the source code for building out the CV_MEC mobile application. The Mobile application is built using flutter and currently supports both Android and IOS. If you are just trying to get a copy of this application for testing, please consider downloading the app from the google play store instead.
 
 ## Getting Started
 
@@ -14,7 +14,41 @@ To Start run:
 flutter doctor
 ```
 
-Currently, this application is only supported on Android, so make sure all Android required components are installed. If non-android components are missing (such as windows app) that is Ok.
+### Flutter version compatibility
+
+This flutter project requires Java 17 in order to build properly. As of October 2024, the default version of Java installed in Android Studio (Ladybug) is Java 21. Currently, this project will remain on Java 17 until numerous dependencies complete their updates to Java 21. If you are running this application alongside Android Studio Ladybug (or newer) you will need to manually modify the Java build version in order for the app to function properly.
+
+The current recommended fix for this is to manually specify the Java JDK to use in the cv_mec/android/gradle.properties file. This can be done by adding the following line to the file
+
+```
+org.gradle.java.home=<Path to your Java 17 JDK>
+```
+
+Note: The file path specified here may need escape characters to function properly. For example the path
+`org.gradle.java.home=C:\Program Files\Java\jdk-17.0.8.7-hotspot`
+May need to be rewritten as: `org.gradle.java.home=C:\\Program Files\\Java\\jdk-17.0.8.7-hotspot`
+
+Below is the recommend versions of Flutter Gradle and Java required to build this project
+
+| Date          | Flutter Version | Java version | Android Studio Version | Gradle Version |
+| :------------ | :-------------: | :----------: | :--------------------: | -------------: |
+| December 2024 |     3.22.2      |      17      |       JellyFish        |          7.6.3 |
+
+### Setup ENV file
+
+This application requires multiple environment variables in order to connect to the partner API. Before building the application, copy the sample.env file to .env and provide values for the following variables.
+
+```
+cp sample.env .env
+```
+
+MAPBOX_ACCESS_TOKEN=
+PARTNER_API_LOCATION=
+USERNAME=
+PASSWORD=
+
+The NOAA_GEOMAG_API_TOKEN included in the sample.env file is currently set to the publically available token specified on the NOAA site. This doesn't need to be changed at this time. For more information on this service please see the NOAA site here:
+https://www.ncei.noaa.gov/maps/historical-declination/
 
 ### Download Dependencies
 
@@ -73,11 +107,4 @@ This application utilizes the same ASN.1 C compiler used by the JPO-ODE and othe
 
 ```
 docker build --target=ffi --output type=local,dest=lib,source=generated_bindings.dart --output type=local,dest=src/,source=generated-files/2020 .
-```
-
-### .env file setup
-This repo uses a .env file to load sensitive keys into the application. A template sample.env file is included in the repo. Before building the application make sure to copy the sample.env file to .env and populate all keys
-
-```
-cp sample.env .env
 ```

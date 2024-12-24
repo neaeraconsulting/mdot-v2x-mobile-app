@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
 
-import 'package:cv_mec/models/registration.dart';
+import 'package:cv_mec/models/imp/registration.dart';
 import 'package:cv_mec/pages/settings_page.dart';
 import 'package:get/get.dart';
 
@@ -26,9 +26,9 @@ class ApiService extends GetxController {
         "password": settingsController.password.value, //"12345" //TODO
       };
 
-      try{
+      try {
         var response = await http.post(Uri.parse(uri),
-          headers: headers, body: json.encode(body));
+            headers: headers, body: json.encode(body));
         if (response.statusCode == 200) {
           Map<String, dynamic> responseObject =
               jsonDecode(response.body.toString());
@@ -36,10 +36,9 @@ class ApiService extends GetxController {
             return responseObject["access_token"];
           }
         }
-      } catch(e){
+      } catch (e) {
         return null;
       }
-      
 
       return null;
     } on SocketException catch (e) {
@@ -53,7 +52,8 @@ class ApiService extends GetxController {
     try {
       print("Registring Device");
       // String imei = await DeviceImei().getDeviceImei() ?? "";
-      final String uri = "${settingsController.baseUri.value}/prd/v2/registration";
+      final String uri =
+          "${settingsController.baseUri.value}/prd/v2/registration";
       final Map<String, String> headers = {
         "Content-Type": "application/json",
         "Authorization": "Bearer $token"
@@ -67,21 +67,19 @@ class ApiService extends GetxController {
       var response =
           await http.post(Uri.parse(uri), headers: headers, body: body);
 
-      if(response.statusCode == 200){
+      if (response.statusCode == 200) {
         dynamic registrationDyanmic = jsonDecode(response.body.toString());
-      
 
-        Registration registration =
-            Registration.fromJson(registrationDyanmic);
+        Registration registration = Registration.fromJson(registrationDyanmic);
 
         return registration;
-      }else{
+      } else {
         print(response.body.toString());
       }
     } on SocketException catch (e) {
       print("Caught exception when attempting to register app with API: $e");
       return null;
-    } catch(e){
+    } catch (e) {
       print("Unable to Register app for unknown reasons");
       return null;
     }
@@ -92,7 +90,8 @@ class ApiService extends GetxController {
     try {
       print("Registring Device");
       // String imei = await DeviceImei().getDeviceImei() ?? "";
-      final String uri = "${settingsController.baseUri.value}/prd/v2/connection";
+      final String uri =
+          "${settingsController.baseUri.value}/prd/v2/connection";
 
       final Map<String, String> headers = {
         "Content-Type": "application/json",

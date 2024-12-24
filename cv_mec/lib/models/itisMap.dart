@@ -1,5 +1,0 @@
-
-class ITIS_MAP {
-
-}
-

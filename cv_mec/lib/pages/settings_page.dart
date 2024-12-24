@@ -20,6 +20,7 @@ class SettingsController extends GetxController {
   RxBool settingsChanged = false.obs;
   RxString appVersion = ''.obs;
   Rx<bool> vzMode = false.obs;
+  Rx<bool> pedestrianMode = false.obs;
 
   initialize() async {
     username.value = await secureStorage.getUsername();
@@ -27,8 +28,7 @@ class SettingsController extends GetxController {
     baseUri.value = await secureStorage.getBaseURI();
     vendorID.value = await secureStorage.getVendorID();
     vzMode.value = await secureStorage.getVZMode();
-
-    print("VzMode on Init: ${vzMode.value}");
+    // pedestrianMode.value = await secureStorage.getPedestrianMode();
 
     bool? darkMode = await sharedPrefs.getDarkModeFromPrefs();
     if (darkMode != null) {

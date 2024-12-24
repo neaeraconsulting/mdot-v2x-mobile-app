@@ -1,19 +1,18 @@
-import 'package:cv_mec/models/J2735/Choice_NodeOffsetPointXY.dart';
-import 'package:cv_mec/models/J2735/Offset_B10.dart';
 import 'package:asn1_plugin/generated_bindings.dart' as C;
+import 'package:cv_mec/models/j2735/choice_node_offset_point_xy.dart';
+import 'package:cv_mec/models/j2735/offset_b10.dart';
 
-class Node_XY_20b extends Choice_NodeOffsetPointXY{
+class Node_XY_20b extends Choice_NodeOffsetPointXY {
   late Offset_B10 x;
   late Offset_B10 y;
 
-  Node_XY_20b.fromC(C.Node_XY_20b nodeXY20b){
+  Node_XY_20b.fromC(C.Node_XY_20b nodeXY20b) {
     x = Offset_B10(nodeXY20b.x);
     y = Offset_B10(nodeXY20b.y);
   }
 
   @override
-  List<double> getOffsetMeters(){
-    return [x.offset_B10/100.0, y.offset_B10/100.0];
+  List<double> getOffsetMeters() {
+    return [x.offset_B10 / 100.0, y.offset_B10 / 100.0];
   }
-
 }
