@@ -1,0 +1,8 @@
+enum MotorizedPropelledType{
+  UNAVAILABLE,
+  OTHERTYPES,
+  WHEELCHAIR,
+  BICYCLE,
+  SCOOTER,
+  SELFBALANCINGDEVICE
+}
