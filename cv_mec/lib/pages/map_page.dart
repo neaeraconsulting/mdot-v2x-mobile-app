@@ -149,7 +149,7 @@ class MapState extends State<MapPage> {
   late Image currentLightState;
   late String nextLightText = "";
 
-  bool debugMode = true;
+  bool debugMode = false;
   bool showLoadingIcon = true;
 
   @override
