@@ -1,1 +1,0 @@
-class Choice_LaneDataAttribute{}

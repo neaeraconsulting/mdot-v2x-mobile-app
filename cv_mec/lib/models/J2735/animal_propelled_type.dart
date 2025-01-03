@@ -1,6 +1,0 @@
-enum AnimalPropelledType {
-  UNAVAILABLE,
-  OTHERTYPES,
-  ANIMALMOUNTED,
-  ANIMALDRAWNCARRIAGE,
-}
