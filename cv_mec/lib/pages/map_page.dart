@@ -178,8 +178,9 @@ class MapState extends State<MapPage> {
     currentLightState = lightStateMap[MovementPhaseState.UNAVAILABLE]!;
 
     if (debugMode) {
-      // TravelerInformation tim = asnService.decodeTim(TestData.leidosSampleTim);
-      // timManager.addOrUpdate(tim, TestData.leidosSampleTim);
+      // TravelerInformation tim =
+      //     asnService.decodeTim(TestData.pedestrianCrossingTim);
+      // timManager.addOrUpdate(tim, TestData.pedestrianCrossingTim);
 
       // TravelerInformation tim2 = asnService.decodeTim(asnService.verizonTim2);
       // timManager.addOrUpdate(tim2, asnService.verizonTim2);
@@ -216,20 +217,23 @@ class MapState extends State<MapPage> {
       updateConnectedStatus(ConnectedStatus.CONNECTED);
 
       if (debugMode) {
-        positionStream =
-            fakePosition(TestData.cdotFakePos12110).listen(updatePosition);
+        positionStream = fakePosition(
+                TestData.tfhrcIntersectionFakePosition.reversed.toList())
+            .listen(updatePosition);
       } else {
         positionStream = locationService.locationStream.listen(updatePosition);
       }
     });
 
-    setState(() {
-      drawnPolygons = getPolygons();
-      drawnPolylines = getPolylines();
+    if (mounted) {
+      setState(() {
+        drawnPolygons = getPolygons();
+        drawnPolylines = getPolylines();
 
-      print("PolyLine Length: ${drawnPolygons.length}");
-      showLoadingIcon = true;
-    });
+        print("PolyLine Length: ${drawnPolygons.length}");
+        showLoadingIcon = true;
+      });
+    }
   }
 
   void fakeSpatMessages(List<String> fakeSpats) {
@@ -289,7 +293,7 @@ class MapState extends State<MapPage> {
   }
 
   Stream<Position> fakePosition(List<List<double>> fakePosition) {
-    return Stream<Position>.periodic(const Duration(milliseconds: 500),
+    return Stream<Position>.periodic(const Duration(milliseconds: 1000),
         (count) {
       List<List<double>> route = fakePosition; //.reversed.toList();
       int index = count % route.length;
@@ -345,9 +349,11 @@ class MapState extends State<MapPage> {
   Future<int> connectToMqttBroker() async {
     String? token = await apiService.getToken();
 
-    setState(() {
-      showLoadingIcon = true;
-    });
+    if (mounted) {
+      setState(() {
+        showLoadingIcon = true;
+      });
+    }
 
     updateConnectedStatus(ConnectedStatus.PARTIAl);
 
@@ -409,9 +415,11 @@ class MapState extends State<MapPage> {
 
     startSendingBSM();
 
-    setState(() {
-      showLoadingIcon = false;
-    });
+    if (mounted) {
+      setState(() {
+        showLoadingIcon = false;
+      });
+    }
 
     return 0;
   }
@@ -477,10 +485,12 @@ class MapState extends State<MapPage> {
       TravelerInformation tim = asnService.decodeTim(trimmedHex);
 
       timManager.addOrUpdate(tim, hex);
-      setState(() {
-        drawnPolygons = getPolygons();
-        drawnPolylines = getPolylines();
-      });
+      if (mounted) {
+        setState(() {
+          drawnPolygons = getPolygons();
+          drawnPolylines = getPolylines();
+        });
+      }
 
       addToReceiveLog(topic, recTime, sendTime, trimmedHex);
     } else if (msgType == MsgType.SPAT) {
@@ -493,10 +503,12 @@ class MapState extends State<MapPage> {
 
       spatManager.addOrUpdate(spat);
 
-      setState(() {
-        drawnPolygons = getPolygons();
-        drawnPolylines = getPolylines();
-      });
+      if (mounted) {
+        setState(() {
+          drawnPolygons = getPolygons();
+          drawnPolylines = getPolylines();
+        });
+      }
 
       addToReceiveLog(topic, recTime, sendTime, trimmedHex);
     } else if (msgType == MsgType.MAP) {
@@ -509,10 +521,12 @@ class MapState extends State<MapPage> {
 
       mapManager.addOrUpdate(map);
 
-      setState(() {
-        drawnPolygons = getPolygons();
-        drawnPolylines = getPolylines();
-      });
+      if (mounted) {
+        setState(() {
+          drawnPolygons = getPolygons();
+          drawnPolylines = getPolylines();
+        });
+      }
 
       addToReceiveLog(topic, recTime, sendTime, trimmedHex);
     }
@@ -621,10 +635,12 @@ class MapState extends State<MapPage> {
   Future<void> updatePosition(Position position) async {
     currentPosition = position;
 
-    setState(() {
-      drawnPolygons = getPolygons();
-      drawnPolylines = getPolylines();
-    });
+    if (mounted) {
+      setState(() {
+        drawnPolygons = getPolygons();
+        drawnPolylines = getPolylines();
+      });
+    }
 
     if (followUser) {
       _mapController.moveAndRotate(getUserLocation(),
@@ -647,10 +663,11 @@ class MapState extends State<MapPage> {
       addToTimLog("ALERT", str);
     }
 
-    setState(() {
-      showTims = codes;
-    });
-
+    if (mounted) {
+      setState(() {
+        showTims = codes;
+      });
+    }
     // showTimMessage(newActiveTims);
   }
 
@@ -658,6 +675,7 @@ class MapState extends State<MapPage> {
     showError("Disconnected from MQTT Broker Randomly");
     updateConnectedStatus(ConnectedStatus.DISCONNECTED);
     stopSendingBSM();
+    mqtt.subscriberList.clear();
   }
 
   bool isConnected() {
@@ -675,17 +693,19 @@ class MapState extends State<MapPage> {
   }
 
   void updateConnectedStatus(ConnectedStatus status) {
-    setState(() {
-      if (status == ConnectedStatus.UNKNOWN) {
-        connectedButtonColor = Colors.grey;
-      } else if (status == ConnectedStatus.CONNECTED) {
-        connectedButtonColor = Colors.green;
-      } else if (status == ConnectedStatus.DISCONNECTED) {
-        connectedButtonColor = Colors.red;
-      } else if (status == ConnectedStatus.PARTIAl) {
-        connectedButtonColor = Colors.orange;
-      }
-    });
+    if (mounted) {
+      setState(() {
+        if (status == ConnectedStatus.UNKNOWN) {
+          connectedButtonColor = Colors.grey;
+        } else if (status == ConnectedStatus.CONNECTED) {
+          connectedButtonColor = Colors.green;
+        } else if (status == ConnectedStatus.DISCONNECTED) {
+          connectedButtonColor = Colors.red;
+        } else if (status == ConnectedStatus.PARTIAl) {
+          connectedButtonColor = Colors.orange;
+        }
+      });
+    }
   }
 
   void updateTimeToChange() {
@@ -757,15 +777,19 @@ class MapState extends State<MapPage> {
           }
         }
 
-        setState(() {
-          currentLightState = lightStateMap[next!.currentPhaseState]!;
-          nextLightText = text;
-        });
+        if (mounted) {
+          setState(() {
+            currentLightState = lightStateMap[next!.currentPhaseState]!;
+            nextLightText = text;
+          });
+        }
       } else {
-        setState(() {
-          currentLightState = lightStateMap[MovementPhaseState.UNAVAILABLE]!;
-          nextLightText = "";
-        });
+        if (mounted) {
+          setState(() {
+            currentLightState = lightStateMap[MovementPhaseState.UNAVAILABLE]!;
+            nextLightText = "";
+          });
+        }
       }
     }
   }
@@ -1249,7 +1273,7 @@ class MapState extends State<MapPage> {
                 // controller.mapController = mapController;
               },
               onPositionChanged: (position, hasGesture) {
-                if (hasGesture) {
+                if (hasGesture && mounted) {
                   setState(() {
                     followUser = false;
                   });
@@ -1257,10 +1281,13 @@ class MapState extends State<MapPage> {
               },
               onTap: (tapPosition, point) {
                 // Reset the polygons when clicking anywhere on the map
-                setState(() {
-                  _hoverGons = null;
-                  _prevHitValues = null;
-                });
+
+                if (mounted) {
+                  setState(() {
+                    _hoverGons = null;
+                    _prevHitValues = null;
+                  });
+                }
               },
             ),
             children: [
@@ -1300,13 +1327,17 @@ class MapState extends State<MapPage> {
                       disableHolesBorder: original.disableHolesBorder,
                     );
                   }).toList();
-                  setState(() => _hoverGons = hoverLines);
+                  if (mounted) {
+                    setState(() => _hoverGons = hoverLines);
+                  }
                 },
                 onExit: (_) {
-                  setState(() {
-                    _hoverGons = null;
-                    _prevHitValues = null;
-                  });
+                  if (mounted) {
+                    setState(() {
+                      _hoverGons = null;
+                      _prevHitValues = null;
+                    });
+                  }
                 },
                 child: GestureDetector(
                   // onTap: () => _openTouchedGonsModal(
@@ -1413,10 +1444,12 @@ class MapState extends State<MapPage> {
                 child: OutlinedButton(
                   onPressed: () {
                     Navigator.pop(context);
-                    setState(() {
-                      _hoverGons = null;
-                      _prevHitValues = null;
-                    });
+                    if (mounted) {
+                      setState(() {
+                        _hoverGons = null;
+                        _prevHitValues = null;
+                      });
+                    }
                   },
                   child: const Text('Close'),
                 ),

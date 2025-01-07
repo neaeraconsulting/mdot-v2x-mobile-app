@@ -30,10 +30,19 @@ class ParamController extends GetxController {
     networkType.value = "non-VZ"; //"VZ";
     useFakePositionToggle.value = false;
     usingFakePosition = false;
-    fakeLatitude.value =
-        39.58937188602476; //38.9549984; //34.05640313666031; //,
-    fakeLongitude.value =
-        -105.0912699992925; //-77.1493367; // -84.2769675541679; //
+
+    // Turner Fairbanks
+    fakeLatitude.value = 38.9555;
+    fakeLongitude.value = -77.1494;
+
+    // Colorado
+    // fakeLatitude.value = 39.58937188602476;
+    // fakeLongitude.value = -105.0912699992925;
+
+    // Atlanta
+    // fakeLatitude.value = 34.05640313666031;
+    // fakeLongitude.value = -84.2769675541679;
+
     messageDelay.value = 1000;
     geoRelevanceOrPrivateToggle.value = true;
     geoRelevanceOrPrivate = true;

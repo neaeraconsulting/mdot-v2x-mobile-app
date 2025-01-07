@@ -65,7 +65,7 @@ class _MQTTTestingState extends State<MQTTTesting> {
   String publishTopic = "";
   String subscribeTopic = "";
   String v2xType = "BSM"; //Parameter
-  int messageDelay = 100; // ms Parameter
+  int messageDelay = 1000; // ms Parameter
 
   DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
   bool isBroadcastingLocation = false;
@@ -107,8 +107,29 @@ class _MQTTTestingState extends State<MQTTTesting> {
 
   @override
   void dispose() {
+    if (_positionStream != null) {
+      _positionStream!.cancel();
+    }
+    mqtt.subscriberList.clear();
+    mqtt.disconnect();
+
+    if (recDataQueue != null) {
+      recDataQueue!.dispose();
+    }
+
+    if (pubDataQueue != null) {
+      pubDataQueue!.dispose();
+    }
+
+    if (appLogQueue != null) {
+      appLogQueue!.dispose();
+    }
+
+    if (timDataQueue != null) {
+      timDataQueue!.dispose();
+    }
+
     super.dispose();
-    asn.cleanupDecoded(bsmTemplate);
   }
 
   void _scrollSendToBottom() {
@@ -140,10 +161,12 @@ class _MQTTTestingState extends State<MQTTTesting> {
 
       if (!isConnected()) {
         stopSending();
-        setState(() {
-          isLogging = false;
-          isBroadcastingLocation = false;
-        });
+        if (mounted) {
+          setState(() {
+            isLogging = false;
+            isBroadcastingLocation = false;
+          });
+        }
       }
     });
   }
@@ -236,9 +259,12 @@ class _MQTTTestingState extends State<MQTTTesting> {
           "Received Unknown Message. Time Delta (ms): ${recTime.millisecondsSinceEpoch - msgTime.millisecondsSinceEpoch}";
     }
 
-    setState(() {
-      receivedLog.add(consoleMessage);
-    });
+    if (mounted) {
+      setState(() {
+        receivedLog.add(consoleMessage);
+      });
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollRecToBottom();
     });
@@ -319,17 +345,20 @@ class _MQTTTestingState extends State<MQTTTesting> {
   }
 
   void addToAppLog(String message) {
-    setState(() {
-      appLog.add(message);
-      if (appLogQueue != null) {
-        String timedMessage =
-            "${DateTime.now().toIso8601String()}, $message \n";
-        appLogQueue!.addItem(timedMessage);
-      }
-    });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollSendToBottom();
-    });
+    if (mounted) {
+      print("Mounted Setting State");
+      setState(() {
+        appLog.add(message);
+        if (appLogQueue != null) {
+          String timedMessage =
+              "${DateTime.now().toIso8601String()}, $message \n";
+          appLogQueue!.addItem(timedMessage);
+        }
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollSendToBottom();
+      });
+    }
   }
 
   void addToTimLog(String operation, String message) {
@@ -501,9 +530,11 @@ class _MQTTTestingState extends State<MQTTTesting> {
   }
 
   void toggleBroadcasting() async {
-    setState(() {
-      isBroadcastingLocation = !isBroadcastingLocation;
-    });
+    if (mounted) {
+      setState(() {
+        isBroadcastingLocation = !isBroadcastingLocation;
+      });
+    }
 
     if (isBroadcastingLocation) {
       startSending();
@@ -518,9 +549,12 @@ class _MQTTTestingState extends State<MQTTTesting> {
         await Permission.phone.request();
       }
     }
-    setState(() {
-      isLogging = !isLogging;
-    });
+    if (mounted) {
+      setState(() {
+        isLogging = !isLogging;
+      });
+    }
+
     if ((isLogging && Platform.isIOS) ||
         (isLogging && await Permission.phone.request().isGranted)) {
       // await Permission.manageExternalStorage.isGranted;
