@@ -5,6 +5,7 @@ import 'dart:math';
 
 import 'package:another_telephony/telephony.dart';
 import 'package:connection_network_type/connection_network_type.dart';
+import 'package:cv_mec/models/data_queue.dart';
 import 'package:cv_mec/models/geometry_direction.dart';
 import 'package:cv_mec/models/j2735/basic_safety_message.dart';
 import 'package:cv_mec/models/j2735/d_second.dart';
@@ -20,15 +21,14 @@ import 'package:cv_mec/models/j2735/node_set_xy.dart';
 import 'package:cv_mec/models/j2735/spat.dart';
 import 'package:cv_mec/models/j2735/time_mark.dart';
 import 'package:cv_mec/models/data_frame_geometry.dart';
-import 'package:cv_mec/models/dataQueue.dart';
 import 'package:cv_mec/models/geo_map.dart';
 import 'package:cv_mec/models/itis_code.dart';
 import 'package:cv_mec/models/j2735/traveler_data_frame.dart';
 import 'package:cv_mec/models/j2735/traveler_information.dart';
 import 'package:cv_mec/models/message_managers/map_manager.dart';
 import 'package:cv_mec/models/msg_types.dart';
-import 'package:cv_mec/models/receievedBsm.dart';
 import 'package:cv_mec/models/imp/registration.dart';
+import 'package:cv_mec/models/receieved_bsm.dart';
 import 'package:cv_mec/models/render_models/render_lane_connection.dart';
 import 'package:cv_mec/models/render_models/render_light_location.dart';
 import 'package:cv_mec/models/message_managers/spat_manager.dart';
@@ -60,6 +60,7 @@ import 'package:cv_mec/models/protobuf_models/geo_routed_msg.pb.dart'
 import 'package:permission_handler/permission_handler.dart';
 import 'package:typed_data/typed_data.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 enum ConnectedStatus { UNKNOWN, DISCONNECTED, CONNECTED, PARTIAl }
 
@@ -414,6 +415,7 @@ class MapState extends State<MapPage> {
     //cdotFakePosition
 
     startSendingBSM();
+    WakelockPlus.enable();
 
     if (mounted) {
       setState(() {
@@ -676,6 +678,7 @@ class MapState extends State<MapPage> {
     updateConnectedStatus(ConnectedStatus.DISCONNECTED);
     stopSendingBSM();
     mqtt.subscriberList.clear();
+    WakelockPlus.disable();
   }
 
   bool isConnected() {

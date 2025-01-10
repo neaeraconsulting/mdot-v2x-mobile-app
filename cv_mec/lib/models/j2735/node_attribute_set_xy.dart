@@ -1,9 +1,9 @@
 import 'dart:ffi';
 
 import 'package:asn1_plugin/generated_bindings.dart' as C;
-import 'package:cv_mec/models/j2735/Offset_B10.dart';
 import 'package:cv_mec/models/j2735/lane_data_attribute_list.dart';
 import 'package:cv_mec/models/j2735/node_attribute_xy_list.dart';
+import 'package:cv_mec/models/j2735/offset_b10.dart';
 import 'package:cv_mec/models/j2735/regional_extension.dart';
 import 'package:cv_mec/models/j2735/segment_attribute_xy_list.dart';
 

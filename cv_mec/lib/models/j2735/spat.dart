@@ -1,6 +1,8 @@
 import 'dart:ffi';
 import 'package:asn1_plugin/generated_bindings.dart' as C;
-import 'package:cv_mec/models/j2735/J2735.dart';
+import 'package:cv_mec/models/j2735/descriptive_name.dart';
+import 'package:cv_mec/models/j2735/intersection_state_list.dart';
+import 'package:cv_mec/models/j2735/minute_of_the_year.dart';
 
 class Spat {
   MinuteOfTheYear? timeStamp;

@@ -1,6 +1,6 @@
 import 'package:asn1_plugin/generated_bindings.dart' as C;
-import 'package:cv_mec/models/j2735/Velocity.dart';
 import 'package:cv_mec/models/j2735/speed_limit_type.dart';
+import 'package:cv_mec/models/j2735/velocity.dart';
 
 class RegulatorySpeedLimit {
   late SpeedLimitType type;

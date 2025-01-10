@@ -1,10 +1,10 @@
 import 'dart:ffi';
 import 'package:asn1_plugin/generated_bindings.dart' as C;
-import 'package:cv_mec/models/j2735/Elevation.dart';
 import 'package:cv_mec/models/j2735/d_date_time.dart';
+import 'package:cv_mec/models/j2735/elevation.dart';
 import 'package:cv_mec/models/j2735/heading.dart';
-import 'package:cv_mec/models/j2735/Latitude.dart';
-import 'package:cv_mec/models/j2735/Longitude.dart';
+import 'package:cv_mec/models/j2735/latitude.dart';
+import 'package:cv_mec/models/j2735/longitude.dart';
 import 'package:cv_mec/models/j2735/position_confidence_set.dart';
 import 'package:cv_mec/models/j2735/positional_accuracy.dart';
 import 'package:cv_mec/models/j2735/speed_and_heading_and_throttle_confidence.dart';

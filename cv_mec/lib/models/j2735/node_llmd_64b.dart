@@ -1,8 +1,8 @@
 import 'package:cv_mec/models/j2735/choice_node_offset_point_ll.dart';
-import 'package:cv_mec/models/j2735/Latitude.dart';
-import 'package:cv_mec/models/j2735/Longitude.dart';
 import 'package:asn1_plugin/generated_bindings.dart' as C;
 import 'package:cv_mec/models/j2735/choice_node_offset_point_xy.dart';
+import 'package:cv_mec/models/j2735/latitude.dart';
+import 'package:cv_mec/models/j2735/longitude.dart';
 
 class Node_LLmD_64b
     implements Choice_NodeOffsetPointXY, Choice_NodeOffsetPointLL {

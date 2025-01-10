@@ -8,7 +8,7 @@ import 'package:cv_mec/models/j2735/driven_line_offset_lg.dart';
 import 'package:cv_mec/models/j2735/driven_line_offset_sm.dart';
 import 'package:cv_mec/models/j2735/lane_id.dart';
 import 'package:cv_mec/models/j2735/regional_extension.dart';
-import 'package:cv_mec/models/j2735/Scale_B12.dart';
+import 'package:cv_mec/models/j2735/scale_b12.dart';
 
 class ComputedLane extends Choice_NodeListXY {
   late LaneID referenceLaneId;

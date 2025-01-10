@@ -151,17 +151,17 @@ class MqttService extends GetxService {
 
   void onConnected() {
     print(
-        'EXAMPLE::OnConnected client callback - Client connection was successful');
+        'CV_MEC::OnConnected client callback - Client connection was successful');
   }
 
   void pong() {
-    print('EXAMPLE::Ping response client callback invoked');
+    print('CV_MEC::Ping response client callback invoked');
     pongCount++;
   }
 
   void subscribe(String topicName,
       Function(MqttReceivedMessage<MqttMessage?>, DateTime) callback) async {
-    print('EXAMPLE::Subscribing to the $topicName topic');
+    print('CV_MEC::Subscribing to the $topicName topic');
 
     int retryCount = 0;
     while (client!.connectionStatus!.state != MqttConnectionState.connected) {
@@ -169,7 +169,7 @@ class MqttService extends GetxService {
       retryCount += 1;
       if (retryCount > 3) {
         print(
-            'EXAMPLE::Unable to Subscribe to Topic. Client is not Connected to Broker');
+            'CV_MEC::Unable to Subscribe to Topic. Client is not Connected to Broker');
         return;
       }
     }

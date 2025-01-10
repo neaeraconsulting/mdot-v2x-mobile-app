@@ -4,8 +4,19 @@ import 'dart:io';
 
 import 'package:another_telephony/telephony.dart';
 import 'package:connection_network_type/connection_network_type.dart';
-import 'package:cv_mec/models/j2735/J2735.dart';
-import 'package:cv_mec/models/dataQueue.dart';
+import 'package:cv_mec/models/data_queue.dart';
+import 'package:cv_mec/models/j2735/choice_content.dart';
+import 'package:cv_mec/models/j2735/choice_item.dart';
+import 'package:cv_mec/models/j2735/exit_service.dart';
+import 'package:cv_mec/models/j2735/generic_signage.dart';
+import 'package:cv_mec/models/j2735/itis_codes.dart';
+import 'package:cv_mec/models/j2735/itis_itis_codes_and_text.dart';
+import 'package:cv_mec/models/j2735/itis_phrase.dart';
+import 'package:cv_mec/models/j2735/itis_text.dart';
+import 'package:cv_mec/models/j2735/speed_limit.dart';
+import 'package:cv_mec/models/j2735/traveler_data_frame.dart';
+import 'package:cv_mec/models/j2735/traveler_information.dart';
+import 'package:cv_mec/models/j2735/work_zone.dart';
 import 'package:cv_mec/models/protobuf_models/geo_routed_msg.pb.dart'
     as protobuf;
 import 'package:cv_mec/models/itis_code.dart';
@@ -254,6 +265,12 @@ class _MQTTTestingState extends State<MQTTTesting> {
         }
       }
       consoleMessage = "$consoleMessage}";
+    } else if (msgType == MsgType.SPAT) {
+      consoleMessage =
+          "Received SPaT Time Delta (ms): ${recTime.millisecondsSinceEpoch - msgTime.millisecondsSinceEpoch}";
+    } else if (msgType == MsgType.MAP) {
+      consoleMessage =
+          "Received MAP Time Delta (ms): ${recTime.millisecondsSinceEpoch - msgTime.millisecondsSinceEpoch}";
     } else {
       consoleMessage =
           "Received Unknown Message. Time Delta (ms): ${recTime.millisecondsSinceEpoch - msgTime.millisecondsSinceEpoch}";
@@ -385,17 +402,34 @@ class _MQTTTestingState extends State<MQTTTesting> {
     }
   }
 
+  void getClientInfo(
+      MqttReceivedMessage<MqttMessage?> message, DateTime recTime) async {
+    final recMess = message.payload as MqttPublishMessage;
+    // session_id = msg.payload.decode("utf-8")["SessionID"]
+
+    String msg = utf8.decode(recMess.payload.message);
+    Map<String, dynamic> clientInfo = json.decode(msg);
+
+    if (clientInfo.containsKey("SessionID")) {
+      publishTopic =
+          "vzimp/1/Private/${clientInfo["SessionID"]}/${controller.clientType}/${controller.clientSubtype}/${settingsController.vendorID.value}/${controller.messageFormat}/$v2xType";
+    }
+  }
+
   void connectToMqttBroker() async {
     timingService.startAllUpdates();
     if (mqttConnectionURL != null && registration != null) {
       int result = await mqtt.connect(mqttConnectionURL!, registration!);
+
       if (result == 0) {
         addToAppLog("Connected to MQTT Broker");
 
         if (controller.geoRelevanceOrPrivate) {
           if (controller.privateDeviceID == "self") {
-            publishTopic =
-                "vzimp/1/Private/${registration!.deviceID}/${controller.clientType}/${controller.clientSubtype}/${settingsController.vendorID.value}/${controller.messageFormat}/$v2xType";
+            mqtt.subscribe("vzimp/1/ClientInfo", getClientInfo);
+
+            // publishTopic =
+            //     "vzimp/1/Private/${registration!.deviceID}/${controller.clientType}/${controller.clientSubtype}/${settingsController.vendorID.value}/${controller.messageFormat}/$v2xType";
           } else {
             publishTopic =
                 "vzimp/1/Private/${controller.privateDeviceID}/${controller.clientType}/${controller.clientSubtype}/${settingsController.vendorID.value}/${controller.messageFormat}/$v2xType";

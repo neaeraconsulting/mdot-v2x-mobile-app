@@ -1,7 +1,11 @@
 import 'dart:ffi';
-
-import 'package:cv_mec/models/j2735/J2735.dart';
 import 'package:asn1_plugin/generated_bindings.dart' as C;
+import 'package:cv_mec/models/j2735/minute_of_the_year.dart';
+import 'package:cv_mec/models/j2735/msg_count.dart';
+import 'package:cv_mec/models/j2735/regional_extension.dart';
+import 'package:cv_mec/models/j2735/traveler_data_frame_list.dart';
+import 'package:cv_mec/models/j2735/unique_msg_id.dart';
+import 'package:cv_mec/models/j2735/url_base.dart';
 
 class TravelerInformation {
   late MsgCount msgCnt;
