@@ -1,9 +1,7 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'generated_bindings.dart';
 import 'dart:ffi';
-import 'package:ffi/ffi.dart';
 
 class Asn1{
 

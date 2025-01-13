@@ -1,6 +1,7 @@
 //import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class SecureStorage {
   static const _storage = FlutterSecureStorage();
@@ -11,19 +12,19 @@ class SecureStorage {
   static const _keyVendorID = 'vendorid';
   static const _keyVzMode = "vzMode";
 
-  static const _startUsername = "user";
-  static const _startPassword = "12345";
-  static const _startBaseURI = "https://cvmecimpapidev2.azurewebsites.net";
-  static const _startVendorID = "NeaeraEval02";
+  static final _startUsername = dotenv.env['USERNAME']!;
+  static final _startPassword = dotenv.env['PASSWORD']!;
+  static final _startBaseURI = dotenv.env['API_ENDPOINT']!;
+  static final _startVendorID = dotenv.env['VENDOR_ID']!;
 
   Future<String> getUsername() async =>
-      await _storage.read(key: _keyUsername) ?? _startUsername;
+      await _storage.read(key: _keyUsername) ?? Future.value(_startUsername);
   Future<String> getPassword() async =>
-      await _storage.read(key: _keyPassword) ?? _startPassword;
+      await _storage.read(key: _keyPassword) ?? Future.value(_startPassword);
   Future<String> getBaseURI() async =>
-      await _storage.read(key: _keyBaseURI) ?? _startBaseURI;
+      await _storage.read(key: _keyBaseURI) ?? Future.value(_startBaseURI);
   Future<String> getVendorID() async =>
-      await _storage.read(key: _keyVendorID) ?? _startVendorID;
+      await _storage.read(key: _keyVendorID) ?? Future.value(_startVendorID);
   Future<bool> getVZMode() async =>
       (await _storage.read(key: _keyVzMode)) == "true";
 

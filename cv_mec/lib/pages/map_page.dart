@@ -1,23 +1,42 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:another_telephony/telephony.dart';
 import 'package:connection_network_type/connection_network_type.dart';
-import 'package:cv_mec/models/GeometryDirection.dart';
-import 'package:cv_mec/models/J2735/TravelerDataFrame.dart';
-import 'package:cv_mec/models/J2735/TravelerInformation.dart';
-import 'package:cv_mec/models/MsgTypes.dart';
-import 'package:cv_mec/models/dataFrameGeometry.dart';
-import 'package:cv_mec/models/dataQueue.dart';
-import 'package:cv_mec/models/itisCode.dart';
-import 'package:cv_mec/models/itisParser.dart';
-import 'package:cv_mec/models/receievedBsm.dart';
-import 'package:cv_mec/models/registration.dart';
-import 'package:cv_mec/models/tim_manager.dart';
+import 'package:cv_mec/models/data_queue.dart';
+import 'package:cv_mec/models/geometry_direction.dart';
+import 'package:cv_mec/models/j2735/basic_safety_message.dart';
+import 'package:cv_mec/models/j2735/d_second.dart';
+import 'package:cv_mec/models/j2735/generic_lane.dart';
+import 'package:cv_mec/models/j2735/intersection_state.dart';
+import 'package:cv_mec/models/j2735/map_data.dart';
+import 'package:cv_mec/models/j2735/minute_of_the_year.dart';
+import 'package:cv_mec/models/j2735/movement_event.dart';
+import 'package:cv_mec/models/j2735/movement_phase_state.dart';
+import 'package:cv_mec/models/j2735/movement_state.dart';
+import 'package:cv_mec/models/j2735/msg_count.dart';
+import 'package:cv_mec/models/j2735/node_set_xy.dart';
+import 'package:cv_mec/models/j2735/spat.dart';
+import 'package:cv_mec/models/j2735/time_mark.dart';
+import 'package:cv_mec/models/data_frame_geometry.dart';
+import 'package:cv_mec/models/geo_map.dart';
+import 'package:cv_mec/models/itis_code.dart';
+import 'package:cv_mec/models/j2735/traveler_data_frame.dart';
+import 'package:cv_mec/models/j2735/traveler_information.dart';
+import 'package:cv_mec/models/message_managers/map_manager.dart';
+import 'package:cv_mec/models/msg_types.dart';
+import 'package:cv_mec/models/imp/registration.dart';
+import 'package:cv_mec/models/receieved_bsm.dart';
+import 'package:cv_mec/models/render_models/render_lane_connection.dart';
+import 'package:cv_mec/models/render_models/render_light_location.dart';
+import 'package:cv_mec/models/message_managers/spat_manager.dart';
+import 'package:cv_mec/models/test_data.dart';
+import 'package:cv_mec/models/message_managers/tim_manager.dart';
+import 'package:cv_mec/models/type_definitions.dart';
+import 'package:cv_mec/models/light_change_time.dart';
 import 'package:cv_mec/models/utils.dart';
-import 'package:cv_mec/pages/mqtt_page.dart';
 import 'package:cv_mec/services/api_service.dart';
 import 'package:cv_mec/services/asn_service.dart';
 import 'package:cv_mec/services/file_service.dart';
@@ -35,23 +54,15 @@ import 'package:get/get.dart';
 import 'package:cv_mec/pages/settings_page.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:cv_mec/services/param_controller.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:mqtt_client/mqtt_client.dart';
-import 'package:cv_mec/models/geoRoutedMsg.pb.dart' as protobuf;
+import 'package:cv_mec/models/protobuf_models/geo_routed_msg.pb.dart'
+    as protobuf;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:typed_data/typed_data.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-import 'package:telephony/telephony.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
-
-// import 'package:flutter/foundation.dart';
-
-typedef HitValue = ({TravelerDataFrame frame});
-
-enum ConnectedStatus {
-  UNKNOWN, DISCONNECTED, CONNECTED, PARTIAl
-}
+enum ConnectedStatus { UNKNOWN, DISCONNECTED, CONNECTED, PARTIAl }
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -60,9 +71,7 @@ class MapPage extends StatefulWidget {
   MapState createState() => MapState();
 }
 
-
 class MapState extends State<MapPage> {
-
   late MapController _mapController;
 
   ParamController paramController = Get.find<ParamController>();
@@ -77,16 +86,22 @@ class MapState extends State<MapPage> {
   SettingsController settingsController = Get.find<SettingsController>();
 
   TimManager timManager = TimManager();
+  MapManager mapManager = MapManager();
+  SpatManager spatManager = SpatManager();
 
   Registration? registration;
   String? mqttConnectionURL;
   Position? currentPosition;
 
   late String publishTopic;
-  late String subscribeTopic;
+  late String publicGeoRelevanceRawSubscribeTopic;
+  late String publicGeoRelevanceSubscribeTopic;
+  late String privateSubscribeTopic;
+  late String privateRawSubscribeTopic;
 
   Timer? bsmMessageTimer;
   late Pointer<Pointer<Void>> bsmTemplate;
+  late Pointer<Pointer<Void>> psmTemplate;
 
   Color connectedButtonColor = Colors.red;
   StreamSubscription<Position>? positionStream;
@@ -94,30 +109,49 @@ class MapState extends State<MapPage> {
   Map<String, ReceivedBsm> receivedBsms = {};
 
   List<ItisCode> showTims = [];
-  List<Polygon<HitValue>> nearbyTimPolygons = [];
+  List<Polygon<HitValue>> drawnPolygons = [];
+  List<Polyline<PolyLineHitValue>> drawnPolylines = [];
+  List<Marker> lightMarkerList = [];
 
   bool followUser = true;
-
-  
-
-  late File recLogFile;
-  late File sendLogFile;
-  late File appLogFile;
-  late File timLogFile;
 
   late DataQueue recDataQueue;
   late DataQueue pubDataQueue;
   late DataQueue appLogQueue;
   late DataQueue timDataQueue;
 
-
   final LayerHitNotifier<HitValue> _hitNotifier = ValueNotifier(null);
   List<HitValue>? _prevHitValues;
   List<Polygon<HitValue>>? _hoverGons;
 
+  final Map<MovementPhaseState, Image> lightStateMap = {
+    MovementPhaseState.UNAVAILABLE:
+        Image.asset("assets/images/Lights/traffic-light-icon-unknown.png"),
+    MovementPhaseState.DARK:
+        Image.asset("assets/images/Lights/traffic-light-icon-unknown.png"),
+    MovementPhaseState.STOP_THEN_PROCEED:
+        Image.asset("assets/images/Lights/traffic-light-icon-red-flashing.png"),
+    MovementPhaseState.STOP_AND_REMAIN:
+        Image.asset("assets/images/Lights/traffic-light-icon-red.png"),
+    MovementPhaseState.PRE_MOVEMENT:
+        Image.asset("assets/images/Lights/traffic-light-yellow-red.png"),
+    MovementPhaseState.PERMISSIVE_MOVEMENT_ALLOWED:
+        Image.asset("assets/images/Lights/traffic-light-icon-yellow.png"),
+    MovementPhaseState.PROTECTED_MOVEMENT_ALLOWED:
+        Image.asset("assets/images/Lights/traffic-light-icon-green.png"),
+    MovementPhaseState.PROTECTED_CLEARANCE:
+        Image.asset("assets/images/Lights/traffic-light-icon-yellow.png"),
+    MovementPhaseState.PERMISSIVE_CLEARANCE:
+        Image.asset("assets/images/Lights/traffic-light-icon-yellow.png"),
+    MovementPhaseState.CAUTION_CONFLICTING_TRAFFIC:
+        Image.asset("assets/images/Lights/traffic-light-icon-yellow.png")
+  };
+
+  late Image currentLightState;
+  late String nextLightText = "";
+
   bool debugMode = false;
   bool showLoadingIcon = true;
-
 
   @override
   void initState() {
@@ -128,190 +162,183 @@ class MapState extends State<MapPage> {
     bsmTemplate = asnService.decode(asnService.bsmTemplate);
     asnService.randomizeBsmId(bsmTemplate);
 
-    publishTopic = "vzimp/1/GeoRelevance/${paramController.clientType.value}/${paramController.clientSubtype.value}/Public/${paramController.messageFormat}/BSM";
-    subscribeTopic = "vzimp/1/GeoRelevance/+/+/Public/${paramController.messageFormat}/+/+";
+    psmTemplate = asnService.decode(asnService.psmTemplate);
+    asnService.randomizePsmId(psmTemplate);
 
+    publishTopic =
+        "vzimp/1/GeoRelevance/${paramController.clientType.value}/${paramController.clientSubtype.value}/Public/${paramController.messageFormat}/BSM";
 
-    if(debugMode){
-      // TravelerInformation tim = asnService.decodeTim(asnService.shopTestTim);
-      // timManager.addOrUpdate(tim, asnService.shopTestTim);
+    publicGeoRelevanceSubscribeTopic =
+        "vzimp/1/GeoRelevance/+/+/Public/j2735_gr/+/+";
+    publicGeoRelevanceRawSubscribeTopic =
+        "vzimp/1/GeoRelevance/+/+/Public/j2735/+/+";
 
-      // TravelerInformation tim2 = asnService.decodeTim(asnService.snowTim);
-      // timManager.addOrUpdate(tim2, asnService.snowTim);
+    privateSubscribeTopic = "vzimp/1/Private/+/+/+/j2735_gr/+/+";
+    privateRawSubscribeTopic = "vzimp/1/Private/+/+/+/j2735/+/+";
+
+    currentLightState = lightStateMap[MovementPhaseState.UNAVAILABLE]!;
+
+    if (debugMode) {
+      // TravelerInformation tim =
+      //     asnService.decodeTim(TestData.pedestrianCrossingTim);
+      // timManager.addOrUpdate(tim, TestData.pedestrianCrossingTim);
+
+      // TravelerInformation tim2 = asnService.decodeTim(asnService.verizonTim2);
+      // timManager.addOrUpdate(tim2, asnService.verizonTim2);
 
       // TravelerInformation tim3 = asnService.decodeTim(asnService.longQueueTim);
       // timManager.addOrUpdate(tim3, asnService.queueTim);
-      TravelerInformation tim4 = asnService.decodeTim(asnService.testTimTemplate);
-      timManager.addOrUpdate(tim4, asnService.testTimTemplate);
+      // TravelerInformation tim4 = asnService.decodeTim(asnService.testTimTemplate);
+      // timManager.addOrUpdate(tim4, asnService.testTimTemplate);
+
+      // MapData map = asnService.decodeMap(TestData.cdotTestMap12110);
+      // PersonalSafetyMessage psm = asnService.decodePsm(TestData.testPsm);
+
+      // mapManager.addOrUpdate(map);
+
+      // fakeSpatMessages(TestData.tfhrcFakeSpats);
     }
-    
-    
 
-
-    Future.delayed(Duration.zero,() async {
+    Future.delayed(Duration.zero, () async {
       if (Platform.isAndroid) {
         await Permission.phone.request();
         await telephony.requestPhoneAndSmsPermissions;
       }
 
       int loggingEnabled = await enableLogging();
-      if(loggingEnabled != 0){
+      if (loggingEnabled != 0) {
         return;
       }
 
       int connected = await connectToMqttBroker();
-      if(connected != 0){
+      if (connected != 0) {
         return;
       }
 
       updateConnectedStatus(ConnectedStatus.CONNECTED);
 
-      if(debugMode){
-        positionStream = fakePosition().listen(updatePosition);
-      }else{
+      if (debugMode) {
+        positionStream = fakePosition(
+                TestData.tfhrcIntersectionFakePosition.reversed.toList())
+            .listen(updatePosition);
+      } else {
         positionStream = locationService.locationStream.listen(updatePosition);
       }
+    });
 
-    });
-    
-    setState(() {
-      nearbyTimPolygons =  getPolygons();
-      showLoadingIcon = true;
-    });
-    
+    if (mounted) {
+      setState(() {
+        drawnPolygons = getPolygons();
+        drawnPolylines = getPolylines();
+
+        print("PolyLine Length: ${drawnPolygons.length}");
+        showLoadingIcon = true;
+      });
+    }
   }
 
-  Stream<Position> fakePosition() {
-    List<List<double>> fakePosition = [
-      [-104.6561595418617,41.15345216754946],
-      [-104.6573927335249,41.15341401495245],
-      [-104.6590666532654,41.15306277390567],
-      [-104.6605730477014,41.15257914872963],
-      [-104.6617224952236,41.15207357286492],
-      [-104.6625679341257,41.15150191309434],
-      [-104.6636372553181,41.15047071929914],
-      [-104.6639320455159,41.1501370073646],
-      [-104.6638033877887,41.14984785653078],
-      [-104.6636150594618,41.14941052090466],
-      [-104.663271970029,41.14890607348637],
-      [-104.6628507704041,41.14856439867128],
-      [-104.6622610668666,41.14824505010286],
-      [-104.6616313568971,41.14794061416405],
-      [-104.6607662341223,41.14763559697753],
-      [-104.6599988871735,41.14740480440657],
-      [-104.6592008284514,41.147241238102],
-      [-104.6583241116581,41.147129395734],
-      [-104.6570632588503,41.14699448483902],
-      [-104.6552592676835,41.14694044027667],
-      [-104.6540259592636,41.14701322706684],
-      [-104.6523573470199,41.14710164841533],
-      [-104.650549640959,41.14737584424974],
-      [-104.6491843566055,41.14770129169258],
-      [-104.6476816917767,41.14811759634699],
-      [-104.6465303616881,41.14864429693967],
-      [-104.6455066268323,41.14929856692202],
-      [-104.6446225006321,41.14996155822642],
-      [-104.6443390355551,41.15057279143712],
-      [-104.6441157220364,41.15082607720087],
-      [-104.6442588765848,41.15106483139488],
-      [-104.6445017890072,41.15160904210572],
-      [-104.644812537398,41.15201861177719],
-      [-104.6453890544243,41.15234617409661],
-      [-104.6462181227486,41.15275649556694],
-      [-104.6470648326806,41.15309347289094],
-      [-104.6479243278075,41.15334819821749],
-      [-104.6488473404503,41.15354120482534],
-      [-104.6498488108498,41.1537194168705],
-      [-104.6511867637169,41.15379243827938],
-      [-104.6524637782885,41.15381393338678],
-      [-104.6534036986443,41.15379780527977],
-      [-104.6541749127448,41.1537225075805],
-      [-104.6551333675142,41.15359518913309],
-      [-104.6557902765014,41.1533760979494],
-      [-104.655941569777,41.1533844572879],
-      [-104.65593194674,41.153331099475],
-      [-104.6558537273296,41.15311864411694],
-      [-104.6558313168253,41.15289878635123],
-      [-104.6557839266243,41.1527341177344],
-      [-104.6558010405442,41.15255634354074],
-      [-104.6558139018388,41.15231574851319],
-      [-104.6559084365072,41.15210233350017],
-      [-104.6560162960262,41.15179024621532],
-      [-104.6562069594552,41.15142387531776],
-      [-104.6564577671106,41.15111016412518],
-      [-104.6566945913634,41.15086021457106],
-      [-104.6569173782721,41.15059351635055],
-      [-104.6571205636599,41.15037523813064],
-      [-104.6572902489951,41.15020455921358],
-      [-104.6574763055333,41.1499586423374],
-      [-104.6576492316124,41.14978254668777],
-      [-104.6577991961617,41.14958305299309],
-      [-104.6579506126636,41.14942512600238],
-      [-104.6581009489405,41.14916947868519],
-      [-104.6581009489405,41.14906947868519],
-      [-104.6581009489405,41.14896947868519],
-      [-104.6581009489405,41.14906947868519],
-      [-104.6578877569632,41.14939765264025],
-      [-104.6577502874676,41.14956920548699],
-      [-104.6575940913711,41.14974727676776],
-      [-104.6574249460533,41.14990910810871],
-      [-104.6572131460098,41.15018943276315],
-      [-104.6570697531772,41.15034907789568],
-      [-104.6568574287179,41.15056725635974],
-      [-104.6566389173078,41.15084077820019],
-      [-104.6564204296445,41.151098347479],
-      [-104.6561598158793,41.15143095589855],
-      [-104.6559782429146,41.15176947193908],
-      [-104.6558697945301,41.15210148383645],
-      [-104.6557850165821,41.15229444935622],
-      [-104.6557717113443,41.15254674138579],
-      [-104.655744534182,41.15272481454229],
-      [-104.6557171621404,41.15289322596242],
-      [-104.6557033114764,41.15313575383042],
-      [-104.6556386502736,41.15338428781476],
-      [-104.6557902765014,41.1533760979494],
+  void fakeSpatMessages(List<String> fakeSpats) {
+    int spatSimStartTime =
+        timingService.getKronosTime().toUtc().millisecondsSinceEpoch;
+    int yearStartMs = DateTime(timingService.getKronosTime().year, 1, 1)
+        .millisecondsSinceEpoch;
 
-    ];
+    int revision = 0;
 
-    return Stream<Position>.periodic(Duration(milliseconds: 500), (count){
-      int index = count % fakePosition.length;
-      int prevIndex = (count - 1)% fakePosition.length;
+    int minEndTime = 0;
+    int maxEndTime = 0;
 
-      List<double> pos = fakePosition[index];
-      List<double> lastPos = fakePosition[prevIndex];
+    Timer.periodic(const Duration(milliseconds: 100), (timer) async {
+      DateTime now = timingService
+          .getKronosTime()
+          .toUtc()
+          .subtract(DateTime.now().timeZoneOffset);
 
-      double heading = radianToDeg(atan2(pos[1] - lastPos[1], pos[0] - lastPos[0]));
+      int deltaMs = (now.millisecondsSinceEpoch - spatSimStartTime);
+
+      int index = (deltaMs ~/ 100) % fakeSpats.length;
+
+      if ((deltaMs ~/ 100) % 600 == 0) {
+        minEndTime = now.minute * 600 + now.second * 10 + 300;
+        maxEndTime = now.minute * 600 + now.second * 10 + 350;
+      }
+
+      Spat spat = asnService.decodeSpat(fakeSpats[index]);
+
+      spat.timeStamp =
+          MinuteOfTheYear((now.millisecondsSinceEpoch - yearStartMs) ~/ 60000);
+
+      for (IntersectionState state
+          in spat.intersections.intersectionStateList) {
+        state.moy = spat.timeStamp;
+        state.timeStamp = DSecond(now.second * 1000 + now.millisecond);
+        state.revision = MsgCount(revision);
+
+        for (MovementState movementState in state.states.movementList) {
+          for (MovementEvent event
+              in movementState.state_time_speed.movementEventList) {
+            if (event.timing != null) {
+              event.timing!.minEndTime = TimeMark(minEndTime);
+              event.timing!.maxEndTime = TimeMark(maxEndTime);
+            }
+          }
+        }
+      }
+
+      revision = (revision + 1) % 127;
+      spatManager.addOrUpdate(spat);
+
+      await Future.delayed(
+          const Duration(milliseconds: 100)); // Simulate an async task
+    });
+  }
+
+  Stream<Position> fakePosition(List<List<double>> fakePosition) {
+    return Stream<Position>.periodic(const Duration(milliseconds: 1000),
+        (count) {
+      List<List<double>> route = fakePosition; //.reversed.toList();
+      int index = count % route.length;
+      int prevIndex = (count - 1) % route.length;
+
+      List<double> pos = route[index];
+      List<double> lastPos = route[prevIndex];
+
+      double heading =
+          radianToDeg(atan2(pos[1] - lastPos[1], pos[0] - lastPos[0]));
 
       heading = -heading + 90;
-      if(heading < 0){
+      if (heading < 0) {
         heading += 360;
       }
-      return Position(longitude: fakePosition[index][0], latitude: fakePosition[index][1], timestamp: DateTime.now(), accuracy: 0, altitude: 1600, altitudeAccuracy: 0, heading: heading, headingAccuracy: 0, speed: 0, speedAccuracy: 0);
+      return Position(
+          longitude: route[index][0],
+          latitude: route[index][1],
+          timestamp: DateTime.now(),
+          accuracy: 0,
+          altitude: 1600,
+          altitudeAccuracy: 0,
+          heading: heading,
+          headingAccuracy: 0,
+          speed: 0,
+          speedAccuracy: 0);
     });
   }
 
   Future<int> enableLogging() async {
     DateTime logTime = timingService.getKronosTime();
 
-    recLogFile = await fileService.getFileForWriting(
-          "MQTT_SUB_LOG_${logTime.millisecondsSinceEpoch}.csv");
-    sendLogFile = await fileService.getFileForWriting(
-          "MQTT_PUB_LOG_${logTime.millisecondsSinceEpoch}.csv");
-    appLogFile = await fileService.getFileForWriting(
-          "APP_LOG_${logTime.millisecondsSinceEpoch}.log");
-    timLogFile = await fileService.getFileForWriting(
-          "TIM_LOG_${logTime.millisecondsSinceEpoch}.csv");
+    recDataQueue =
+        DataQueue("MQTT_SUB_LOG_${logTime.millisecondsSinceEpoch}.csv");
+    pubDataQueue =
+        DataQueue("MQTT_PUB_LOG_${logTime.millisecondsSinceEpoch}.csv");
+    appLogQueue = DataQueue("APP_LOG_${logTime.millisecondsSinceEpoch}.log");
+    timDataQueue = DataQueue("TIM_LOG_${logTime.millisecondsSinceEpoch}.csv");
 
-    recDataQueue = DataQueue(recLogFile);
-    pubDataQueue = DataQueue(sendLogFile);
-    appLogQueue = DataQueue(appLogFile);
-    timDataQueue = DataQueue(timLogFile);
-
-
-    String subHeader = "Topic, Receive Time ms, Send Time ms, Delta Time ms, Longitude, Latitude, Network, Broker, Msg Bytes\n";
-    String pubHeader = "Topic, Send Time ms, Longitude, Latitude, Network, Broker, Msg Bytes\n";
+    String subHeader =
+        "Topic, Receive Time ms, Send Time ms, Delta Time ms, Longitude, Latitude, Network, Broker, Msg Bytes\n";
+    String pubHeader =
+        "Topic, Send Time ms, Longitude, Latitude, Network, Broker, Msg Bytes\n";
     String timHeader = "Action, Time, Longitude, Latitude, Heading, asn1\n";
-      
 
     recDataQueue.addItem(subHeader);
     pubDataQueue.addItem(pubHeader);
@@ -323,14 +350,17 @@ class MapState extends State<MapPage> {
   Future<int> connectToMqttBroker() async {
     String? token = await apiService.getToken();
 
-    setState(() {
-      showLoadingIcon = true;
-    });
+    if (mounted) {
+      setState(() {
+        showLoadingIcon = true;
+      });
+    }
 
     updateConnectedStatus(ConnectedStatus.PARTIAl);
 
     if (token == null) {
-      showError("Unable to retrieve token from partner API. Please verify partner API credentials in settings menu");
+      showError(
+          "Unable to retrieve token from partner API. Please verify partner API credentials in settings menu");
       return 1;
     }
 
@@ -338,26 +368,28 @@ class MapState extends State<MapPage> {
     if (await fileService.checkIfRegistrationExists()) {
       addToAppLog("Loading Registration from Cache");
       registration = await fileService.getRegistration();
-
     } else {
       addToAppLog("Loading Registration from Server");
-      registration = await apiService.getRegistration(token, paramController.clientType.value, paramController.clientSubtype.value);
+      registration = await apiService.getRegistration(
+          token,
+          paramController.clientType.value,
+          paramController.clientSubtype.value);
       fileService.saveRegistration(registration!);
     }
-    
-    if(registration == null){
+
+    if (registration == null) {
       showError("Unable to retrieve registration information from partner API");
       return 2;
     }
 
-    
-    addToAppLog("Acquired Certificates for DeviceID: ${registration!.deviceID}");
+    addToAppLog(
+        "Acquired Certificates for DeviceID: ${registration!.deviceID}");
 
     String vzString = paramController.networkType.value;
 
-    if(settingsController.vzMode.value){
+    if (settingsController.vzMode.value) {
       vzString = "VZ";
-    }else{
+    } else {
       vzString = "non-VZ";
     }
 
@@ -369,25 +401,33 @@ class MapState extends State<MapPage> {
         vzString);
 
     int result = await mqtt.connect(mqttConnectionURL!, registration!);
-    if(result != 0){
+    if (result != 0) {
       showError("Unable to Connect to MQTT Broker");
       return 3;
     }
 
-    mqtt.subscribe(subscribeTopic, onGeoRelevanceMessage);
+    mqtt.subscribe(privateRawSubscribeTopic, onRawAsnMessage); //MAP / TIM
+    mqtt.subscribe(privateSubscribeTopic, onGeoRelevanceMessage);
+    mqtt.subscribe(
+        publicGeoRelevanceRawSubscribeTopic, onRawAsnMessage); // SPaT
+    mqtt.subscribe(publicGeoRelevanceSubscribeTopic, onGeoRelevanceMessage);
+
+    //cdotFakePosition
 
     startSendingBSM();
+    WakelockPlus.enable();
 
-    setState(() {
-      showLoadingIcon = false;
-    });
-    
+    if (mounted) {
+      setState(() {
+        showLoadingIcon = false;
+      });
+    }
+
     return 0;
   }
 
-  
-
-  void onGeoRelevanceMessage(MqttReceivedMessage<MqttMessage?> message, DateTime recTime) async{
+  void onGeoRelevanceMessage(
+      MqttReceivedMessage<MqttMessage?> message, DateTime recTime) async {
     addToAppLog("Received Geo Relevance Message");
 
     final recMess = message.payload as MqttPublishMessage;
@@ -397,66 +437,137 @@ class MapState extends State<MapPage> {
 
     DateTime msgTime = Utils.timeStampToDateTime(decodedMessage.time);
 
-    
+    addToAppLog(
+        "${decodedMessage.position.longitude}, ${decodedMessage.position.latitude}");
 
-    String hex = utf8.decode(decodedMessage.msgBytes);
+    String hex = ASNService.bytesToHex(decodedMessage.msgBytes);
+    processIncomingMessage(message.topic, hex, recTime, msgTime);
+  }
 
+  void onRawAsnMessage(
+      MqttReceivedMessage<MqttMessage?> message, DateTime recTime) {
+    addToAppLog("Received ASN1 Message");
+    final recMess = message.payload as MqttPublishMessage;
+    String hex = ASNService.bytesToHex(recMess.payload.message);
+    print("ASN1: $hex");
+    processIncomingMessage(message.topic, hex, recTime, null);
+  }
 
+  void processIncomingMessage(
+      String topic, String hex, DateTime recTime, DateTime? sendTime) {
     MsgType msgType = asnService.determineHexMessageType(hex);
 
-
-    if(msgType == MsgType.BSM){
+    if (msgType == MsgType.BSM) {
       addToAppLog("Identified Message as BSM");
-      Pointer<Pointer<Void>> bsm = asnService.decode(hex);
-      LatLng position = LatLng(decodedMessage.position.latitude, decodedMessage.position.longitude);
-      String vehicleID = asnService.getBsmId(bsm);
+      String trimmedHex =
+          asnService.trimMessageHeaders(hex, asnService.BSM_START_FLAG)!;
+      BasicSafetyMessage bsm = asnService.decodeBsm(trimmedHex);
 
-      
+      LatLng position = LatLng(bsm.coreData.lat.getDecimalLatitude(),
+          bsm.coreData.long.getDecimalLongitude());
+      String vehicleID = ASNService.bytesToHex(bsm.coreData.id.temporaryID);
 
-      if(receivedBsms.containsKey(vehicleID)){
-        
-        if(receivedBsms[vehicleID]!.dateTime.isBefore(msgTime)){
-          receivedBsms[vehicleID] = ReceivedBsm(vehicleID, msgTime, position);
+      DateTime bsmTime = bsm.coreData.secMark.getDateTime(recTime);
+
+      if (receivedBsms.containsKey(vehicleID)) {
+        if (receivedBsms[vehicleID]!.dateTime.isBefore(bsmTime)) {
+          receivedBsms[vehicleID] = ReceivedBsm(vehicleID, bsmTime, position);
         }
-      }else{
-        receivedBsms[vehicleID] = ReceivedBsm(vehicleID, msgTime, position);
+      } else {
+        receivedBsms[vehicleID] = ReceivedBsm(vehicleID, bsmTime, position);
       }
 
-      asnService.cleanupDecoded(bsm);
-      
-      
-    }else if(msgType == MsgType.TIM){
+      addToReceiveLog(topic, recTime, bsmTime, trimmedHex);
+    } else if (msgType == MsgType.TIM) {
       addToAppLog("Identified Message as TIM");
-      String trimmedHex = asnService.trimMessageHeaders(hex, asnService.TIM_START_FLAG)!;
+      String trimmedHex = asnService.trimMessageHeaders(
+          hex,
+          asnService
+              .TIM_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
       TravelerInformation tim = asnService.decodeTim(trimmedHex);
-      addToTimLog("RECEIVED", hex);
 
       timManager.addOrUpdate(tim, hex);
-      setState(() {
-        nearbyTimPolygons = getPolygons();
-      });
-      
-    }
+      if (mounted) {
+        setState(() {
+          drawnPolygons = getPolygons();
+          drawnPolylines = getPolylines();
+        });
+      }
 
+      addToReceiveLog(topic, recTime, sendTime, trimmedHex);
+    } else if (msgType == MsgType.SPAT) {
+      addToAppLog("Identified Message as SPAT");
+      String trimmedHex = asnService.trimMessageHeaders(
+          hex,
+          asnService
+              .SPAT_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
+      Spat spat = asnService.decodeSpat(trimmedHex);
+
+      spatManager.addOrUpdate(spat);
+
+      if (mounted) {
+        setState(() {
+          drawnPolygons = getPolygons();
+          drawnPolylines = getPolylines();
+        });
+      }
+
+      addToReceiveLog(topic, recTime, sendTime, trimmedHex);
+    } else if (msgType == MsgType.MAP) {
+      addToAppLog("Identified Message as MAP $hex");
+      String trimmedHex = asnService.trimMessageHeaders(
+          hex,
+          asnService
+              .MAP_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
+      MapData map = asnService.decodeMap(trimmedHex);
+
+      mapManager.addOrUpdate(map);
+
+      if (mounted) {
+        setState(() {
+          drawnPolygons = getPolygons();
+          drawnPolylines = getPolylines();
+        });
+      }
+
+      addToReceiveLog(topic, recTime, sendTime, trimmedHex);
+    }
+  }
+
+  void addToReceiveLog(
+      String topic, DateTime recTime, DateTime? sendTime, String hex) async {
     String netStat = "Unavailable";
     if (Platform.isAndroid) {
       netStat = await getNetworkField();
     }
+
+    int delta = 0;
+    int logSendTime = 0;
+    if (sendTime != null) {
+      delta = recTime.millisecondsSinceEpoch - sendTime.millisecondsSinceEpoch;
+      logSendTime = sendTime.millisecondsSinceEpoch;
+    }
+
+    double longitude = 0;
+    double latitude = 0;
+    if (currentPosition != null) {
+      longitude = currentPosition!.longitude;
+      latitude = currentPosition!.latitude;
+    }
+
     String record =
-        "${message.topic},${recTime.millisecondsSinceEpoch},${msgTime.millisecondsSinceEpoch},${recTime.millisecondsSinceEpoch - msgTime.millisecondsSinceEpoch},${decodedMessage.position.longitude},${decodedMessage.position.latitude},$netStat,$mqttConnectionURL,${utf8.decode(decodedMessage.msgBytes)}\n";
+        "$topic,${recTime.millisecondsSinceEpoch},$logSendTime,$delta,$longitude,$latitude,$netStat,$mqttConnectionURL,$hex\n";
 
     recDataQueue.addItem(record);
-    
   }
 
-  void showError(String message){
+  void showError(String message) {
     addToAppLog("ERROR: $message");
     // TODO
   }
 
-  void addToAppLog(String message){
-    // TODO
-    print(message);
+  void addToAppLog(String message) {
+    print("APPLOG: $message");
     appLogQueue.addItem("$message\n");
   }
 
@@ -465,8 +576,9 @@ class MapState extends State<MapPage> {
     bsmMessageTimer?.cancel();
 
     // Set the timer to call _runFunction every 100 milliseconds
-    bsmMessageTimer = Timer.periodic(Duration(milliseconds: 100), (timer) {
-      sendBsm();
+    bsmMessageTimer =
+        Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      sendMessage();
       if (!isConnected()) {
         stopSendingBSM();
         onMqttDisconnect();
@@ -474,48 +586,48 @@ class MapState extends State<MapPage> {
     });
   }
 
-  void sendBsm() async {
-      protobuf.GeoRoutedMsg msg = protobuf.GeoRoutedMsg();
+  void sendMessage() async {
+    protobuf.GeoRoutedMsg msg = protobuf.GeoRoutedMsg();
 
-      protobuf.Position pos = protobuf.Position();
+    protobuf.Position pos = protobuf.Position();
 
-      if(currentPosition==null){
-        addToAppLog("Cannot Send BSM. Location is Null");
-        updateConnectedStatus(ConnectedStatus.PARTIAl);
-        return;
-      }
+    if (currentPosition == null) {
+      addToAppLog("Cannot Send BSM. Location is Null");
+      updateConnectedStatus(ConnectedStatus.PARTIAl);
+      return;
+    }
 
-      
+    pos.longitude = currentPosition!.longitude;
+    pos.latitude = currentPosition!.latitude;
 
-      pos.longitude = currentPosition!.longitude;
-      pos.latitude = currentPosition!.latitude;
+    DateTime sendTime = timingService.getKronosTime();
 
-      DateTime sendTime = timingService.getKronosTime();
+    Uint8Buffer buffer = Uint8Buffer();
+    msg.position = pos;
 
-      Uint8Buffer buffer = Uint8Buffer();
-      msg.position = pos;
+    asnService.setBsmLongLat(bsmTemplate, pos.longitude, pos.latitude);
+    asnService.incrementBsmMsgCnt(bsmTemplate);
+    asnService.setBsmTime(bsmTemplate, sendTime);
 
-      asnService.setBsmLongLat(bsmTemplate, pos.longitude, pos.latitude);
-      asnService.incrementBsmMsgCnt(bsmTemplate);
-      asnService.setBsmTime(bsmTemplate, sendTime);
+    String hex = asnService.encode(bsmTemplate);
 
-      msg.msgBytes = utf8.encode(asnService.encode(bsmTemplate));
-      msg.time = Utils.dateTimeToTimestamp(sendTime);
+    msg.msgBytes = ASNService.hexToBytes(hex);
 
-      buffer.addAll(msg.writeToBuffer());
+    msg.time = Utils.dateTimeToTimestamp(sendTime);
 
-      int messageID = mqtt.publishBytes(buffer, publishTopic);
-      updateConnectedStatus(ConnectedStatus.CONNECTED);
-      NetworkStatus networkStatus =
-              await ConnectionNetworkType().currentNetworkStatus();
-      String netStat = "Unavailable";
-      if (Platform.isAndroid) {
-        netStat = "${await getNetworkField()}";
+    buffer.addAll(msg.writeToBuffer());
 
-      }
-      String record =
-          "$publishTopic,${sendTime.millisecondsSinceEpoch},${pos.longitude},${pos.latitude},${netStat},$mqttConnectionURL,${utf8.decode(msg.msgBytes)}\n";
-      pubDataQueue!.addItem(record);
+    int messageID = mqtt.publishBytes(buffer, publishTopic);
+    updateConnectedStatus(ConnectedStatus.CONNECTED);
+    NetworkStatus networkStatus =
+        await ConnectionNetworkType().currentNetworkStatus();
+    String netStat = "Unavailable";
+    if (Platform.isAndroid) {
+      netStat = await getNetworkField();
+    }
+    String record =
+        "$publishTopic,${sendTime.millisecondsSinceEpoch},${pos.longitude},${pos.latitude},$netStat,$mqttConnectionURL,$hex\n";
+    pubDataQueue.addItem(record);
   }
 
   void stopSendingBSM() {
@@ -525,43 +637,48 @@ class MapState extends State<MapPage> {
   Future<void> updatePosition(Position position) async {
     currentPosition = position;
 
-    setState(() {
-      nearbyTimPolygons = getPolygons();
-    });
-    
-
-    if(followUser){
-      _mapController.moveAndRotate(getUserLocation(), _mapController.camera.zoom, _mapController.camera.rotation);
+    if (mounted) {
+      setState(() {
+        drawnPolygons = getPolygons();
+        drawnPolylines = getPolylines();
+      });
     }
-    
-    List<TravelerDataFrame> newActiveTims =  timManager.getNewActiveTims(position.longitude, position.latitude, position.heading);
 
-    // List<TravelerDataFrame> frames = timManager.getTimsToShow(-104.9695, 40.4741, position.heading);
-    List<TravelerDataFrame> frames = timManager.getTimsToShow(position.longitude, position.latitude, position.heading);
-    List<ItisCode> codes = await timManager.getItisRepresentationForDataFrames(frames);
+    if (followUser) {
+      _mapController.moveAndRotate(getUserLocation(),
+          _mapController.camera.zoom, _mapController.camera.rotation);
+    }
 
+    List<TravelerDataFrame> newActiveTims = timManager.getNewActiveTims(
+        position.longitude, position.latitude, position.heading);
+
+    List<TravelerDataFrame> frames = timManager.getTimsToShow(
+        position.longitude, position.latitude, position.heading);
+
+    updateTimeToChange();
+
+    List<ItisCode> codes =
+        await timManager.getItisRepresentationForDataFrames(frames);
 
     List<String> hex = timManager.getUniqueAsnFromDataFrames(frames);
-    for(String str in hex){
+    for (String str in hex) {
       addToTimLog("ALERT", str);
     }
-    
 
-
-
-    setState(() {
-      showTims = codes;
-    });
-    
+    if (mounted) {
+      setState(() {
+        showTims = codes;
+      });
+    }
     // showTimMessage(newActiveTims);
-
   }
 
-  void onMqttDisconnect(){
+  void onMqttDisconnect() {
     showError("Disconnected from MQTT Broker Randomly");
     updateConnectedStatus(ConnectedStatus.DISCONNECTED);
     stopSendingBSM();
-    //TODO cleanup other tasks
+    mqtt.subscriberList.clear();
+    WakelockPlus.disable();
   }
 
   bool isConnected() {
@@ -569,122 +686,418 @@ class MapState extends State<MapPage> {
         mqtt.client!.connectionStatus!.state == MqttConnectionState.connected;
   }
 
-  LatLng getUserLocation(){
-    if(currentPosition != null){
+  LatLng getUserLocation() {
+    if (currentPosition != null) {
       return LatLng(currentPosition!.latitude, currentPosition!.longitude);
-    }else{
-      return LatLng(paramController.fakeLatitude.value, paramController.fakeLongitude.value);
-    }                       
+    } else {
+      return LatLng(paramController.fakeLatitude.value,
+          paramController.fakeLongitude.value);
+    }
   }
 
-  void updateConnectedStatus(ConnectedStatus status){
-    print("Updating Connected Status");
-    setState(() {
-      if(status == ConnectedStatus.UNKNOWN){
-        connectedButtonColor = Colors.grey;
-      }else if(status == ConnectedStatus.CONNECTED){
-        connectedButtonColor = Colors.green;
-      }else if (status == ConnectedStatus.DISCONNECTED){
-        connectedButtonColor = Colors.red;
-      }else if(status == ConnectedStatus.PARTIAl){
-        connectedButtonColor = Colors.orange;
+  void updateConnectedStatus(ConnectedStatus status) {
+    if (mounted) {
+      setState(() {
+        if (status == ConnectedStatus.UNKNOWN) {
+          connectedButtonColor = Colors.grey;
+        } else if (status == ConnectedStatus.CONNECTED) {
+          connectedButtonColor = Colors.green;
+        } else if (status == ConnectedStatus.DISCONNECTED) {
+          connectedButtonColor = Colors.red;
+        } else if (status == ConnectedStatus.PARTIAl) {
+          connectedButtonColor = Colors.orange;
+        }
+      });
+    }
+  }
+
+  void updateTimeToChange() {
+    DateTime now = timingService.getKronosTime();
+    LightChangeTime? next;
+    Position? pos = currentPosition;
+    if (pos != null) {
+      List<GeoMap> geoMaps =
+          mapManager.getActiveMaps(pos.longitude, pos.latitude);
+
+      for (GeoMap map in geoMaps) {
+        List<int> activeLaneIds =
+            mapManager.getActiveLaneIds(map, pos.longitude, pos.latitude);
+
+        // if(activeLaneIds.isNotEmpty){
+        List<int> signalGroups = [];
+        for (int activeLane in activeLaneIds) {
+          if (map.laneSignalGroups.containsKey(activeLane)) {
+            signalGroups.addAll(map.laneSignalGroups[activeLane]!);
+          }
+        }
+
+        for (int signalGroup in signalGroups) {
+          LightChangeTime? timing = spatManager.getNextLaneTimeChange(
+              map.intersectionGeometry.id.id.intersectionID, signalGroup, now);
+          if (timing != null) {
+            if (next == null || timing.minEndTime.isBefore(next.minEndTime)) {
+              next = timing;
+            }
+          }
+        }
       }
-    });
+
+      if (next != null) {
+        String text = "";
+        if (next.likelyTime != null) {
+          int nextExpectedChange = (next.likelyTime!.millisecondsSinceEpoch -
+                  now.millisecondsSinceEpoch) ~/
+              1000;
+          text = "$nextExpectedChange S";
+          if (nextExpectedChange > 60) {
+            text = "Change in:\n > 1\n Minute";
+          } else if (nextExpectedChange < 0) {
+            text = "Changing Now";
+          }
+        } else if (next.maxEndTime != null) {
+          int expectedMaxTime = (next.maxEndTime!.millisecondsSinceEpoch -
+                  now.millisecondsSinceEpoch) ~/
+              1000;
+          int expectedMinTime = (next.minEndTime.millisecondsSinceEpoch -
+                  now.millisecondsSinceEpoch) ~/
+              1000;
+
+          text = "Change in:\n $expectedMinTime - $expectedMaxTime\n Seconds";
+          if (expectedMinTime > 60) {
+            text = "Change in:\n > 1\n Minute";
+          } else if (expectedMinTime < 0) {
+            text = "Changing Now";
+          }
+        } else {
+          int expectedMinTime = (next.minEndTime.millisecondsSinceEpoch -
+                  now.millisecondsSinceEpoch) ~/
+              1000;
+          text = "> $expectedMinTime Seconds";
+          if (expectedMinTime > 60) {
+            text = "Change in:\n > 1\n Minute";
+          } else if (expectedMinTime < 0) {
+            text = "Changing Now";
+          }
+        }
+
+        if (mounted) {
+          setState(() {
+            currentLightState = lightStateMap[next!.currentPhaseState]!;
+            nextLightText = text;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            currentLightState = lightStateMap[MovementPhaseState.UNAVAILABLE]!;
+            nextLightText = "";
+          });
+        }
+      }
+    }
   }
 
-  List<Marker> getMarkerList(){
-
+  List<Marker> getMarkerList() {
     List<Marker> markerList = [];
 
-    
-    if(currentPosition != null){
-        Marker userMarker = Marker(
+    Position? pos = currentPosition;
+
+    if (pos != null) {
+      if (_mapController.camera.zoom > 17.5) {
+        // Get Maps that the user is near or in
+        List<GeoMap> geoMaps =
+            mapManager.getActiveMaps(pos.longitude, pos.latitude);
+
+        for (GeoMap map in geoMaps) {
+          // Get SPaT messages associated with the relavent MAP messages
+          List<IntersectionState> states = spatManager.getActiveSpats(
+              map.intersectionGeometry.id.id.intersectionID,
+              timingService.getKronosTime());
+
+          for (IntersectionState state in states) {
+            // This code indexes light colors by signal group to allow easy lookup down the line
+            Map<int, MovementEvent> stateMap = {};
+            for (MovementState movement in state.states.movementList) {
+              if (movement.state_time_speed.movementEventList.isNotEmpty) {
+                stateMap[movement.signalGroup.signalGroupID] =
+                    movement.state_time_speed.movementEventList.first;
+              }
+            }
+
+            for (RenderLightLocation lightLocation
+                in map.lightLocations.values) {
+              MovementPhaseState dominantState = MovementPhaseState.UNAVAILABLE;
+              for (int signalGroup in lightLocation.signalGroups) {
+                if (stateMap.containsKey(signalGroup)) {
+                  dominantState = getDominantMovementPhaseState(
+                      stateMap[signalGroup]!.eventState, dominantState);
+                }
+              }
+              markerList.add(Marker(
+                width: 20.0,
+                height: 40.0,
+                point: lightLocation.coordinate,
+                child: lightStateMap[dominantState] ??
+                    const Icon(
+                      Icons.traffic,
+                      color: Colors.grey,
+                    ),
+              ));
+            }
+          }
+        }
+      }
+
+      Marker userMarker = Marker(
         width: 80.0,
         height: 80.0,
         point: getUserLocation(),
-        child: Icon(Icons.directions_car, color: Colors.red,)
-        ,
+        child: const Icon(
+          Icons.directions_car,
+          color: Colors.red,
+        ),
       );
 
       markerList.add(userMarker);
     }
-    
 
     DateTime compTime = timingService.getKronosTime();
-    DateTime endTime = compTime.add(Duration(seconds: 1));
-    DateTime startTime = compTime.subtract(Duration(seconds: 1));
+    DateTime endTime = compTime.add(const Duration(seconds: 1));
+    DateTime startTime = compTime.subtract(const Duration(seconds: 1));
 
     List<String> removeKeys = [];
-    
-    for(String key in receivedBsms.keys){
-      ReceivedBsm bsm = receivedBsms[key]!;
-      if(bsm.dateTime.toUtc().isAfter(startTime) && bsm.dateTime.toUtc().isBefore(endTime)){
 
+    for (String key in receivedBsms.keys) {
+      ReceivedBsm bsm = receivedBsms[key]!;
+
+      if (bsm.dateTime.isAfter(startTime) && bsm.dateTime.isBefore(endTime)) {
         Marker remoteMarker = Marker(
           width: 80.0,
           height: 80.0,
           point: bsm.position,
-          child: Icon(Icons.directions_car, color:Colors.blue[900]),
+          child: Icon(Icons.directions_car, color: Colors.blue[900]),
         );
 
-
         markerList.add(remoteMarker);
-      }else{
+      } else {
         removeKeys.add(key);
       }
     }
 
-    for(String key in removeKeys){
+    for (String key in removeKeys) {
       receivedBsms.remove(key);
     }
 
     return markerList;
   }
 
-  List<Polygon<HitValue>> getPolygons(){
+  MovementPhaseState getDominantMovementPhaseState(
+      MovementPhaseState a, MovementPhaseState b) {
+    final priorityOrder = [
+      MovementPhaseState.PROTECTED_MOVEMENT_ALLOWED,
+      MovementPhaseState.PROTECTED_CLEARANCE,
+      MovementPhaseState.PERMISSIVE_MOVEMENT_ALLOWED,
+      MovementPhaseState.PERMISSIVE_CLEARANCE,
+      MovementPhaseState.STOP_AND_REMAIN,
+      MovementPhaseState.STOP_THEN_PROCEED,
+      MovementPhaseState.PRE_MOVEMENT,
+      MovementPhaseState.CAUTION_CONFLICTING_TRAFFIC,
+      MovementPhaseState.DARK,
+      MovementPhaseState.UNAVAILABLE,
+    ];
+
+    if (priorityOrder.indexOf(a) < priorityOrder.indexOf(b)) {
+      return a;
+    } else {
+      return b;
+    }
+  }
+
+  List<Polyline<PolyLineHitValue>> getPolylines() {
+    List<Polyline<PolyLineHitValue>> polylines = [];
+
+    Position? pos = currentPosition;
+
+    if (pos != null) {
+      // Get Maps that the user is near or in
+      List<GeoMap> geoMaps =
+          mapManager.getActiveMaps(pos.longitude, pos.latitude);
+
+      for (GeoMap map in geoMaps) {
+        // Get SPaT messages associated with the relavent MAP messages
+        List<IntersectionState> states = spatManager.getActiveSpats(
+            map.intersectionGeometry.id.id.intersectionID,
+            timingService.getKronosTime());
+
+        for (IntersectionState state in states) {
+          // This code indexes light colors by signal group to allow easy lookup down the line
+          Map<int, MovementEvent> stateMap = {};
+          for (MovementState movement in state.states.movementList) {
+            if (movement.state_time_speed.movementEventList.isNotEmpty) {
+              stateMap[movement.signalGroup.signalGroupID] =
+                  movement.state_time_speed.movementEventList.first;
+            }
+          }
+
+          // Iterate over the pre-calculated lines and assign each connection a color
+          for (RenderLaneConnection connection in map.laneConnections) {
+            Color connectionColor = Colors.grey;
+            StrokePattern pattern = const StrokePattern.dotted();
+            if (stateMap.containsKey(connection.signalGroup)) {
+              MovementPhaseState lightState =
+                  stateMap[connection.signalGroup]!.eventState;
+
+              if (lightState == MovementPhaseState.DARK) {
+                connectionColor = Colors.grey.shade900;
+                pattern = const StrokePattern.dotted();
+              } else if (lightState == MovementPhaseState.STOP_THEN_PROCEED) {
+                connectionColor = Colors.red;
+                pattern = const StrokePattern.dotted();
+              } else if (lightState == MovementPhaseState.STOP_AND_REMAIN) {
+                connectionColor = Colors.red;
+                pattern = const StrokePattern.solid();
+              } else if (lightState == MovementPhaseState.PRE_MOVEMENT) {
+                connectionColor = Colors.orange;
+                pattern = const StrokePattern.dotted();
+              } else if (lightState ==
+                  MovementPhaseState.PERMISSIVE_MOVEMENT_ALLOWED) {
+                connectionColor = Colors.green;
+                pattern = const StrokePattern.dotted();
+              } else if (lightState ==
+                  MovementPhaseState.PROTECTED_MOVEMENT_ALLOWED) {
+                connectionColor = Colors.green;
+                pattern = const StrokePattern.solid();
+              } else if (lightState == MovementPhaseState.PROTECTED_CLEARANCE) {
+                connectionColor = Colors.yellow;
+                pattern = const StrokePattern.solid();
+              } else if (lightState ==
+                  MovementPhaseState.CAUTION_CONFLICTING_TRAFFIC) {
+                connectionColor = Colors.orange;
+                pattern = const StrokePattern.solid();
+              } else if (lightState ==
+                  MovementPhaseState.PERMISSIVE_CLEARANCE) {
+                connectionColor = Colors.yellow;
+                pattern = const StrokePattern.dotted();
+              }
+            }
+
+            Polyline<PolyLineHitValue> hitPoly = Polyline(
+                points: connection.coordinates,
+                borderColor: connectionColor,
+                color: connectionColor,
+                borderStrokeWidth: 1,
+                strokeWidth: 1,
+                hitValue: (name: "Connection ${polylines.length}"),
+                pattern: pattern);
+
+            polylines.add(hitPoly);
+          }
+        }
+
+        for (GenericLane lane in map.intersectionGeometry.laneSet.laneList) {
+          List<LatLng> laneCoordinates =
+              geometryService.getLatLngCoordinatesFromNodeSetXY(
+                  lane.nodeList.nodeListXY as NodeSetXY,
+                  map.intersectionGeometry.refPoint);
+
+          // Adds Ingress and Egress Map Lanes
+          Color laneColor = Colors.blue.shade900;
+          if (lane.ingressApproach != null) {
+            laneColor = Colors.pink.shade300;
+          }
+
+          Polyline<PolyLineHitValue> hitPoly = Polyline(
+            points: laneCoordinates,
+            borderColor: laneColor,
+            color: laneColor,
+            borderStrokeWidth: 1,
+            strokeWidth: 1,
+            hitValue: (name: "Lane: ${lane.laneID}"),
+          );
+          polylines.add(hitPoly);
+
+          // Add Connecting Lines for Map
+          // if(lane.connectsTo != null){
+          //   for(Connection connection in lane.connectsTo!.connectsTo){
+          //     GenericLane connectingLane = connection.
+          //   }
+          // }
+        }
+      }
+    }
+
+    return polylines;
+  }
+
+  List<Polygon<HitValue>> getPolygons() {
     List<Polygon<HitValue>> polygons = [];
 
     List<DataFrameGeometry> dataFrames = timManager.getActiveTimGeometry();
 
-    for(DataFrameGeometry frame in dataFrames){
-
+    for (DataFrameGeometry frame in dataFrames) {
       TravelerDataFrame tdFrame = frame.frame;
 
       // ItisCode code = await timManager.getItisRepresentationForDataFrame(tdFrame);
 
-      for(GeometryDirection geoDir in frame.geometry){
-        List<LatLng> polyPoints = geometryService.convertGeometryToLatLngList(geoDir.geometry);
-
-        
+      for (GeometryDirection geoDir in frame.geometry) {
+        List<LatLng> polyPoints =
+            geometryService.convertGeometryToLatLngList(geoDir.geometry);
 
         Polygon<HitValue> hitPoly = Polygon(
           points: polyPoints,
           borderColor: Colors.orangeAccent,
-          color: Color.fromARGB(128, 252, 173, 89),
+          color: const Color.fromARGB(128, 252, 173, 89),
           borderStrokeWidth: 1,
-          hitValue: (
-            frame: tdFrame,
-          ),  
+          hitValue: (frame: tdFrame,),
         );
 
         polygons.add(hitPoly);
       }
-
     }
+
+    // for (GeoMap geoMap in mapManager.storedMaps.values) {
+    //   List<LatLng> polyPoints =
+    //       geometryService.convertGeometryToLatLngList(geoMap.mapBoundingBox);
+    //   Polygon<HitValue> hitPoly = Polygon(
+    //     points: polyPoints,
+    //     borderColor: Colors.pinkAccent,
+    //     color: const Color.fromARGB(20, 255, 243, 253),
+    //     borderStrokeWidth: 1,
+    //   );
+
+    //   polygons.add(hitPoly);
+    // }
+
+    // if (currentPosition != null) {
+    //   for (jts.Geometry geo in mapManager.getActiveLaneGeometries(
+    //       mapManager.storedMaps.entries.first.value,
+    //       currentPosition!.longitude,
+    //       currentPosition!.latitude)) {
+    //     List<LatLng> polyPoints =
+    //         geometryService.convertGeometryToLatLngList(geo);
+    //     Polygon<HitValue> hitPoly = Polygon(
+    //       points: polyPoints,
+    //       borderColor: Colors.blueAccent,
+    //       color: Color.fromARGB(128, 89, 97, 252),
+    //       borderStrokeWidth: 1,
+    //     );
+
+    //     polygons.add(hitPoly);
+    //   }
+    // }
 
     return polygons;
   }
 
-  addToTimLog(String action, String asn1){
-    if(currentPosition!=null){
-      timDataQueue.addItem("$action, ${timingService.getKronosTime().millisecondsSinceEpoch}, ${currentPosition!.longitude}, ${currentPosition!.latitude}, ${currentPosition!.heading}, $asn1\n");
-    }else{
-      timDataQueue.addItem("$action, ${timingService.getKronosTime().millisecondsSinceEpoch}, 0, 0, 0, $asn1\n");
+  addToTimLog(String action, String asn1) {
+    if (currentPosition != null) {
+      timDataQueue.addItem(
+          "$action, ${timingService.getKronosTime().millisecondsSinceEpoch}, ${currentPosition!.longitude}, ${currentPosition!.latitude}, ${currentPosition!.heading}, $asn1\n");
+    } else {
+      timDataQueue.addItem(
+          "$action, ${timingService.getKronosTime().millisecondsSinceEpoch}, 0, 0, 0, $asn1\n");
     }
   }
-
-
-
 
   Future<String> getNetworkField() async {
     NetworkType type = await telephony.dataNetworkType;
@@ -700,9 +1113,11 @@ class MapState extends State<MapPage> {
 
   String enumToString(Object o) => o.toString().split('.').last;
 
-
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
     const String appTitle = "MAP";
     return Scaffold(
       appBar: AppBar(
@@ -713,7 +1128,7 @@ class MapState extends State<MapPage> {
               positionStream?.cancel();
               mqtt.disconnect();
 
-              Future.delayed(Duration(milliseconds: 100),() async {
+              Future.delayed(const Duration(milliseconds: 100), () async {
                 Get.back();
               });
             }),
@@ -726,84 +1141,125 @@ class MapState extends State<MapPage> {
               }),
         ],
       ),
-      body: Stack(alignment: AlignmentDirectional.topStart, 
-        children: [
-          Center(
-            child: map(context, _mapController)
-          ),
-          Align(alignment: Alignment.topLeft,
-            child: Column(
-              children: [
-                ElevatedButton(
-                  onPressed: () {
-                    updateConnectedStatus(ConnectedStatus.DISCONNECTED);
-                    stopSendingBSM();
-                    connectToMqttBroker();
-                  },
-                  // child: Icon(Icons.menu, color: Colors.white),
-                  child: Icon(Icons.connect_without_contact_rounded, color: Colors.white),
-                  style: ElevatedButton.styleFrom(
-                    shape: CircleBorder(),
-                    padding: EdgeInsets.all(10),
-                    backgroundColor: connectedButtonColor, // <-- Button color
-                    foregroundColor: Colors.black, // <-- Splash color
-                    shadowColor: Colors.black,
-                  ),
+      body: Stack(alignment: AlignmentDirectional.topStart, children: [
+        Center(child: map(context, _mapController)),
+        Align(
+          alignment: Alignment.topRight,
+          child: nextLightText.isNotEmpty
+              ? Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Container(
+                      width: screenWidth * 0.20,
+                      // height: screenHeight * 0.25,
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                            color: Colors.yellow.shade600,
+                            width: 2.0), // Box border
+                        borderRadius: BorderRadius.circular(
+                            8.0), // Optional: Rounded corners
+                        color:
+                            Colors.grey.shade800, // Optional: Background color
+                      ),
+                      child: Column(mainAxisSize: MainAxisSize.min, children: [
+                        const Text("Current Light State",
+                            textAlign: TextAlign.center),
+                        SizedBox(
+                            width: screenWidth * 0.15,
+                            height: screenHeight * 0.15,
+                            child: currentLightState),
+                        Text(nextLightText, textAlign: TextAlign.center),
+                      ])))
+              : Container(),
+        ),
+        Align(
+            alignment: Alignment.topLeft,
+            child: Column(children: [
+              ElevatedButton(
+                onPressed: () {
+                  updateConnectedStatus(ConnectedStatus.DISCONNECTED);
+                  stopSendingBSM();
+                  connectToMqttBroker();
+                },
+                style: ElevatedButton.styleFrom(
+                  shape: const CircleBorder(),
+                  padding: const EdgeInsets.all(10),
+                  backgroundColor: connectedButtonColor, // <-- Button color
+                  foregroundColor: Colors.black, // <-- Splash color
+                  shadowColor: Colors.black,
                 ),
-                ElevatedButton(
-                  onPressed: () {
-                    followUser = true;
-                    _mapController.moveAndRotate(getUserLocation(), _mapController.camera.zoom, _mapController.camera.rotation);
-                  },
-                  // child: Icon(Icons.menu, color: Colors.white),
-                  child: Icon(Icons.directions_car, color: Colors.white),
-                  style: ElevatedButton.styleFrom(
-                    shape: CircleBorder(),
-                    padding: EdgeInsets.all(10),
-                    backgroundColor: followUser ? Colors.green : Colors.blue, // <-- Button color
-                    foregroundColor: Colors.black, // <-- Splash color
-                    shadowColor: Colors.black,
-                  ),
+                // child: Icon(Icons.menu, color: Colors.white),
+                child: const Icon(Icons.connect_without_contact_rounded,
+                    color: Colors.white),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  followUser = true;
+                  _mapController.moveAndRotate(
+                      getUserLocation(),
+                      _mapController.camera.zoom,
+                      _mapController.camera.rotation);
+                },
+                style: ElevatedButton.styleFrom(
+                  shape: const CircleBorder(),
+                  padding: const EdgeInsets.all(10),
+                  backgroundColor: followUser
+                      ? Colors.green
+                      : Colors.blue, // <-- Button color
+                  foregroundColor: Colors.black, // <-- Splash color
+                  shadowColor: Colors.black,
                 ),
-              ]
-            )
-          ),
-          Align(alignment: Alignment.bottomCenter,
+                // child: Icon(Icons.menu, color: Colors.white),
+                child: const Icon(Icons.directions_car, color: Colors.white),
+              ),
+            ])),
+        Align(
+            alignment: Alignment.bottomCenter,
             child: CarouselSlider(
-              options: CarouselOptions(height: 150.0, viewportFraction: 0.3, enableInfiniteScroll: false),
+              options: CarouselOptions(
+                  height: 150.0,
+                  viewportFraction: 0.3,
+                  enableInfiniteScroll: false),
               items: showTims.map((displayCode) {
-
                 Color borderColor = Colors.blue;
 
-                if(displayCode.status == ITIS_CODE_STATUS.VALID){
+                if (displayCode.status == ITIS_CODE_STATUS.VALID) {
                   borderColor = Colors.green;
-                }else if(displayCode.status ==ITIS_CODE_STATUS.UNKNOWN){
+                } else if (displayCode.status == ITIS_CODE_STATUS.UNKNOWN) {
                   borderColor = Colors.yellow;
-                }else if(displayCode.status == ITIS_CODE_STATUS.ERROR){
+                } else if (displayCode.status == ITIS_CODE_STATUS.ERROR) {
                   borderColor = Colors.red;
                 }
 
                 return Builder(
                   builder: (BuildContext context) {
                     return Container(
-                      width: MediaQuery.of(context).size.width,
-                      margin: EdgeInsets.symmetric(horizontal: 5.0),
-                      child: displayCode.image != null ? Image(image: displayCode.image!) : Text('${displayCode.description}', style: TextStyle(fontSize: 16.0),)
-                    );
+                        width: MediaQuery.of(context).size.width,
+                        margin: const EdgeInsets.symmetric(horizontal: 5.0),
+                        child: displayCode.image != null
+                            ? Image(image: displayCode.image!)
+                            : Text(
+                                displayCode.description,
+                                style: const TextStyle(fontSize: 16.0),
+                              ));
                   },
                 );
               }).toList(),
-            )
-          ),
-          Align(alignment:Alignment.center, 
-            child: showLoadingIcon? const SpinKitSpinningLines(color: Colors.white, size: 140, lineWidth: 4,) : null,
-          )
-        ]
-      ), 
-    );   
+            )),
+        Align(
+          alignment: Alignment.center,
+          child: showLoadingIcon
+              ? const SpinKitSpinningLines(
+                  color: Colors.white,
+                  size: 140,
+                  lineWidth: 4,
+                )
+              : null,
+        )
+      ]),
+    );
   }
 
-  Widget map(BuildContext context,  MapController mapController) {
+  Widget map(BuildContext context, MapController mapController) {
     return Obx(
       () => SizedBox(
         // width: screenWidthPercentage(context, percentage: orientation == Orientation.portrait ? 0.8 : 0.4),
@@ -811,58 +1267,59 @@ class MapState extends State<MapPage> {
         child: FlutterMap(
             mapController: mapController,
             options: MapOptions(
-              initialCenter: LatLng(paramController.fakeLatitude.value, paramController.fakeLongitude.value),//LatLng(, paramController.fakeLongitude.value),
+              initialCenter: LatLng(
+                  paramController.fakeLatitude.value,
+                  paramController.fakeLongitude
+                      .value), //LatLng(, paramController.fakeLongitude.value),
               initialZoom: 16,
               onMapReady: () {
                 // controller.mapController = mapController;
               },
-              onPositionChanged: (position, hasGesture){
-                if (hasGesture) {
-                    setState(() {
-                      followUser = false;
-                    });
-                  }
+              onPositionChanged: (position, hasGesture) {
+                if (hasGesture && mounted) {
+                  setState(() {
+                    followUser = false;
+                  });
+                }
               },
               onTap: (tapPosition, point) {
                 // Reset the polygons when clicking anywhere on the map
-                setState(() {
-                  _hoverGons = null;
-                  _prevHitValues = null;
-                });
+
+                if (mounted) {
+                  setState(() {
+                    _hoverGons = null;
+                    _prevHitValues = null;
+                  });
+                }
               },
             ),
             children: [
               Text("${paramController.fakeLatitude.value}"),
               TileLayer(
-                urlTemplate: 'https://api.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}',
+                urlTemplate:
+                    'https://api.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}',
                 additionalOptions: {
                   'accessToken': dotenv.env['MAPBOX_ACCESS_TOKEN']!,
                   'id': 'mapbox.satellite',
                 },
               ),
-              MarkerLayer(
-                  markers: getMarkerList(),
-                  rotate: true,
-                ),
               MouseRegion(
                 hitTestBehavior: HitTestBehavior.deferToChild,
                 cursor: SystemMouseCursors.click,
                 onHover: (_) {
-
                   final hitValues = _hitNotifier.value?.hitValues.toList();
-                  if (hitValues == null){
+                  if (hitValues == null) {
                     return;
                   }
 
                   if (listEquals(hitValues, _prevHitValues)) return;
                   _prevHitValues = hitValues;
 
-                  var _polygons = Map.fromEntries(nearbyTimPolygons.map((e) => MapEntry(e.hitValue, e)));
+                  var polygons = Map.fromEntries(
+                      drawnPolygons.map((e) => MapEntry(e.hitValue, e)));
 
                   final hoverLines = hitValues.map((v) {
-
-                    
-                    final original = _polygons[v]!;
+                    final original = polygons[v]!;
 
                     return Polygon<HitValue>(
                       points: original.points,
@@ -873,31 +1330,46 @@ class MapState extends State<MapPage> {
                       disableHolesBorder: original.disableHolesBorder,
                     );
                   }).toList();
-                  setState(() => _hoverGons = hoverLines);
+                  if (mounted) {
+                    setState(() => _hoverGons = hoverLines);
+                  }
                 },
                 onExit: (_) {
-                  setState(() {
-                    _hoverGons = null;
-                    _prevHitValues = null;
-                  });
+                  if (mounted) {
+                    setState(() {
+                      _hoverGons = null;
+                      _prevHitValues = null;
+                    });
+                  }
                 },
                 child: GestureDetector(
-                  onTap: () => _openTouchedGonsModal(
-                    'Tapped',
-                    _hitNotifier.value!.hitValues,
-                    _hitNotifier.value!.coordinate,
-                  ),
-                  child: PolygonLayer(
-                    hitNotifier: _hitNotifier,
-                    simplificationTolerance: 0,
-                    polygons: [...nearbyTimPolygons, ...?_hoverGons],
-                  ),
+                  // onTap: () => _openTouchedGonsModal(
+                  //   'Tapped',
+                  //   _hitNotifier.value!.hitValues,
+                  //   _hitNotifier.value!.coordinate,
+                  // ),
+                  child: Stack(children: [
+                    PolylineLayer(
+                      hitNotifier: _hitNotifier,
+                      polylines: [...drawnPolylines],
+                      simplificationTolerance: 0,
+                    ),
+                    PolygonLayer(
+                      hitNotifier: _hitNotifier,
+                      simplificationTolerance: 0,
+                      polygons: [...drawnPolygons, ...?_hoverGons],
+                    ),
+                    MarkerLayer(
+                      markers: getMarkerList(),
+                      rotate: true,
+                    ),
+                  ]),
                 ),
-              ),
+              )
             ]),
       ),
     );
-  } 
+  }
 
   void _openTouchedGonsModal(
     String eventType,
@@ -924,42 +1396,45 @@ class MapState extends State<MapPage> {
                 itemBuilder: (context, index) {
                   final tappedLineData = tappedLines[index];
                   TravelerDataFrame frame = tappedLineData.frame;
-                  return FutureBuilder<ItisCode> (
-                    future: timManager.getItisRepresentationForDataFrame(tappedLineData.frame),
-                    builder: (context, snapshot){
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        // Show a loading indicator while waiting for the async call
-                        return ListTile(
-                          leading: CircularProgressIndicator(),
-                          title: Text("Loading..."),
-                        );
-                      } else if (snapshot.hasError) {
-                        // Handle any errors that occurred during the async call
-                        return ListTile(
-                          leading: Icon(Icons.error),
-                          title: Text("Error loading data"),
-                          subtitle: Text(snapshot.error.toString()),
-                        );
-                      } else if (snapshot.hasData) {
-                        // Show the actual data once it has been fetched
-                        final ItisCode code = snapshot.data!;
-                        return ListTile(
-                          leading: index == 0
-                              ? code.image != null
-                                  ? Image(image: code.image!)
-                                  : Text('${code.description}', style: TextStyle(fontSize: 16.0))
-                              : index == tappedLines.length - 1
-                                  ? const Icon(Icons.vertical_align_bottom)
-                                  : const SizedBox.shrink(),
-                          title: Text("TIM Message"),
-                          subtitle: Text("Description: ${code.description}\nStart Time: ${timManager.getTimStartTime(frame)}\n End Time: ${timManager.getTimEndTime(frame)}"),
-                          dense: false,
-                        );
-                      }
-                      // Default case: show nothing if there’s no data
-                      return SizedBox.shrink();
-                    }
-                  );
+                  return FutureBuilder<ItisCode>(
+                      future: timManager.getItisRepresentationForDataFrame(
+                          tappedLineData.frame),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          // Show a loading indicator while waiting for the async call
+                          return const ListTile(
+                            leading: CircularProgressIndicator(),
+                            title: Text("Loading..."),
+                          );
+                        } else if (snapshot.hasError) {
+                          // Handle any errors that occurred during the async call
+                          return ListTile(
+                            leading: const Icon(Icons.error),
+                            title: const Text("Error loading data"),
+                            subtitle: Text(snapshot.error.toString()),
+                          );
+                        } else if (snapshot.hasData) {
+                          // Show the actual data once it has been fetched
+                          final ItisCode code = snapshot.data!;
+                          return ListTile(
+                            leading: index == 0
+                                ? code.image != null
+                                    ? Image(image: code.image!)
+                                    : Text(code.description,
+                                        style: const TextStyle(fontSize: 16.0))
+                                : index == tappedLines.length - 1
+                                    ? const Icon(Icons.vertical_align_bottom)
+                                    : const SizedBox.shrink(),
+                            title: const Text("TIM Message"),
+                            subtitle: Text(
+                                "Description: ${code.description}\nStart Time: ${timManager.getTimStartTime(frame)}\n End Time: ${timManager.getTimEndTime(frame)}"),
+                            dense: false,
+                          );
+                        }
+                        // Default case: show nothing if there’s no data
+                        return const SizedBox.shrink();
+                      });
                 },
                 itemCount: tappedLines.length,
               ),
@@ -970,12 +1445,14 @@ class MapState extends State<MapPage> {
               child: SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
-                  onPressed: (){
+                  onPressed: () {
                     Navigator.pop(context);
-                    setState(() {
-                    _hoverGons = null;
-                    _prevHitValues = null;
-                    });
+                    if (mounted) {
+                      setState(() {
+                        _hoverGons = null;
+                        _prevHitValues = null;
+                      });
+                    }
                   },
                   child: const Text('Close'),
                 ),
@@ -986,18 +1463,4 @@ class MapState extends State<MapPage> {
       ),
     );
   }
-
-  // @override
-  // void dispose(){
-  //   super.dispose();
-  //   cleanupAll();
-    
-
-  // }
-
-  // void cleanupAll(){
-  //   stopSendingBSM();
-  //   mqtt.disconnect();
-  //   _mapController.dispose();
-  // }
 }
