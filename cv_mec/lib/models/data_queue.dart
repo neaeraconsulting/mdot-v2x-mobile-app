@@ -9,6 +9,7 @@ class DataQueue {
   final _queue = StreamController<String>();
   late File _file;
   late String fileName;
+  late String filePath;
   Future<void>? _lastWriteOperation;
 
   DataQueue(String fileName) {
@@ -21,6 +22,7 @@ class DataQueue {
 
   void init() async {
     _file = await fileService.getFileForWriting(fileName);
+    filePath = _file.path;
     _queue.stream.listen((item) async {
       _lastWriteOperation = _writeDataToFile(item, _lastWriteOperation);
     });

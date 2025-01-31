@@ -1,0 +1,29 @@
+name: flutter_kronos_plus
+description: Kronos is an open source Network Time Protocol (NTP) synchronization library for providing a trusted clock.
+version: 1.0.0
+homepage: 'https://github.com/Mo0Khaled/flutter-kronos-plus.git'
+repository: 'https://github.com/Mo0Khaled/flutter-kronos-plus.git'
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+module:
+  androidX: true
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.plugin.flutter_kronos_plus
+        pluginClass: FlutterKronosPlusPlugin
+      ios:
+        pluginClass: FlutterKronosPlusPlugin

@@ -21,6 +21,12 @@ class SettingsController extends GetxController {
   RxString appVersion = ''.obs;
   Rx<bool> vzMode = false.obs;
   Rx<bool> pedestrianMode = false.obs;
+  RxString deviceID = ''.obs;
+  RxString s3AccessKey = (dotenv.env['S3_ACCESS_KEY'] ?? "").obs;
+  RxString s3SecretKey = (dotenv.env['S3_SECRET_KEY'] ?? "").obs;
+  RxString s3BucketName = (dotenv.env['S3_BUCKET_NAME'] ?? "").obs;
+  RxString s3Region = (dotenv.env['S3_REGION'] ?? "").obs;
+  RxString s3DestDir = (dotenv.env['S3_DESTINATION'] ?? "").obs;
 
   initialize() async {
     username.value = await secureStorage.getUsername();
@@ -28,6 +34,14 @@ class SettingsController extends GetxController {
     baseUri.value = await secureStorage.getBaseURI();
     vendorID.value = await secureStorage.getVendorID();
     vzMode.value = await secureStorage.getVZMode();
+    deviceID.value = await secureStorage.getDeviceID();
+
+    s3AccessKey.value = await secureStorage.getS3AccessKey();
+    s3SecretKey.value = await secureStorage.getS3SecretKey();
+    s3BucketName.value = await secureStorage.getS3BucketName();
+    s3Region.value = await secureStorage.getS3Region();
+    s3DestDir.value = await secureStorage.getS3DestDir();
+
     // pedestrianMode.value = await secureStorage.getPedestrianMode();
 
     bool? darkMode = await sharedPrefs.getDarkModeFromPrefs();
@@ -76,6 +90,7 @@ class SettingsPage extends StatelessWidget {
   TextEditingController passwordController = TextEditingController();
   TextEditingController baseUriController = TextEditingController();
   TextEditingController vendorIDController = TextEditingController();
+  TextEditingController deviceIDController = TextEditingController();
 
   FileService fileService = Get.find<FileService>();
 
@@ -90,6 +105,7 @@ class SettingsPage extends StatelessWidget {
           passwordController.text = controller.password.value;
           baseUriController.text = controller.baseUri.value;
           vendorIDController.text = controller.vendorID.value;
+          deviceIDController.text = controller.deviceID.value;
           return Scaffold(
               appBar: AppBar(
                 title: const Text("Settings Page"),
@@ -171,6 +187,17 @@ class SettingsPage extends StatelessWidget {
           },
         ),
         spacer(),
+        TextField(
+          decoration: const InputDecoration(labelText: 'Device ID'),
+          controller: deviceIDController,
+          obscureText: false,
+          onChanged: (value) async {
+            if (value != controller.deviceID.value) {
+              controller.settingsChanged.value = true;
+            }
+          },
+        ),
+        spacer(),
         SwitchListTile(
             title: const Text("VZ Mode"),
             value: controller.vzMode.value,
@@ -203,6 +230,9 @@ class SettingsPage extends StatelessWidget {
                         await controller.secureStorage
                             .setVendorID(vendorIDController.text);
                         await controller.secureStorage
+                            .setDeviceID(deviceIDController.text);
+                        controller.deviceID.value = deviceIDController.text;
+                        await controller.secureStorage
                             .setVZMode(controller.vzMode.value);
                         controller.settingsChanged.value = false;
 
@@ -220,6 +250,7 @@ class SettingsPage extends StatelessWidget {
                       passwordController.text = controller.password.value;
                       baseUriController.text = controller.baseUri.value;
                       vendorIDController.text = controller.vendorID.value;
+                      deviceIDController.text = controller.deviceID.value;
 
                       controller.settingsChanged.value = false;
                     }

@@ -94,7 +94,8 @@ class TimManager {
   }
 
   List<TravelerDataFrame> getNewActiveTims(
-      double longitude, double latitude, double heading) {
+      double longitude, double latitude, double heading,
+      [bool ignoreHeading = false]) {
     List<TravelerDataFrame> newActiveDataFrames = [];
 
     for (String key in storedTims.keys) {
@@ -109,8 +110,10 @@ class TimManager {
             for (GeometryDirection geometry in dataFrameGeometry.geometry) {
               if (geometryService.isPointInPolygon(
                   geometry.geometry, longitude, latitude)) {
-                if (geometry.direction != null &&
-                    isDirectionInHeadingSlice(heading, geometry.direction!)) {
+                if (ignoreHeading ||
+                    (geometry.direction != null &&
+                        isDirectionInHeadingSlice(
+                            heading, geometry.direction!))) {
                   anyActiveZone = true;
                 }
               } else {
@@ -154,7 +157,9 @@ class TimManager {
     return activeDataFrames;
   }
 
-  List<TravelerDataFrame> getTimsToShow(longitude, latitude, heading) {
+  List<TravelerDataFrame> getTimsToShow(
+      double longitude, double latitude, double heading,
+      [bool ignoreHeading = false]) {
     List<TravelerDataFrame> showDataFrames = [];
 
     for (String key in storedTims.keys) {
@@ -168,8 +173,10 @@ class TimManager {
             for (GeometryDirection geometry in dataFrameGeometry.geometry) {
               if (geometryService.isPointInPolygon(
                   geometry.geometry, longitude, latitude)) {
-                if (geometry.direction != null &&
-                    isDirectionInHeadingSlice(heading, geometry.direction!)) {
+                if (ignoreHeading ||
+                    (geometry.direction != null &&
+                        isDirectionInHeadingSlice(
+                            heading, geometry.direction!))) {
                   showDataFrames.add(dataFrame);
                   break;
                 }
@@ -253,7 +260,7 @@ class TimManager {
   }
 
   bool isDataFrameTimeActive(TravelerDataFrame dataFrame) {
-    DateTime now = DateTime.now();
+    DateTime now = DateTime.now().toUtc();
 
     int year = now.year;
     if (dataFrame.startYear != null) {
