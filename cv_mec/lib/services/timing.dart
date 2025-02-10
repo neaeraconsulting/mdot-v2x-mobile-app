@@ -3,7 +3,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:cv_mec/services/location_service.dart';
 import 'package:ntp/ntp.dart';
-import 'package:flutter_kronos/flutter_kronos.dart';
+import 'package:flutter_kronos_plus/flutter_kronos_plus.dart';
 
 class Timing extends GetxController {
   Rx<DateTime> geoTime = DateTime.now().toUtc().obs;
@@ -77,8 +77,8 @@ class Timing extends GetxController {
 
   void _updateKronosTime(DateTime currTime) async {
     final result = await Future.wait([
-      FlutterKronos.getCurrentTimeMs,
-      FlutterKronos.getCurrentNtpTimeMs,
+      FlutterKronosPlus.getCurrentTimeMs,
+      FlutterKronosPlus.getCurrentNtpTimeMs,
     ]);
     kronosTime.value = DateTime.fromMillisecondsSinceEpoch(result[0]!).toUtc();
   }
@@ -86,6 +86,11 @@ class Timing extends GetxController {
   DateTime getKronosTime() {
     _updateKronosTime(DateTime.now());
     return kronosTime.value;
+  }
+
+  DateTime getNtpTime() {
+    _updateNtpTime(DateTime.now());
+    return ntpTime.value;
   }
 
   void startLocationUpdates() {
@@ -101,7 +106,10 @@ class Timing extends GetxController {
   }
 
   Future<void> handleNtpUpdate(Timer _) async {
-    _setNtpTimeOffset(await NTP.now());
+    _setNtpTimeOffset(await NTP.now(
+        lookUpAddress: "time.aws.com",
+        port: 123,
+        timeout: Duration(seconds: 5)));
   }
 
   void startNtpTimeUpdates() {
@@ -135,9 +143,9 @@ class Timing extends GetxController {
   }
 
   void startKronosTimeUpdates() async {
-    FlutterKronos.sync();
+    FlutterKronosPlus.sync();
 
-    int? currentTime = await FlutterKronos.getCurrentTimeMs;
+    int? currentTime = await FlutterKronosPlus.getCurrentTimeMs;
     kronosTime.value =
         DateTime.fromMillisecondsSinceEpoch(currentTime!).toUtc();
   }
@@ -146,14 +154,14 @@ class Timing extends GetxController {
 
   void startAllUpdates() {
     startLocationUpdates();
-    startNtpTimeUpdates();
+    // startNtpTimeUpdates(); // ntpTimeUpdates are disabled because NTP package crashes the entire application if it cannot find the source server.
     startSystemTimeUpdates();
     startKronosTimeUpdates();
   }
 
   void stopAllUpdates() {
     stopLocationUpdates();
-    stopNtpTimeUpdates();
+    // stopNtpTimeUpdates();
     stopSystemTimeUpdates();
     stopKronosTimeUpdates();
   }

@@ -42,10 +42,19 @@ This application requires multiple environment variables in order to connect to 
 cp sample.env .env
 ```
 
-MAPBOX_ACCESS_TOKEN=
-PARTNER_API_LOCATION=
-USERNAME=
-PASSWORD=
+| Variable              | Purpose                                                           | Default Value | Required |
+| :-------------------- | :---------------------------------------------------------------- | :------------ | -------- |
+| NOAA_GEOMAG_API_TOKEN | Allow the App to query current magnetic offsets                   | zNEw7         | Yes      |
+| MAPBOX_ACCESS_TOKEN   | Required for Rendering MAP tiles. Acquired from MapBox account    |               | Yes      |
+| API_ENDPOINT          | Location of the CV-MEC partner API.                               |               | Yes      |
+| USERNAME              | Username for the app to login to the partner API with             |               | Yes      |
+| PASSWORD              | Password for the app to login to the partner API with             |               | Yes      |
+| VENDOR_ID             | Vendor ID to use when the APP registers and Connects with the IMP |               | Yes      |
+| S3_ACCESS_KEY         | An AWS IAM access key for connecting to an S3 Bucket              |               | No       |
+| S3_SECRET_KEY         | An AWS IAM secret Key for connecting to an S3 Bucket              |               | No       |
+| S3_BUCKET_NAME        | The Name of the S3 Bucket to offload log files to                 |               | No       |
+| S3_REGION             | The AWS region hosting the S3 Bucket and IAM credentials          |               | No       |
+| S3_DESTINATION        | A subfolder within the Bucket to Place Log files                  |               | No       |
 
 The NOAA_GEOMAG_API_TOKEN included in the sample.env file is currently set to the publically available token specified on the NOAA site. This doesn't need to be changed at this time. For more information on this service please see the NOAA site here:
 https://www.ncei.noaa.gov/maps/historical-declination/

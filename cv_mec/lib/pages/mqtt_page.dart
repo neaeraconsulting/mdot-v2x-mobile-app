@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:ffi';
 import 'dart:io';
 
-import 'package:another_telephony/telephony.dart';
 import 'package:connection_network_type/connection_network_type.dart';
 import 'package:cv_mec/models/data_queue.dart';
+import 'package:cv_mec/models/j2735/basic_safety_message.dart';
 import 'package:cv_mec/models/j2735/choice_content.dart';
 import 'package:cv_mec/models/j2735/choice_item.dart';
 import 'package:cv_mec/models/j2735/exit_service.dart';
@@ -13,10 +13,13 @@ import 'package:cv_mec/models/j2735/itis_codes.dart';
 import 'package:cv_mec/models/j2735/itis_itis_codes_and_text.dart';
 import 'package:cv_mec/models/j2735/itis_phrase.dart';
 import 'package:cv_mec/models/j2735/itis_text.dart';
+import 'package:cv_mec/models/j2735/map_data.dart';
+import 'package:cv_mec/models/j2735/spat.dart';
 import 'package:cv_mec/models/j2735/speed_limit.dart';
 import 'package:cv_mec/models/j2735/traveler_data_frame.dart';
 import 'package:cv_mec/models/j2735/traveler_information.dart';
 import 'package:cv_mec/models/j2735/work_zone.dart';
+import 'package:cv_mec/models/leidos_date_extraction.dart';
 import 'package:cv_mec/models/protobuf_models/geo_routed_msg.pb.dart'
     as protobuf;
 import 'package:cv_mec/models/itis_code.dart';
@@ -59,7 +62,6 @@ class _MQTTTestingState extends State<MQTTTesting> {
   final ASNService asn = ASNService();
   final FileService fileService = FileService();
   final Timing timingService = Get.find<Timing>();
-  final Telephony telephony = Telephony.instance;
   final GeometryService geometryService = GeometryService();
 
   ParamController controller = Get.find<ParamController>();
@@ -217,13 +219,21 @@ class _MQTTTestingState extends State<MQTTTesting> {
     MsgType msgType = asn.determineHexMessageType(hex);
 
     String consoleMessage = "";
+    DateTime? generationTime;
 
     if (msgType == MsgType.BSM) {
       consoleMessage =
           "Received BSM Time Delta (ms): ${recTime.millisecondsSinceEpoch - msgTime.millisecondsSinceEpoch}";
+
+      String trimmedHex = asn.trimMessageHeaders(hex, asn.BSM_START_FLAG)!;
+      BasicSafetyMessage bsm = asn.decodeBsm(trimmedHex);
+
+      generationTime = bsm.coreData.secMark.getDateTime(recTime);
     } else if (msgType == MsgType.TIM) {
       String trimmedHex = asn.trimMessageHeaders(hex, asn.TIM_START_FLAG)!;
       TravelerInformation tim = asn.decodeTim(trimmedHex);
+
+      generationTime = LeidosDateExtraction.extractDateFromTim(tim);
 
       timManager.addOrUpdate(tim, hex);
 
@@ -266,9 +276,23 @@ class _MQTTTestingState extends State<MQTTTesting> {
       }
       consoleMessage = "$consoleMessage}";
     } else if (msgType == MsgType.SPAT) {
+      String trimmedHex = asn.trimMessageHeaders(hex,
+          asn.SPAT_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
+      Spat spat = asn.decodeSpat(trimmedHex);
+
+      if (spat.intersections.intersectionStateList.isNotEmpty) {
+        generationTime =
+            spat.intersections.intersectionStateList.first.getUtcTime();
+      }
+
       consoleMessage =
           "Received SPaT Time Delta (ms): ${recTime.millisecondsSinceEpoch - msgTime.millisecondsSinceEpoch}";
     } else if (msgType == MsgType.MAP) {
+      String trimmedHex = asn.trimMessageHeaders(hex,
+          asn.MAP_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
+      MapData map = asn.decodeMap(trimmedHex);
+      generationTime = LeidosDateExtraction.extractDateFromMap(map);
+
       consoleMessage =
           "Received MAP Time Delta (ms): ${recTime.millisecondsSinceEpoch - msgTime.millisecondsSinceEpoch}";
     } else {
@@ -287,12 +311,16 @@ class _MQTTTestingState extends State<MQTTTesting> {
     });
 
     if (isLogging) {
-      String netStat = "Unavailable";
-      if (Platform.isAndroid) {
-        netStat = await getNetworkField();
+      int generationDelta = 0;
+      int messageGenerationTime = 0;
+      if (generationTime != null) {
+        generationDelta = recTime.millisecondsSinceEpoch -
+            generationTime.millisecondsSinceEpoch;
+        messageGenerationTime = generationTime.millisecondsSinceEpoch;
       }
+
       String record =
-          "${message.topic},${recTime.millisecondsSinceEpoch},${msgTime.millisecondsSinceEpoch},${recTime.millisecondsSinceEpoch - msgTime.millisecondsSinceEpoch},${decodedMessage.position.longitude},${decodedMessage.position.latitude},$netStat,$mqttConnectionURL,$hex\n";
+          "${message.topic}, ${msgType.toString().split('.').last}, ${recTime.millisecondsSinceEpoch},${msgTime.millisecondsSinceEpoch},$messageGenerationTime,${recTime.millisecondsSinceEpoch - msgTime.millisecondsSinceEpoch},$generationDelta,${decodedMessage.position.longitude},${decodedMessage.position.latitude},$mqttConnectionURL,$hex\n";
       if (recDataQueue != null) {
         recDataQueue!.addItem(record);
       }
@@ -329,9 +357,6 @@ class _MQTTTestingState extends State<MQTTTesting> {
 
       msg.msgBytes = ASNService.hexToBytes(hex);
 
-      // msg.msgBytes = utf8.encode(
-      //     "0022e12d18466c65c1493800000e00e4616183e85a8f0100c000038081bc001480b8494c4c950cd8cde6e9651116579f22a424dd78fffff00761e4fd7eb7d07f7fff80005f11d1020214c1c0ffc7c016aff4017a0ff65403b0fd204c20ffccc04f8fe40c420ffe6404cefe60e9a10133408fcfde1438103ab4138f00e1eec1048ec160103e237410445c171104e26bc103dc4154305c2c84103b1c1c8f0a82f42103f34262d1123198103dac25fb12034ce10381c259f12038ca103574251b10e3b2210324c23ad0f23d8efffe0000209340d10000004264bf00");
-
       msg.time = dateTimeToTimestamp(sendTime);
 
       buffer.addAll(msg.writeToBuffer());
@@ -340,14 +365,8 @@ class _MQTTTestingState extends State<MQTTTesting> {
       addToAppLog("Sent: ${sendTime.millisecondsSinceEpoch}");
       if (isLogging) {
         if (pubDataQueue != null) {
-          NetworkStatus networkStatus =
-              await ConnectionNetworkType().currentNetworkStatus();
-          String netStat = "Unavailable";
-          if (Platform.isAndroid) {
-            netStat = await getNetworkField();
-          }
           String record =
-              "$publishTopic,${sendTime.millisecondsSinceEpoch},${pos.longitude},${pos.latitude},$netStat,$mqttConnectionURL,${utf8.decode(msg.msgBytes)}\n";
+              "$publishTopic,${sendTime.millisecondsSinceEpoch},${pos.longitude},${pos.latitude},$mqttConnectionURL,$hex\n";
           pubDataQueue!.addItem(record);
         }
       }
@@ -578,11 +597,6 @@ class _MQTTTestingState extends State<MQTTTesting> {
   }
 
   void toggleLogging() async {
-    if (!isLogging) {
-      if (Platform.isAndroid) {
-        await Permission.phone.request();
-      }
-    }
     if (mounted) {
       setState(() {
         isLogging = !isLogging;
@@ -593,9 +607,6 @@ class _MQTTTestingState extends State<MQTTTesting> {
         (isLogging && await Permission.phone.request().isGranted)) {
       // await Permission.manageExternalStorage.isGranted;
       // await fileService.requestPermissions();
-      if (Platform.isAndroid) {
-        await telephony.requestPhoneAndSmsPermissions;
-      }
 
       DateTime logTime = timingService.getKronosTime();
 
@@ -605,7 +616,7 @@ class _MQTTTestingState extends State<MQTTTesting> {
           DataQueue("MQTT_PUB_LOG_${logTime.millisecondsSinceEpoch}.csv");
       addToAppLog("Saving Records to ${recDataQueue!.fileName}");
       String subHeader =
-          "Topic, Receive Time ms, Send Time ms, Delta Time ms, Longitude, Latitude, Network, Broker, Msg Bytes\n";
+          "topic,message_type,receive_time_ms,send_time_ms,generation_time_ms,send_rec_delta_time_ms,gen_rec_delta_time_ms,longitude,latitude,broker,msg_bytes\n";
 
       recDataQueue!.addItem(subHeader);
 
@@ -627,15 +638,10 @@ class _MQTTTestingState extends State<MQTTTesting> {
   }
 
   Future<String> getNetworkField() async {
-    NetworkType type = await telephony.dataNetworkType;
-    List<SignalStrength> strenghts = await telephony.signalStrengths;
-
+    String networkType = "UNKNOWN";
     String signalStrength = "NONE_OR_UNKNOWN";
-    if (strenghts.isNotEmpty) {
-      signalStrength = enumToString(strenghts[0]);
-    }
 
-    return "${enumToString(type)} $signalStrength";
+    return "$networkType $signalStrength";
   }
 
   String enumToString(Object o) => o.toString().split('.').last;

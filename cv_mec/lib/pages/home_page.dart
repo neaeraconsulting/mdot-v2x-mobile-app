@@ -2,6 +2,7 @@ import 'package:cv_mec/pages/map_page.dart';
 import 'package:cv_mec/pages/mqtt_page.dart';
 import 'package:cv_mec/services/api_service.dart';
 import 'package:cv_mec/services/asn_service.dart';
+import 'package:cv_mec/services/aws_service.dart';
 import 'package:cv_mec/services/file_service.dart';
 import 'package:cv_mec/services/geometry_service.dart';
 import 'package:cv_mec/services/location_service.dart';
@@ -26,6 +27,7 @@ class HomePage extends StatelessWidget {
     Get.put(FileService());
     Get.put(MqttService());
     Get.put(GeometryService());
+    Get.put(S3Service());
     return Scaffold(
         appBar: AppBar(
           leading: const Icon(Icons.traffic),

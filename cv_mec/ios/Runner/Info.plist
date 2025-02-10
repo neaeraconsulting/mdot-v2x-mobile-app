@@ -58,7 +58,7 @@
   		<string>mqtt.tcp</string>
 	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>This app needs access to location when open.</string>
+	<string>This application needs access to your location in order to provide you with accurate connected vehicle information near your location.</string>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
 	<key>UIFileSharingEnabled</key>

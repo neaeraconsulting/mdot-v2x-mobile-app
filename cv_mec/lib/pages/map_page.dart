@@ -3,12 +3,12 @@ import 'dart:ffi';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:another_telephony/telephony.dart';
 import 'package:connection_network_type/connection_network_type.dart';
 import 'package:cv_mec/models/data_queue.dart';
 import 'package:cv_mec/models/geometry_direction.dart';
 import 'package:cv_mec/models/j2735/basic_safety_message.dart';
 import 'package:cv_mec/models/j2735/d_second.dart';
+import 'package:cv_mec/models/j2735/descriptive_name.dart';
 import 'package:cv_mec/models/j2735/generic_lane.dart';
 import 'package:cv_mec/models/j2735/intersection_state.dart';
 import 'package:cv_mec/models/j2735/map_data.dart';
@@ -25,6 +25,7 @@ import 'package:cv_mec/models/geo_map.dart';
 import 'package:cv_mec/models/itis_code.dart';
 import 'package:cv_mec/models/j2735/traveler_data_frame.dart';
 import 'package:cv_mec/models/j2735/traveler_information.dart';
+import 'package:cv_mec/models/leidos_date_extraction.dart';
 import 'package:cv_mec/models/message_managers/map_manager.dart';
 import 'package:cv_mec/models/msg_types.dart';
 import 'package:cv_mec/models/imp/registration.dart';
@@ -39,6 +40,7 @@ import 'package:cv_mec/models/light_change_time.dart';
 import 'package:cv_mec/models/utils.dart';
 import 'package:cv_mec/services/api_service.dart';
 import 'package:cv_mec/services/asn_service.dart';
+import 'package:cv_mec/services/aws_service.dart';
 import 'package:cv_mec/services/file_service.dart';
 import 'package:cv_mec/services/geometry_service.dart';
 import 'package:cv_mec/services/location_service.dart';
@@ -82,8 +84,8 @@ class MapState extends State<MapPage> {
   FileService fileService = Get.find<FileService>();
   MqttService mqtt = Get.find<MqttService>();
   LocationService locationService = Get.find<LocationService>();
-  Telephony telephony = Telephony.instance;
   SettingsController settingsController = Get.find<SettingsController>();
+  S3Service awsService = Get.find<S3Service>();
 
   TimManager timManager = TimManager();
   MapManager mapManager = MapManager();
@@ -102,6 +104,8 @@ class MapState extends State<MapPage> {
   Timer? bsmMessageTimer;
   late Pointer<Pointer<Void>> bsmTemplate;
   late Pointer<Pointer<Void>> psmTemplate;
+
+  Timer? uploadTimer;
 
   Color connectedButtonColor = Colors.red;
   StreamSubscription<Position>? positionStream;
@@ -152,6 +156,7 @@ class MapState extends State<MapPage> {
 
   bool debugMode = false;
   bool showLoadingIcon = true;
+  bool showLightText = true;
 
   @override
   void initState() {
@@ -200,11 +205,6 @@ class MapState extends State<MapPage> {
     }
 
     Future.delayed(Duration.zero, () async {
-      if (Platform.isAndroid) {
-        await Permission.phone.request();
-        await telephony.requestPhoneAndSmsPermissions;
-      }
-
       int loggingEnabled = await enableLogging();
       if (loggingEnabled != 0) {
         return;
@@ -218,9 +218,8 @@ class MapState extends State<MapPage> {
       updateConnectedStatus(ConnectedStatus.CONNECTED);
 
       if (debugMode) {
-        positionStream = fakePosition(
-                TestData.tfhrcIntersectionFakePosition.reversed.toList())
-            .listen(updatePosition);
+        positionStream =
+            fakePosition(TestData.tfhrcStaticPosition).listen(updatePosition);
       } else {
         positionStream = locationService.locationStream.listen(updatePosition);
       }
@@ -230,8 +229,6 @@ class MapState extends State<MapPage> {
       setState(() {
         drawnPolygons = getPolygons();
         drawnPolylines = getPolylines();
-
-        print("PolyLine Length: ${drawnPolygons.length}");
         showLoadingIcon = true;
       });
     }
@@ -294,7 +291,7 @@ class MapState extends State<MapPage> {
   }
 
   Stream<Position> fakePosition(List<List<double>> fakePosition) {
-    return Stream<Position>.periodic(const Duration(milliseconds: 1000),
+    return Stream<Position>.periodic(const Duration(milliseconds: 500),
         (count) {
       List<List<double>> route = fakePosition; //.reversed.toList();
       int index = count % route.length;
@@ -333,16 +330,19 @@ class MapState extends State<MapPage> {
         DataQueue("MQTT_PUB_LOG_${logTime.millisecondsSinceEpoch}.csv");
     appLogQueue = DataQueue("APP_LOG_${logTime.millisecondsSinceEpoch}.log");
     timDataQueue = DataQueue("TIM_LOG_${logTime.millisecondsSinceEpoch}.csv");
-
     String subHeader =
-        "Topic, Receive Time ms, Send Time ms, Delta Time ms, Longitude, Latitude, Network, Broker, Msg Bytes\n";
+        "topic,message_type,receive_time_ms,send_time_ms,generation_time_ms,send_rec_delta_time_ms,gen_rec_delta_time_ms,longitude,latitude,broker,msg_bytes\n";
     String pubHeader =
-        "Topic, Send Time ms, Longitude, Latitude, Network, Broker, Msg Bytes\n";
-    String timHeader = "Action, Time, Longitude, Latitude, Heading, asn1\n";
+        "topic,send_time_ms,longitude,latitude,broker,msg_bytes\n";
+    String timHeader = "action,time,longitude,latitude,heading,asn1\n";
 
     recDataQueue.addItem(subHeader);
     pubDataQueue.addItem(pubHeader);
     timDataQueue.addItem(timHeader);
+
+    uploadTimer = Timer.periodic(Duration(minutes: 5), (timer) {
+      uploadAllLogs();
+    });
 
     return 0;
   }
@@ -374,7 +374,10 @@ class MapState extends State<MapPage> {
           token,
           paramController.clientType.value,
           paramController.clientSubtype.value);
-      fileService.saveRegistration(registration!);
+
+      if (registration != null) {
+        fileService.saveRegistration(registration!);
+      }
     }
 
     if (registration == null) {
@@ -449,16 +452,15 @@ class MapState extends State<MapPage> {
     addToAppLog("Received ASN1 Message");
     final recMess = message.payload as MqttPublishMessage;
     String hex = ASNService.bytesToHex(recMess.payload.message);
-    print("ASN1: $hex");
     processIncomingMessage(message.topic, hex, recTime, null);
   }
 
   void processIncomingMessage(
       String topic, String hex, DateTime recTime, DateTime? sendTime) {
+    addToAppLog("Identified Message as BSM");
     MsgType msgType = asnService.determineHexMessageType(hex);
 
     if (msgType == MsgType.BSM) {
-      addToAppLog("Identified Message as BSM");
       String trimmedHex =
           asnService.trimMessageHeaders(hex, asnService.BSM_START_FLAG)!;
       BasicSafetyMessage bsm = asnService.decodeBsm(trimmedHex);
@@ -477,7 +479,7 @@ class MapState extends State<MapPage> {
         receivedBsms[vehicleID] = ReceivedBsm(vehicleID, bsmTime, position);
       }
 
-      addToReceiveLog(topic, recTime, bsmTime, trimmedHex);
+      addToReceiveLog(topic, "BSM", recTime, sendTime, bsmTime, trimmedHex);
     } else if (msgType == MsgType.TIM) {
       addToAppLog("Identified Message as TIM");
       String trimmedHex = asnService.trimMessageHeaders(
@@ -493,8 +495,19 @@ class MapState extends State<MapPage> {
           drawnPolylines = getPolylines();
         });
       }
+      DateTime? generationTime = LeidosDateExtraction.extractDateFromTim(tim);
 
-      addToReceiveLog(topic, recTime, sendTime, trimmedHex);
+      Future.delayed(const Duration(milliseconds: 0), () async {
+        String messageType = "TIM";
+        if (tim.dataFrames.travelerDataFrameList.isNotEmpty) {
+          ItisCode code = await timManager.getItisRepresentationForDataFrame(
+              tim.dataFrames.travelerDataFrameList.first);
+          messageType = "TIM ${code.description}";
+        }
+
+        addToReceiveLog(
+            topic, messageType, recTime, sendTime, generationTime, trimmedHex);
+      });
     } else if (msgType == MsgType.SPAT) {
       addToAppLog("Identified Message as SPAT");
       String trimmedHex = asnService.trimMessageHeaders(
@@ -511,8 +524,14 @@ class MapState extends State<MapPage> {
           drawnPolylines = getPolylines();
         });
       }
+      DateTime? spatGenTime;
+      if (spat.intersections.intersectionStateList.isNotEmpty) {
+        spatGenTime =
+            spat.intersections.intersectionStateList.first.getUtcTime();
+      }
 
-      addToReceiveLog(topic, recTime, sendTime, trimmedHex);
+      addToReceiveLog(
+          topic, "SPAT", recTime, sendTime, spatGenTime, trimmedHex);
     } else if (msgType == MsgType.MAP) {
       addToAppLog("Identified Message as MAP $hex");
       String trimmedHex = asnService.trimMessageHeaders(
@@ -530,22 +549,26 @@ class MapState extends State<MapPage> {
         });
       }
 
-      addToReceiveLog(topic, recTime, sendTime, trimmedHex);
+      addToReceiveLog(topic, "MAP", recTime, sendTime,
+          LeidosDateExtraction.extractDateFromMap(map), trimmedHex);
     }
   }
 
-  void addToReceiveLog(
-      String topic, DateTime recTime, DateTime? sendTime, String hex) async {
-    String netStat = "Unavailable";
-    if (Platform.isAndroid) {
-      netStat = await getNetworkField();
-    }
-
+  void addToReceiveLog(String topic, String msgType, DateTime recTime,
+      DateTime? sendTime, DateTime? generationTime, String hex) async {
     int delta = 0;
     int logSendTime = 0;
     if (sendTime != null) {
       delta = recTime.millisecondsSinceEpoch - sendTime.millisecondsSinceEpoch;
       logSendTime = sendTime.millisecondsSinceEpoch;
+    }
+
+    int generationDelta = 0;
+    int messageGenerationTime = 0;
+    if (generationTime != null) {
+      generationDelta = recTime.millisecondsSinceEpoch -
+          generationTime.millisecondsSinceEpoch;
+      messageGenerationTime = generationTime.millisecondsSinceEpoch;
     }
 
     double longitude = 0;
@@ -556,7 +579,7 @@ class MapState extends State<MapPage> {
     }
 
     String record =
-        "$topic,${recTime.millisecondsSinceEpoch},$logSendTime,$delta,$longitude,$latitude,$netStat,$mqttConnectionURL,$hex\n";
+        "$topic, ${msgType.toString().split('.').last}, ${recTime.millisecondsSinceEpoch},$logSendTime,$messageGenerationTime,$delta,$generationDelta,$longitude,$latitude,$mqttConnectionURL,$hex\n";
 
     recDataQueue.addItem(record);
   }
@@ -634,8 +657,24 @@ class MapState extends State<MapPage> {
     bsmMessageTimer?.cancel();
   }
 
+  DateTime prevNtp = DateTime.now();
+  DateTime prevKronos = DateTime.now();
+  DateTime prevLocal = DateTime.now();
+
   Future<void> updatePosition(Position position) async {
     currentPosition = position;
+
+    DateTime now = DateTime.now();
+
+    DateTime ntp = timingService.getNtpTime();
+    DateTime kronos = timingService.getKronosTime();
+
+    final timeDelta =
+        now.millisecondsSinceEpoch - prevLocal.millisecondsSinceEpoch;
+
+    prevNtp = ntp;
+    prevKronos = kronos;
+    prevLocal = now;
 
     if (mounted) {
       setState(() {
@@ -649,11 +688,24 @@ class MapState extends State<MapPage> {
           _mapController.camera.zoom, _mapController.camera.rotation);
     }
 
-    List<TravelerDataFrame> newActiveTims = timManager.getNewActiveTims(
-        position.longitude, position.latitude, position.heading);
+    List<TravelerDataFrame> newActiveTims = [];
 
-    List<TravelerDataFrame> frames = timManager.getTimsToShow(
-        position.longitude, position.latitude, position.heading);
+    List<TravelerDataFrame> frames = [];
+
+    // if speed is less than 1 meter / second (~2.2 mph)
+    if (position.speed < 1) {
+      newActiveTims = timManager.getNewActiveTims(
+          position.longitude, position.latitude, position.heading, true);
+
+      frames = timManager.getTimsToShow(
+          position.longitude, position.latitude, position.heading, true);
+    } else {
+      newActiveTims = timManager.getNewActiveTims(
+          position.longitude, position.latitude, position.heading);
+
+      frames = timManager.getTimsToShow(
+          position.longitude, position.latitude, position.heading);
+    }
 
     updateTimeToChange();
 
@@ -679,6 +731,7 @@ class MapState extends State<MapPage> {
     stopSendingBSM();
     mqtt.subscriberList.clear();
     WakelockPlus.disable();
+    uploadTimer?.cancel();
   }
 
   bool isConnected() {
@@ -1055,37 +1108,6 @@ class MapState extends State<MapPage> {
       }
     }
 
-    // for (GeoMap geoMap in mapManager.storedMaps.values) {
-    //   List<LatLng> polyPoints =
-    //       geometryService.convertGeometryToLatLngList(geoMap.mapBoundingBox);
-    //   Polygon<HitValue> hitPoly = Polygon(
-    //     points: polyPoints,
-    //     borderColor: Colors.pinkAccent,
-    //     color: const Color.fromARGB(20, 255, 243, 253),
-    //     borderStrokeWidth: 1,
-    //   );
-
-    //   polygons.add(hitPoly);
-    // }
-
-    // if (currentPosition != null) {
-    //   for (jts.Geometry geo in mapManager.getActiveLaneGeometries(
-    //       mapManager.storedMaps.entries.first.value,
-    //       currentPosition!.longitude,
-    //       currentPosition!.latitude)) {
-    //     List<LatLng> polyPoints =
-    //         geometryService.convertGeometryToLatLngList(geo);
-    //     Polygon<HitValue> hitPoly = Polygon(
-    //       points: polyPoints,
-    //       borderColor: Colors.blueAccent,
-    //       color: Color.fromARGB(128, 89, 97, 252),
-    //       borderStrokeWidth: 1,
-    //     );
-
-    //     polygons.add(hitPoly);
-    //   }
-    // }
-
     return polygons;
   }
 
@@ -1099,16 +1121,35 @@ class MapState extends State<MapPage> {
     }
   }
 
-  Future<String> getNetworkField() async {
-    NetworkType type = await telephony.dataNetworkType;
-    List<SignalStrength> strenghts = await telephony.signalStrengths;
-
-    String signalStrength = "NONE_OR_UNKNOWN";
-    if (strenghts.isNotEmpty) {
-      signalStrength = enumToString(strenghts[0]);
+  void uploadAllLogs() {
+    if (settingsController.deviceID.value.isNotEmpty) {
+      awsService.uploadFile(recDataQueue.filePath,
+          "subscribe/${settingsController.deviceID.value}");
+      awsService.uploadFile(pubDataQueue.filePath,
+          "publish/${settingsController.deviceID.value}");
+      awsService.uploadFile(
+          pubDataQueue.filePath, "tim/${settingsController.deviceID.value}");
+      awsService.uploadFile(
+          pubDataQueue.filePath, "app/${settingsController.deviceID.value}");
+    } else if (registration != null) {
+      awsService.uploadFile(
+          recDataQueue.filePath, "subscribe/${registration!.deviceID}");
+      awsService.uploadFile(
+          pubDataQueue.filePath, "publish/${registration!.deviceID}");
+      awsService.uploadFile(
+          pubDataQueue.filePath, "tim/${registration!.deviceID}");
+      awsService.uploadFile(
+          pubDataQueue.filePath, "app/${registration!.deviceID}");
+    } else {
+      addToAppLog("Cannot Upload Logs - Device ID is Unavailable");
     }
+  }
 
-    return "${enumToString(type)} $signalStrength";
+  Future<String> getNetworkField() async {
+    String networkType = "UNKNOWN";
+    String signalStrength = "NONE_OR_UNKNOWN";
+
+    return "$networkType $signalStrength";
   }
 
   String enumToString(Object o) => o.toString().split('.').last;
@@ -1126,6 +1167,7 @@ class MapState extends State<MapPage> {
             onPressed: () {
               bsmMessageTimer?.cancel();
               positionStream?.cancel();
+              uploadTimer?.cancel();
               mqtt.disconnect();
 
               Future.delayed(const Duration(milliseconds: 100), () async {
@@ -1145,7 +1187,7 @@ class MapState extends State<MapPage> {
         Center(child: map(context, _mapController)),
         Align(
           alignment: Alignment.topRight,
-          child: nextLightText.isNotEmpty
+          child: showLightText && nextLightText.isNotEmpty
               ? Padding(
                   padding: const EdgeInsets.all(8),
                   child: Container(
@@ -1162,14 +1204,22 @@ class MapState extends State<MapPage> {
                       ),
                       child: Column(mainAxisSize: MainAxisSize.min, children: [
                         const Text("Current Light State",
-                            textAlign: TextAlign.center),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.white)),
                         SizedBox(
                             width: screenWidth * 0.15,
                             height: screenHeight * 0.15,
                             child: currentLightState),
-                        Text(nextLightText, textAlign: TextAlign.center),
+                        Text(nextLightText,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.white)),
                       ])))
-              : Container(),
+              : (!showLightText && nextLightText.isNotEmpty)
+                  ? SizedBox(
+                      width: screenWidth * 0.15,
+                      height: screenHeight * 0.15,
+                      child: currentLightState)
+                  : Container(),
         ),
         Align(
             alignment: Alignment.topLeft,
@@ -1210,6 +1260,21 @@ class MapState extends State<MapPage> {
                 ),
                 // child: Icon(Icons.menu, color: Colors.white),
                 child: const Icon(Icons.directions_car, color: Colors.white),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  addToAppLog("Upload Log Files");
+                  uploadAllLogs();
+                },
+                style: ElevatedButton.styleFrom(
+                  shape: const CircleBorder(),
+                  padding: const EdgeInsets.all(10),
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.black, // <-- Splash color
+                  shadowColor: Colors.black,
+                ),
+                // child: Icon(Icons.menu, color: Colors.white),
+                child: const Icon(Icons.upload, color: Colors.white),
               ),
             ])),
         Align(
