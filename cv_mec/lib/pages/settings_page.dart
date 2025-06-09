@@ -1,5 +1,6 @@
 import 'package:cv_mec/services/file_service.dart';
 import 'package:cv_mec/services/secure_storage.dart';
+import 'package:cv_mec/services/vehicle_notification_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
@@ -20,7 +21,11 @@ class SettingsController extends GetxController {
   RxBool settingsChanged = false.obs;
   RxString appVersion = ''.obs;
   Rx<bool> vzMode = false.obs;
-  Rx<bool> pedestrianMode = false.obs;
+  Rx<bool> notificationsEnabled = false.obs;
+  Rx<bool> demoMode = false.obs;
+  Rx<bool> readMessages = false.obs;
+  // Rx<bool> pedestrianMode = false.obs;
+
   RxString deviceID = ''.obs;
   RxString s3AccessKey = (dotenv.env['S3_ACCESS_KEY'] ?? "").obs;
   RxString s3SecretKey = (dotenv.env['S3_SECRET_KEY'] ?? "").obs;
@@ -35,14 +40,16 @@ class SettingsController extends GetxController {
     vendorID.value = await secureStorage.getVendorID();
     vzMode.value = await secureStorage.getVZMode();
     deviceID.value = await secureStorage.getDeviceID();
+    notificationsEnabled.value = await secureStorage.getNotificationsEnabled();
+    demoMode.value = await secureStorage.getDemoMode();
+    readMessages.value = await secureStorage.getReadMessages();
+    // pedestrianMode.value = await secureStorage.getPedestrianMode();
 
     s3AccessKey.value = await secureStorage.getS3AccessKey();
     s3SecretKey.value = await secureStorage.getS3SecretKey();
     s3BucketName.value = await secureStorage.getS3BucketName();
     s3Region.value = await secureStorage.getS3Region();
     s3DestDir.value = await secureStorage.getS3DestDir();
-
-    // pedestrianMode.value = await secureStorage.getPedestrianMode();
 
     bool? darkMode = await sharedPrefs.getDarkModeFromPrefs();
     if (darkMode != null) {
@@ -58,8 +65,7 @@ class SettingsController extends GetxController {
       darkModeState.value = Get.isDarkMode;
     }
 
-    PackageInfo packageInfo =
-        await PackageInfo.fromPlatform(); // Fetch the app version
+    PackageInfo packageInfo = await PackageInfo.fromPlatform(); // Fetch the app version
     appVersion.value = '${packageInfo.version} (${packageInfo.buildNumber})';
     //appVersion.value = "App Version #9";
   }
@@ -208,6 +214,40 @@ class SettingsPage extends StatelessWidget {
               }
             }),
         spacer(),
+        SwitchListTile(
+            title: const Text("Enable Notifications"),
+            value: controller.notificationsEnabled.value,
+            onChanged: (value) {
+              if (value != controller.notificationsEnabled.value) {
+                controller.notificationsEnabled.value = value;
+                controller.settingsChanged.value = true;
+                if (controller.notificationsEnabled.value) {
+                  VehicleNotificationManager.notifyVehicleFromMessageAndImage(
+                      "Notifications Enabled!", const AssetImage('assets/images/cvmec_logo.png'));
+                }
+              }
+            }),
+        spacer(),
+        SwitchListTile(
+            title: const Text("Read Messages"),
+            value: controller.readMessages.value,
+            onChanged: (value) {
+              if (value != controller.readMessages.value) {
+                controller.readMessages.value = value;
+                controller.settingsChanged.value = true;
+              }
+            }),
+        spacer(),
+        SwitchListTile(
+            title: const Text("Enable Demo Mode"),
+            value: controller.demoMode.value,
+            onChanged: (value) {
+              if (value != controller.demoMode.value) {
+                controller.demoMode.value = value;
+                controller.settingsChanged.value = true;
+              }
+            }),
+        spacer(),
         Row(
           children: [
             ElevatedButton(
@@ -218,22 +258,19 @@ class SettingsPage extends StatelessWidget {
                         return;
                       } else {
                         controller.username.value = usernameController.text;
-                        await controller.secureStorage
-                            .setUsername(usernameController.text);
+                        await controller.secureStorage.setUsername(usernameController.text);
                         controller.password.value = passwordController.text;
-                        await controller.secureStorage
-                            .setPassword(passwordController.text);
+                        await controller.secureStorage.setPassword(passwordController.text);
                         controller.baseUri.value = baseUriController.text;
-                        await controller.secureStorage
-                            .setBaseURI(baseUriController.text);
+                        await controller.secureStorage.setBaseURI(baseUriController.text);
                         controller.vendorID.value = vendorIDController.text;
-                        await controller.secureStorage
-                            .setVendorID(vendorIDController.text);
-                        await controller.secureStorage
-                            .setDeviceID(deviceIDController.text);
+                        await controller.secureStorage.setVendorID(vendorIDController.text);
+                        await controller.secureStorage.setDeviceID(deviceIDController.text);
                         controller.deviceID.value = deviceIDController.text;
-                        await controller.secureStorage
-                            .setVZMode(controller.vzMode.value);
+                        await controller.secureStorage.setVZMode(controller.vzMode.value);
+                        await controller.secureStorage.setNotificationsEnabled(controller.notificationsEnabled.value);
+                        await controller.secureStorage.setReadMessages(controller.readMessages.value);
+                        await controller.secureStorage.setDemoMode(controller.demoMode.value);
                         controller.settingsChanged.value = false;
 
                         await fileService.deleteRegistration();
@@ -251,7 +288,10 @@ class SettingsPage extends StatelessWidget {
                       baseUriController.text = controller.baseUri.value;
                       vendorIDController.text = controller.vendorID.value;
                       deviceIDController.text = controller.deviceID.value;
-
+                      controller.vzMode.value = await controller.secureStorage.getVZMode();
+                      controller.notificationsEnabled.value = await controller.secureStorage.getNotificationsEnabled();
+                      controller.readMessages.value = await controller.secureStorage.getReadMessages();
+                      controller.demoMode.value = await controller.secureStorage.getDemoMode();
                       controller.settingsChanged.value = false;
                     }
                   : null,
@@ -336,8 +376,7 @@ class SettingsPage extends StatelessWidget {
         Row(children: [
           Icon(icon, color: Colors.blue), //change color to match theme
           const SizedBox(width: 10),
-          Text(sectionTitle,
-              style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(sectionTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
         ]),
         const Divider(height: 20, thickness: 1),
       ],

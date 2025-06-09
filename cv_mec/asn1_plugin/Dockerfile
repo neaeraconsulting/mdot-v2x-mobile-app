@@ -38,18 +38,27 @@ RUN flutter
 ADD . /build
 
 
-#ADD ./asn1/2020.tar.gz /build
+#ADD ./asn1/2024.tar.gz /build
 
 # Modify Includes on all files
 #ADD ./asn1/change_includes.py /build
 
 # Extract Raw C Sources
-RUN tar -xaf /build/asn1/2020.tar.gz -C /build/src
-RUN rm /build/src/generated-files/2020/converter-example.c
-RUN rm /build/src/generated-files/2020/converter-example.mk
+RUN tar -xaf /build/asn1/2024.tar.gz -C /build/src
+RUN rm /build/src/generated-files/2024/converter-example.c
+RUN rm /build/src/generated-files/2024/converter-example.mk
 
-RUN cp /build/asn1/NodeOffsetPointLL.h /build/src/generated-files/2020/NodeOffsetPointLL.h
-RUN cp /build/asn1/NodeOffsetPointLL.c /build/src/generated-files/2020/NodeOffsetPointLL.c
+# Copy in some override files for a handful of problem classes
+# Required Overrides for 2020
+#RUN cp /build/asn1/NodeOffsetPointLL.h /build/src/generated-files/2024/NodeOffsetPointLL.h
+#RUN cp /build/asn1/NodeOffsetPointLL.c /build/src/generated-files/2024/NodeOffsetPointLL.c
+
+# Required Overrides for 2024
+RUN cp /build/asn1/GeneralizedTime_ber.c /build/src/generated-files/2024/GeneralizedTime_ber.c
+RUN cp /build/asn1/GeneralizedTime_print.c /build/src/generated-files/2024/GeneralizedTime_print.c
+RUN cp /build/asn1/GeneralizedTime_xer.c /build/src/generated-files/2024/GeneralizedTime_xer.c
+RUN cp /build/asn1/GeneralizedTime.c /build/src/generated-files/2024/GeneralizedTime.c
+
 
 # Remove Path Referenced Headers
 RUN python3 /build/asn1/change_includes.py
@@ -63,12 +72,12 @@ RUN flutter pub run ffigen
 
 FROM scratch AS ffi
 COPY --from=build /build/lib/generated_bindings.dart /generated_bindings.dart
-COPY --from=build /build/src/generated-files/2020/ /generated-files/2020/
+COPY --from=build /build/src/generated-files/2024/ /generated-files/2024/
 
 # ENTRYPOINT [ "" ]
 #ENTRYPOINT ["tail", "-f", "/dev/null"]
 
-#RUN tar -xaf 2020.tar.gz
+#RUN tar -xaf 2024.tar.gz
 
 
 
