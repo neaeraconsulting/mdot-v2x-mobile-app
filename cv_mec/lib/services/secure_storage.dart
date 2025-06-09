@@ -13,6 +13,7 @@ class SecureStorage {
   static const _keyNotificationsEnabled = "notificationsEnabled";
   static const _keyReadMessages = "readMessages";
   static const _keyDemoMode = "demoMode";
+  static const _keyDeveloperMode = "developerMode";
 
   static const _keyS3Accesskey = "s3AccessKey";
   static const _keyS3SecretKey = "s3SecretKey";
@@ -41,6 +42,7 @@ class SecureStorage {
   Future<bool> getNotificationsEnabled() async => (await _storage.read(key: _keyNotificationsEnabled)) == "true";
   Future<bool> getReadMessages() async => (await _storage.read(key: _keyReadMessages)) == "true";
   Future<bool> getDemoMode() async => (await _storage.read(key: _keyDemoMode)) == "true";
+  Future<bool> getDeveloperMode() async => (await _storage.read(key: _keyDeveloperMode)) == "true";
 
   Future setUsername(String username) async => await _storage.write(key: _keyUsername, value: username);
   Future setPassword(String password) async => await _storage.write(key: _keyPassword, value: password);
@@ -76,6 +78,16 @@ class SecureStorage {
       await _storage.write(key: _keyDemoMode, value: "true");
     } else {
       await _storage.write(key: _keyDemoMode, value: "false");
+    }
+  }
+
+  Future setDeveloperMode(bool developerMode) async {
+    if (developerMode) {
+      await _storage.write(key: _keyDeveloperMode, value: "true");
+      print("true");
+    } else {
+      await _storage.write(key: _keyDeveloperMode, value: "false");
+      print("false");
     }
   }
 

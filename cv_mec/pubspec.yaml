@@ -59,6 +59,8 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
+  build_runner: ^2.3.3
+  json_serializable: ^6.8.0
 
 flutter:
   uses-material-design: true
@@ -69,6 +71,7 @@ flutter:
     - assets/images/ITIS/
     - assets/fonts/
     - assets/images/Lights/
+    - assets/images/Vehicle_config_icons/
 
   # fonts:
   #   - family: HighwayGothic

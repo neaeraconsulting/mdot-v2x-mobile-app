@@ -205,49 +205,62 @@ asn_TYPE_operation_t asn_OP_GeneralizedTime = {
 #endif /* !defined(ASN_DISABLE_PRINT_SUPPORT) */
 		GeneralizedTime_compare,
 #if !defined(ASN_DISABLE_BER_SUPPORT)
-		OCTET_STRING_decode_ber, /* Implemented in terms of OCTET STRING */
-		GeneralizedTime_encode_der,
+		// OCTET_STRING_decode_ber, /* Implemented in terms of OCTET STRING */
+		// GeneralizedTime_encode_der,
+		0,
+		0,
 #else
 		0,
 		0,
 #endif /* !defined(ASN_DISABLE_BER_SUPPORT) */
 #if !defined(ASN_DISABLE_XER_SUPPORT)
-		OCTET_STRING_decode_xer_utf8,
-		GeneralizedTime_encode_xer,
+		// OCTET_STRING_decode_xer_utf8,
+		// GeneralizedTime_encode_xer,
+		0,
+		0,
 #else
 		0,
 		0,
 #endif /* !defined(ASN_DISABLE_XER_SUPPORT) */
 #if !defined(ASN_DISABLE_JER_SUPPORT)
-		OCTET_STRING_decode_jer_utf8,
-		GeneralizedTime_encode_jer,
+		// OCTET_STRING_decode_jer_utf8,
+		// GeneralizedTime_encode_jer,
+		0,
+		0,
 #else
 		0,
 		0,
 #endif /* !defined(ASN_DISABLE_JER_SUPPORT) */
 #if !defined(ASN_DISABLE_OER_SUPPORT)
-		OCTET_STRING_decode_oer,
-		OCTET_STRING_encode_oer,
+		// OCTET_STRING_decode_oer,
+		// OCTET_STRING_encode_oer,
+		0,
+		0,
 #else
 		0,
 		0,
 #endif /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT)
-		OCTET_STRING_decode_uper,
-		OCTET_STRING_encode_uper,
+		// OCTET_STRING_decode_uper,
+		// OCTET_STRING_encode_uper,
+		0,
+		0,
 #else
 		0,
 		0,
 #endif /* !defined(ASN_DISABLE_UPER_SUPPORT) */
 #if !defined(ASN_DISABLE_APER_SUPPORT)
-		OCTET_STRING_decode_aper,
-		OCTET_STRING_encode_aper,
+		// OCTET_STRING_decode_aper,
+		// OCTET_STRING_encode_aper,
+		0,
+		0,
 #else
 		0,
 		0,
 #endif /* !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_RFILL_SUPPORT)
-		GeneralizedTime_random_fill,
+		// GeneralizedTime_random_fill,
+		0,
 #else
 		0,
 #endif /* !defined(ASN_DISABLE_RFILL_SUPPORT) */

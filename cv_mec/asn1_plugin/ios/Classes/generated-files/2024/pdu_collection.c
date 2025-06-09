@@ -207,7 +207,7 @@ extern struct asn_TYPE_descriptor_s asn_DEF_ReceiptServiceSerialNumber;
 extern struct asn_TYPE_descriptor_s asn_DEF_ReceiptText;
 extern struct asn_TYPE_descriptor_s asn_DEF_StationType;
 extern struct asn_TYPE_descriptor_s asn_DEF_TariffClassId;
-extern struct asn_TYPE_descriptor_s asn_DEF_Time;
+// extern struct asn_TYPE_descriptor_s asn_DEF_Time;
 extern struct asn_TYPE_descriptor_s asn_DEF_TimeClassId;
 extern struct asn_TYPE_descriptor_s asn_DEF_TimeUnit;
 extern struct asn_TYPE_descriptor_s asn_DEF_TrailerType;
@@ -252,7 +252,7 @@ extern struct asn_TYPE_descriptor_s asn_DEF_EnvironmentalCharacteristics;
 extern struct asn_TYPE_descriptor_s asn_DEF_Lpn;
 extern struct asn_TYPE_descriptor_s asn_DEF_PaymentMeans;
 extern struct asn_TYPE_descriptor_s asn_DEF_PaymentMeansBalance;
-extern struct asn_TYPE_descriptor_s asn_DEF_Point;
+// extern struct asn_TYPE_descriptor_s asn_DEF_Point;
 extern struct asn_TYPE_descriptor_s asn_DEF_PurseBalance;
 extern struct asn_TYPE_descriptor_s asn_DEF_TrailerCharacteristics;
 extern struct asn_TYPE_descriptor_s asn_DEF_ValidityOfContract;
@@ -1434,7 +1434,7 @@ struct asn_TYPE_descriptor_s *asn_pdu_collection[] = {
 	&asn_DEF_ReceiptText,	
 	&asn_DEF_StationType,	
 	&asn_DEF_TariffClassId,	
-	&asn_DEF_Time,	
+	// &asn_DEF_Time,	
 	&asn_DEF_TimeClassId,	
 	&asn_DEF_TimeUnit,	
 	&asn_DEF_TrailerType,	
@@ -1479,7 +1479,7 @@ struct asn_TYPE_descriptor_s *asn_pdu_collection[] = {
 	&asn_DEF_Lpn,	
 	&asn_DEF_PaymentMeans,	
 	&asn_DEF_PaymentMeansBalance,	
-	&asn_DEF_Point,	
+	// &asn_DEF_Point,	
 	&asn_DEF_PurseBalance,	
 	&asn_DEF_TrailerCharacteristics,	
 	&asn_DEF_ValidityOfContract,	

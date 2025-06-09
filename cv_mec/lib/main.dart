@@ -1,5 +1,5 @@
-import 'package:cv_mec/models/theme_settings.dart';
 import 'package:cv_mec/services/vehicle_notification_manager.dart';
+import 'package:cv_mec/styles/theme_setting.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
@@ -23,8 +23,8 @@ class MainApp extends StatelessWidget {
     return ToastificationWrapper(
       child: GetMaterialApp(
         title: 'AMP',
-        theme: appThemeData,
-        darkTheme: darkAppThemeData,
+        theme: lightTheme,
+        darkTheme: darkTheme,
         home: const HomePage(),
       ),
     );

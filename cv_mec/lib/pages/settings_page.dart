@@ -1,3 +1,4 @@
+import 'package:cv_mec/models/vehicle.dart';
 import 'package:cv_mec/services/file_service.dart';
 import 'package:cv_mec/services/secure_storage.dart';
 import 'package:cv_mec/services/vehicle_notification_manager.dart';
@@ -5,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:cv_mec/services/shared_pref.dart';
+import 'package:get/get_rx/get_rx.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class SettingsController extends GetxController {
@@ -13,6 +15,7 @@ class SettingsController extends GetxController {
   SecureStorage secureStorage = SecureStorage();
 
   Rx<bool> darkModeState = Get.isDarkMode.obs;
+  Rx<bool> developerMode = false.obs;
 
   RxString username = dotenv.env['USERNAME']!.obs;
   RxString password = dotenv.env['PASSWORD']!.obs;
@@ -24,7 +27,6 @@ class SettingsController extends GetxController {
   Rx<bool> notificationsEnabled = false.obs;
   Rx<bool> demoMode = false.obs;
   Rx<bool> readMessages = false.obs;
-  // Rx<bool> pedestrianMode = false.obs;
 
   RxString deviceID = ''.obs;
   RxString s3AccessKey = (dotenv.env['S3_ACCESS_KEY'] ?? "").obs;
@@ -43,7 +45,7 @@ class SettingsController extends GetxController {
     notificationsEnabled.value = await secureStorage.getNotificationsEnabled();
     demoMode.value = await secureStorage.getDemoMode();
     readMessages.value = await secureStorage.getReadMessages();
-    // pedestrianMode.value = await secureStorage.getPedestrianMode();
+    developerMode.value = await secureStorage.getDeveloperMode();
 
     s3AccessKey.value = await secureStorage.getS3AccessKey();
     s3SecretKey.value = await secureStorage.getS3SecretKey();
@@ -322,6 +324,14 @@ class SettingsPage extends StatelessWidget {
                 value: controller.darkModeState.value,
                 onChanged: (value) {
                   controller.switchModeState();
+                }),
+            spacer(),
+            SwitchListTile(
+                title: const Text("Developer Mode"),
+                value: controller.developerMode.value,
+                onChanged: (value) async {
+                  controller.developerMode.value = value;
+                  await controller.secureStorage.setDeveloperMode(value);
                 }),
           ],
         ));
