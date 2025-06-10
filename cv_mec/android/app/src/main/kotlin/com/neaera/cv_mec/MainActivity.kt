@@ -41,6 +41,9 @@ private const val channel_description = "CV Mec Traveler Information Message Ale
 private const val COMMUNICATION_CHANNEL_NAME = "com.neaera.cv_mec/vehicle-notification"
 private const val COMMAND_NOTIFY = "notify"
 
+private const val MARK_AS_READ_INTENT_REQUEST_CODE = 0;
+private const val REPLY_INTENT_REQUEST_CODE = 0;
+
 class MainActivity: FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -120,7 +123,7 @@ class MainActivity: FlutterActivity() {
         val markAsReadIntent = createMarkAsReadIntent(context, notificationId)
         val markAsReadPendingIntent = PendingIntent.getService(
             context,
-            12345, // TODO: Is this right?
+            MARK_AS_READ_INTENT_REQUEST_CODE,
             markAsReadIntent,
             PendingIntent.FLAG_UPDATE_CURRENT  or PendingIntent.FLAG_IMMUTABLE)
         val markAsReadAction = NotificationCompat.Action.Builder(
@@ -137,7 +140,7 @@ class MainActivity: FlutterActivity() {
 
         val replyPendingIntent = PendingIntent.getService(
             context,
-            12345, // TODO: Is this right?
+            REPLY_INTENT_REQUEST_CODE,
             replyIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE)
 
@@ -161,6 +164,7 @@ class MainActivity: FlutterActivity() {
         context: Context, notificationId: Int, description: String): NotificationCompat.MessagingStyle {
         // Method defined by the messaging app.
         val appDeviceUser = "CV_MEC"
+        val blankBitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888) // 1x1 transparent pixel
 
         val devicePerson = Person.Builder()
             // The display name (also the name that's read aloud in Android auto).
@@ -189,7 +193,7 @@ class MainActivity: FlutterActivity() {
 
         val senderPerson = Person.Builder()
             .setName(appDeviceUser)
-            .setIcon(IconCompat.createWithResource(context, R.drawable.baseline_account_circle_24))
+            .setIcon(IconCompat.createWithBitmap(blankBitmap))
             .setKey(appDeviceUser)
             .build()
 
@@ -236,7 +240,7 @@ class MainActivity: FlutterActivity() {
         // Creates the notification.
         val notification = NotificationCompat.Builder(context, channel_id)
             // A required field for the Android UI.
-            .setSmallIcon(IconCompat.createWithBitmap(imageBitmap))
+            .setSmallIcon(R.drawable.ic_notification)
             .setCategory(Notification.CATEGORY_MESSAGE)
             // Shows in Android Auto as the conversation image.
             .setLargeIcon(imageBitmap)
