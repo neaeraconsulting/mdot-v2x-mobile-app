@@ -2,26 +2,25 @@ import 'dart:async';
 import 'dart:ffi';
 import 'dart:io';
 
+import 'package:asn1_plugin/j2735/2024/basic_safety_message/basic_safety_message.dart';
+import 'package:asn1_plugin/j2735/2024/choice/choice_content.dart';
+import 'package:asn1_plugin/j2735/2024/choice/choice_item.dart';
+import 'package:asn1_plugin/j2735/2024/common/speed_limit.dart';
+import 'package:asn1_plugin/j2735/2024/itis/itis_codes.dart';
+import 'package:asn1_plugin/j2735/2024/itis/itis_itis_codes_and_text.dart';
+import 'package:asn1_plugin/j2735/2024/itis/itis_phrase.dart';
+import 'package:asn1_plugin/j2735/2024/itis/itis_text.dart';
+import 'package:asn1_plugin/j2735/2024/map_data/map_data.dart';
+import 'package:asn1_plugin/j2735/2024/spat/spat.dart';
+import 'package:asn1_plugin/j2735/2024/traveler_information/exit_service.dart';
+import 'package:asn1_plugin/j2735/2024/traveler_information/generic_signage.dart';
+import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_data_frame.dart';
+import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_information.dart';
+import 'package:asn1_plugin/j2735/2024/traveler_information/work_zone.dart';
 import 'package:connection_network_type/connection_network_type.dart';
 import 'package:cv_mec/models/data_queue.dart';
-import 'package:cv_mec/models/j2735/basic_safety_message.dart';
-import 'package:cv_mec/models/j2735/choice_content.dart';
-import 'package:cv_mec/models/j2735/choice_item.dart';
-import 'package:cv_mec/models/j2735/exit_service.dart';
-import 'package:cv_mec/models/j2735/generic_signage.dart';
-import 'package:cv_mec/models/j2735/itis_codes.dart';
-import 'package:cv_mec/models/j2735/itis_itis_codes_and_text.dart';
-import 'package:cv_mec/models/j2735/itis_phrase.dart';
-import 'package:cv_mec/models/j2735/itis_text.dart';
-import 'package:cv_mec/models/j2735/map_data.dart';
-import 'package:cv_mec/models/j2735/spat.dart';
-import 'package:cv_mec/models/j2735/speed_limit.dart';
-import 'package:cv_mec/models/j2735/traveler_data_frame.dart';
-import 'package:cv_mec/models/j2735/traveler_information.dart';
-import 'package:cv_mec/models/j2735/work_zone.dart';
 import 'package:cv_mec/models/leidos_date_extraction.dart';
-import 'package:cv_mec/models/protobuf_models/geo_routed_msg.pb.dart'
-    as protobuf;
+import 'package:cv_mec/models/protobuf_models/geo_routed_msg.pb.dart' as protobuf;
 import 'package:cv_mec/models/itis_code.dart';
 import 'package:cv_mec/models/itis_parser.dart';
 import 'package:cv_mec/models/msg_types.dart';
@@ -201,12 +200,10 @@ class _MQTTTestingState extends State<MQTTTesting> {
     }
   }
 
-  void onReceieve(
-      MqttReceivedMessage<MqttMessage?> message, DateTime recTime) async {
+  void onReceieve(MqttReceivedMessage<MqttMessage?> message, DateTime recTime) async {
     final recMess = message.payload as MqttPublishMessage;
 
-    protobuf.GeoRoutedMsg decodedMessage =
-        protobuf.GeoRoutedMsg.fromBuffer(recMess.payload.message);
+    protobuf.GeoRoutedMsg decodedMessage = protobuf.GeoRoutedMsg.fromBuffer(recMess.payload.message);
 
     DateTime msgTime = timeStampToDateTime(decodedMessage.time);
 
@@ -240,8 +237,7 @@ class _MQTTTestingState extends State<MQTTTesting> {
       consoleMessage = "Received TIM with Data: \n{\n";
 
       for (int i = 0; i < tim.dataFrames.travelerDataFrameList.length; i++) {
-        Choice_Content content =
-            tim.dataFrames.travelerDataFrameList[i].content;
+        Choice_Content content = tim.dataFrames.travelerDataFrameList[i].content;
         if (content is WorkZone) {
           WorkZone wz = content;
           for (int j = 0; j < wz.item.length; j++) {
@@ -276,20 +272,19 @@ class _MQTTTestingState extends State<MQTTTesting> {
       }
       consoleMessage = "$consoleMessage}";
     } else if (msgType == MsgType.SPAT) {
-      String trimmedHex = asn.trimMessageHeaders(hex,
-          asn.SPAT_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
+      String trimmedHex = asn.trimMessageHeaders(
+          hex, asn.SPAT_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
       Spat spat = asn.decodeSpat(trimmedHex);
 
       if (spat.intersections.intersectionStateList.isNotEmpty) {
-        generationTime =
-            spat.intersections.intersectionStateList.first.getUtcTime();
+        generationTime = spat.intersections.intersectionStateList.first.getUtcTime();
       }
 
       consoleMessage =
           "Received SPaT Time Delta (ms): ${recTime.millisecondsSinceEpoch - msgTime.millisecondsSinceEpoch}";
     } else if (msgType == MsgType.MAP) {
-      String trimmedHex = asn.trimMessageHeaders(hex,
-          asn.MAP_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
+      String trimmedHex = asn.trimMessageHeaders(
+          hex, asn.MAP_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
       MapData map = asn.decodeMap(trimmedHex);
       generationTime = LeidosDateExtraction.extractDateFromMap(map);
 
@@ -314,8 +309,7 @@ class _MQTTTestingState extends State<MQTTTesting> {
       int generationDelta = 0;
       int messageGenerationTime = 0;
       if (generationTime != null) {
-        generationDelta = recTime.millisecondsSinceEpoch -
-            generationTime.millisecondsSinceEpoch;
+        generationDelta = recTime.millisecondsSinceEpoch - generationTime.millisecondsSinceEpoch;
         messageGenerationTime = generationTime.millisecondsSinceEpoch;
       }
 
@@ -375,8 +369,8 @@ class _MQTTTestingState extends State<MQTTTesting> {
 
   void updatePosition(Position position) {
     currentPosition = position;
-    List<TravelerDataFrame> newActiveTims = timManager.getNewActiveTims(
-        position.longitude, position.latitude, position.heading);
+    List<TravelerDataFrame> newActiveTims =
+        timManager.getNewActiveTims(position.longitude, position.latitude, position.heading);
     showTimMessage(newActiveTims);
   }
 
@@ -386,8 +380,7 @@ class _MQTTTestingState extends State<MQTTTesting> {
       setState(() {
         appLog.add(message);
         if (appLogQueue != null) {
-          String timedMessage =
-              "${DateTime.now().toIso8601String()}, $message \n";
+          String timedMessage = "${DateTime.now().toIso8601String()}, $message \n";
           appLogQueue!.addItem(timedMessage);
         }
       });
@@ -421,8 +414,7 @@ class _MQTTTestingState extends State<MQTTTesting> {
     }
   }
 
-  void getClientInfo(
-      MqttReceivedMessage<MqttMessage?> message, DateTime recTime) async {
+  void getClientInfo(MqttReceivedMessage<MqttMessage?> message, DateTime recTime) async {
     final recMess = message.payload as MqttPublishMessage;
     // session_id = msg.payload.decode("utf-8")["SessionID"]
 
@@ -454,13 +446,11 @@ class _MQTTTestingState extends State<MQTTTesting> {
                 "vzimp/1/Private/${controller.privateDeviceID}/${controller.clientType}/${controller.clientSubtype}/${settingsController.vendorID.value}/${controller.messageFormat}/$v2xType";
           }
 
-          subscribeTopic =
-              "vzimp/1/Private/+/+/+/${controller.messageFormat.value}/+/+";
+          subscribeTopic = "vzimp/1/Private/+/+/+/${controller.messageFormat.value}/+/+";
         } else {
           publishTopic =
               "vzimp/1/GeoRelevance/${controller.clientType.value}/${controller.clientSubtype.value}/Public/${controller.messageFormat}/$v2xType";
-          subscribeTopic =
-              "vzimp/1/GeoRelevance/+/+/Public/${controller.messageFormat}/+/+";
+          subscribeTopic = "vzimp/1/GeoRelevance/+/+/Public/${controller.messageFormat}/+/+";
         }
 
         addToAppLog("Publish Topic $publishTopic");
@@ -470,8 +460,7 @@ class _MQTTTestingState extends State<MQTTTesting> {
         addToAppLog("Failed to connect to MQTT Broker");
       }
     } else {
-      addToAppLog(
-          "MQTT Connection is not available because the connection URL or Registration are missing");
+      addToAppLog("MQTT Connection is not available because the connection URL or Registration are missing");
     }
   }
 
@@ -512,8 +501,7 @@ class _MQTTTestingState extends State<MQTTTesting> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('Traveler Information Message',
-                    style: TextStyle(
-                        color: Colors.black, fontWeight: FontWeight.bold)),
+                    style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -525,8 +513,7 @@ class _MQTTTestingState extends State<MQTTTesting> {
                       ))
                     else
                       Expanded(
-                        child: Text(displayCode.description,
-                            style: const TextStyle(color: Colors.black)),
+                        child: Text(displayCode.description, style: const TextStyle(color: Colors.black)),
                       )
                   ],
                 ),
@@ -603,25 +590,21 @@ class _MQTTTestingState extends State<MQTTTesting> {
       });
     }
 
-    if ((isLogging && Platform.isIOS) ||
-        (isLogging && await Permission.phone.request().isGranted)) {
+    if ((isLogging && Platform.isIOS) || (isLogging && await Permission.phone.request().isGranted)) {
       // await Permission.manageExternalStorage.isGranted;
       // await fileService.requestPermissions();
 
       DateTime logTime = timingService.getKronosTime();
 
-      recDataQueue =
-          DataQueue("MQTT_SUB_LOG_${logTime.millisecondsSinceEpoch}.csv");
-      pubDataQueue =
-          DataQueue("MQTT_PUB_LOG_${logTime.millisecondsSinceEpoch}.csv");
+      recDataQueue = DataQueue("MQTT_SUB_LOG_${logTime.millisecondsSinceEpoch}.csv");
+      pubDataQueue = DataQueue("MQTT_PUB_LOG_${logTime.millisecondsSinceEpoch}.csv");
       addToAppLog("Saving Records to ${recDataQueue!.fileName}");
       String subHeader =
           "topic,message_type,receive_time_ms,send_time_ms,generation_time_ms,send_rec_delta_time_ms,gen_rec_delta_time_ms,longitude,latitude,broker,msg_bytes\n";
 
       recDataQueue!.addItem(subHeader);
 
-      String pubHeader =
-          "Topic, Send Time ms, Longitude, Latitude, Network, Broker, Msg Bytes\n";
+      String pubHeader = "Topic, Send Time ms, Longitude, Latitude, Network, Broker, Msg Bytes\n";
       pubDataQueue!.addItem(pubHeader);
     } else {}
   }
@@ -633,8 +616,7 @@ class _MQTTTestingState extends State<MQTTTesting> {
   }
 
   bool isConnected() {
-    return mqtt.client != null &&
-        mqtt.client!.connectionStatus!.state == MqttConnectionState.connected;
+    return mqtt.client != null && mqtt.client!.connectionStatus!.state == MqttConnectionState.connected;
   }
 
   Future<String> getNetworkField() async {
@@ -649,14 +631,13 @@ class _MQTTTestingState extends State<MQTTTesting> {
   protobuf.Timestamp dateTimeToTimestamp(DateTime dateTime) {
     protobuf.Timestamp time = protobuf.Timestamp();
     time.seconds = Int64(dateTime.millisecondsSinceEpoch ~/ 1000);
-    time.nanos =
-        (dateTime.millisecond * 1E6 + dateTime.microsecond * 1000).toInt();
+    time.nanos = (dateTime.millisecond * 1E6 + dateTime.microsecond * 1000).toInt();
     return time;
   }
 
   DateTime timeStampToDateTime(protobuf.Timestamp timeStamp) {
-    DateTime dt = DateTime.fromMicrosecondsSinceEpoch(
-        (timeStamp.seconds.toInt() * 1E6).toInt() + timeStamp.nanos ~/ 1000);
+    DateTime dt =
+        DateTime.fromMicrosecondsSinceEpoch((timeStamp.seconds.toInt() * 1E6).toInt() + timeStamp.nanos ~/ 1000);
     return dt;
   }
 
@@ -702,23 +683,15 @@ class _MQTTTestingState extends State<MQTTTesting> {
                     //   registration = await fileService.getRegistration();
                     // } else {
                     addToAppLog("Loading Registration from Server");
-                    registration = await api.getRegistration(
-                        token,
-                        controller.clientType.value,
-                        controller.clientSubtype.value);
+                    registration =
+                        await api.getRegistration(token, controller.clientType.value, controller.clientSubtype.value);
                     // }
                     if (registration != null) {
                       fileService.saveRegistration(registration!);
-                      addToAppLog(
-                          "Acquired Certificates for DeviceID: ${registration!.deviceID}");
-                      mqttConnectionURL = await api.getConnection(
-                          token,
-                          registration!.deviceID,
-                          controller.fakeLatitude.value,
-                          controller.fakeLongitude.value,
-                          controller.networkType.value);
-                      addToAppLog(
-                          "Acquired MQTT Connection String: $mqttConnectionURL");
+                      addToAppLog("Acquired Certificates for DeviceID: ${registration!.deviceID}");
+                      mqttConnectionURL = await api.getConnection(token, registration!.deviceID,
+                          controller.fakeLatitude.value, controller.fakeLongitude.value, controller.networkType.value);
+                      addToAppLog("Acquired MQTT Connection String: $mqttConnectionURL");
                     } else {
                       addToAppLog("Failed to Register application");
                     }
@@ -738,14 +711,10 @@ class _MQTTTestingState extends State<MQTTTesting> {
               child: Text(!isConnected() ? "Connect" : "Disconnect"),
             ),
             ElevatedButton(
-              onPressed: mqtt.client != null &&
-                      mqtt.client!.connectionStatus!.state ==
-                          MqttConnectionState.connected
+              onPressed: mqtt.client != null && mqtt.client!.connectionStatus!.state == MqttConnectionState.connected
                   ? toggleBroadcasting
                   : null,
-              child: Text(isBroadcastingLocation
-                  ? "Stop Broadcasting"
-                  : "Start Broadcasting"),
+              child: Text(isBroadcastingLocation ? "Stop Broadcasting" : "Start Broadcasting"),
             ),
             ElevatedButton(
               onPressed: isConnected() ? toggleLogging : null,
