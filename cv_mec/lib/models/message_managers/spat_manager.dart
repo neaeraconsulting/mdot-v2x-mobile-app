@@ -1,4 +1,5 @@
 import 'package:asn1_plugin/j2735/2024/common/intersection_reference_id.dart';
+import 'package:asn1_plugin/j2735/2024/common/minute_of_the_year.dart';
 import 'package:asn1_plugin/j2735/2024/spat/intersection_state.dart';
 import 'package:asn1_plugin/j2735/2024/spat/movement_event.dart';
 import 'package:asn1_plugin/j2735/2024/spat/movement_state.dart';
@@ -10,8 +11,24 @@ class SpatManager {
   Map<int, IntersectionState> storedIntersections = <int, IntersectionState>{};
 
   void addOrUpdate(Spat spat) {
+
     for (IntersectionState state in spat.intersections.intersectionStateList) {
       int stateId = state.id.id.intersectionID;
+
+      
+
+      if(state.moy == null){
+        DateTime now = DateTime.now().toUtc();
+        if(state.timeStamp != null){
+          DateTime yearStart = DateTime.utc(now.year, 1, 1);
+          int minutes = now.difference(yearStart).inMinutes;
+          if(state.timeStamp!.dSecond > 55 && now.second < 5){
+            minutes -=1;
+          }
+          state.moy = MinuteOfTheYear(minutes);
+        }
+      }
+
       if (storedIntersections.containsKey(stateId)) {
         if (state.getUtcTime().isAfter(storedIntersections[stateId]!.getUtcTime())) {
           storedSpats[stateId] = spat;

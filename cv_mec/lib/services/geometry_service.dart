@@ -367,4 +367,61 @@ class GeometryService {
 
     return points;
   }
+
+  List<LatLng> getPolygonProjection(LatLng position, double degrees, double laneWidth) {
+    double radians = degToRadian(-(degrees - 90));
+    double distance = 100;
+
+    Coordinate start = Coordinate(0, 0);
+    Coordinate end = Coordinate(distance * sin(radians), distance * cos(radians));
+
+    List<Coordinate> coordinates = [start, end];
+
+    List<Coordinate> polygon = getPolygonFromPointPath(coordinates, laneWidth);
+
+    List<LatLng> latLngCoordinates = [];
+    for (int i = 0; i < polygon.length; i++) {
+      LatLng anchor = LatLng(position.latitude, position.longitude);
+      final converted = shiftLatLng(anchor, polygon[i].y, polygon[i].x);
+      latLngCoordinates.add(LatLng(converted.latitude, converted.longitude));
+    }
+    return latLngCoordinates;
+  }
+
+  Polygon getConicSectionProjection(LatLng position, double degrees, double startingWidth, double fov, double length) {
+    List<Coordinate> coordinates = [];
+
+    double radians = degToRadian(-(degrees - 90));
+    double normal = degToRadian(-(degrees - 90) + 90);
+    double fovRadians = degToRadian(fov) / 2.0;
+
+    double startingOffset = startingWidth / 2;
+
+    double h = length / (cos(fovRadians));
+
+    Coordinate positiveOffsetCoordinate = Coordinate(startingOffset * cos(normal), startingOffset * sin(normal));
+    Coordinate negativeOffsetCoordinate = Coordinate(-startingOffset * cos(normal), -startingOffset * sin(normal));
+    Coordinate positiveCorner =
+        positiveOffsetCoordinate + Coordinate(h * cos(radians + fovRadians), h * sin(radians + fovRadians));
+    Coordinate negativeCorner =
+        negativeOffsetCoordinate + Coordinate(h * cos(radians - fovRadians), h * sin(radians - fovRadians));
+
+    // coordinates.add(Coordinate(0, 0));
+    coordinates.add(positiveOffsetCoordinate);
+    coordinates.add(positiveCorner);
+    coordinates.add(negativeCorner);
+    coordinates.add(negativeOffsetCoordinate);
+    coordinates.add(positiveOffsetCoordinate);
+
+    List<Coordinate> latLngCoordinates = [];
+    // print("Coordinate:");
+    for (int i = 0; i < coordinates.length; i++) {
+      final converted = shiftLatLng(position, coordinates[i].x, coordinates[i].y);
+      latLngCoordinates.add(Coordinate(converted.longitude, converted.latitude));
+    }
+
+    return geometryFactory.createPolygonFromCoords(latLngCoordinates);
+
+    // return latLngCoordinates;
+  }
 }

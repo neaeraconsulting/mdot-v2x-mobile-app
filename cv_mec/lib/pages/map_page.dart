@@ -1,15 +1,27 @@
 import 'dart:async';
-import 'dart:ffi';
 import 'dart:io';
 import 'dart:math';
 
 import 'package:asn1_plugin/j2735/2024/basic_safety_message/basic_safety_message.dart';
+import 'package:asn1_plugin/j2735/2024/basic_safety_message/bsmpart_iiextension.dart';
+import 'package:asn1_plugin/j2735/2024/basic_safety_message/special_vehicle_extensions.dart';
+import 'package:asn1_plugin/j2735/2024/basic_safety_message/supplemental_vehicle_extensions.dart';
+import 'package:asn1_plugin/j2735/2024/common/basic_vehicle_class.dart';
+import 'package:asn1_plugin/j2735/2024/common/d_day.dart';
+import 'package:asn1_plugin/j2735/2024/common/d_hour.dart';
+import 'package:asn1_plugin/j2735/2024/common/d_minute.dart';
+import 'package:asn1_plugin/j2735/2024/common/d_month.dart';
 import 'package:asn1_plugin/j2735/2024/common/d_second.dart';
+import 'package:asn1_plugin/j2735/2024/common/d_year.dart';
+import 'package:asn1_plugin/j2735/2024/common/lightbar_in_use.dart';
 import 'package:asn1_plugin/j2735/2024/common/minute_of_the_year.dart';
 import 'package:asn1_plugin/j2735/2024/common/msg_count.dart';
 import 'package:asn1_plugin/j2735/2024/common/node_set_xy.dart';
+import 'package:asn1_plugin/j2735/2024/common/siren_in_use.dart';
 import 'package:asn1_plugin/j2735/2024/map_data/generic_lane.dart';
 import 'package:asn1_plugin/j2735/2024/map_data/map_data.dart';
+import 'package:asn1_plugin/j2735/2024/personal_safety_message/personal_safety_message.dart';
+import 'package:asn1_plugin/j2735/2024/sensor_data_sharing_message/detected_object_data.dart';
 import 'package:asn1_plugin/j2735/2024/sensor_data_sharing_message/sensor_data_sharing_message.dart';
 import 'package:asn1_plugin/j2735/2024/spat/intersection_state.dart';
 import 'package:asn1_plugin/j2735/2024/spat/movement_event.dart';
@@ -19,18 +31,28 @@ import 'package:asn1_plugin/j2735/2024/spat/spat.dart';
 import 'package:asn1_plugin/j2735/2024/spat/time_mark.dart';
 import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_data_frame.dart';
 import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_information.dart';
+import 'package:bluetooth_classic/models/device.dart';
 import 'package:connection_network_type/connection_network_type.dart';
+import 'package:cv_mec/controllers/obd_controller.dart';
+import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/models/data_queue.dart';
 import 'package:cv_mec/models/geometry_direction.dart';
+import 'package:cv_mec/models/icon_manager.dart';
 import 'package:cv_mec/models/itis_converter.dart';
 import 'package:cv_mec/models/data_frame_geometry.dart';
 import 'package:cv_mec/models/geo_map.dart';
 import 'package:cv_mec/models/itis_code.dart';
 import 'package:cv_mec/models/leidos_date_extraction.dart';
+import 'package:cv_mec/models/message_builders/bsm_message_builder.dart';
+import 'package:cv_mec/models/message_builders/psm_message_builder.dart';
 import 'package:cv_mec/models/message_managers/map_manager.dart';
+import 'package:cv_mec/models/message_managers/received_message_manager.dart';
 import 'package:cv_mec/models/msg_types.dart';
 import 'package:cv_mec/models/imp/registration.dart';
-import 'package:cv_mec/models/receieved_bsm.dart';
+import 'package:cv_mec/models/received_messages/receieved_msg.dart';
+import 'package:cv_mec/models/received_messages/received_bsm.dart';
+import 'package:cv_mec/models/received_messages/received_psm.dart';
+import 'package:cv_mec/models/received_messages/received_sdsm.dart';
 import 'package:cv_mec/models/render_models/render_lane_connection.dart';
 import 'package:cv_mec/models/render_models/render_light_location.dart';
 import 'package:cv_mec/models/message_managers/spat_manager.dart';
@@ -39,6 +61,7 @@ import 'package:cv_mec/models/message_managers/tim_manager.dart';
 import 'package:cv_mec/models/type_definitions.dart';
 import 'package:cv_mec/models/light_change_time.dart';
 import 'package:cv_mec/models/utils.dart';
+import 'package:cv_mec/models/vehicle.dart';
 import 'package:cv_mec/services/api_service.dart';
 import 'package:cv_mec/services/asn_service.dart';
 import 'package:cv_mec/services/aws_service.dart';
@@ -49,6 +72,12 @@ import 'package:cv_mec/services/mqtt_service.dart';
 import 'package:cv_mec/services/param_controller.dart';
 import 'package:cv_mec/services/secure_storage.dart';
 import 'package:cv_mec/services/vehicle_notification_manager.dart';
+import 'package:cv_mec/styles/app_colors.dart';
+import 'package:cv_mec/styles/arc_painter.dart';
+import 'package:cv_mec/styles/screen_size.dart';
+import 'package:cv_mec/styles/spacing.dart';
+import 'package:cv_mec/styles/widgets/appbar.dart';
+import 'package:cv_mec/views/bluetooth_dialog.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cv_mec/services/timing.dart';
 import 'package:flutter/material.dart';
@@ -57,15 +86,14 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:geodesy/geodesy.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
-import 'package:cv_mec/pages/settings_page.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:cv_mec/models/protobuf_models/geo_routed_msg.pb.dart' as protobuf;
-import 'package:permission_handler/permission_handler.dart';
 import 'package:typed_data/typed_data.dart';
-import 'package:carousel_slider/carousel_slider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:cv_mec/controllers/configuration_controller.dart';
+import 'package:asn1_plugin/j2735/2024/common/siren_in_use.dart';
 
 enum ConnectedStatus { UNKNOWN, DISCONNECTED, CONNECTED, PARTIAl }
 
@@ -89,10 +117,13 @@ class MapState extends State<MapPage> {
   LocationService locationService = Get.find<LocationService>();
   SettingsController settingsController = Get.find<SettingsController>();
   S3Service awsService = Get.find<S3Service>();
+  ConfigurationController configController = Get.find<ConfigurationController>();
 
   TimManager timManager = TimManager();
   MapManager mapManager = MapManager();
   SpatManager spatManager = SpatManager();
+  ReceivedMessageManager messageManager = ReceivedMessageManager();
+
   SecureStorage secureStorage = SecureStorage();
 
   Registration? registration;
@@ -105,16 +136,14 @@ class MapState extends State<MapPage> {
   late String privateSubscribeTopic;
   late String privateRawSubscribeTopic;
 
-  Timer? bsmMessageTimer;
-  late Pointer<Pointer<Void>> bsmTemplate;
-  late Pointer<Pointer<Void>> psmTemplate;
+  Timer? sendMessageTimer;
+  late BsmMessageBuilder bsmBuilder;
+  late PsmMessageBuilder psmBuilder;
 
   Timer? uploadTimer;
 
   Color connectedButtonColor = Colors.red;
   StreamSubscription<Position>? positionStream;
-
-  Map<String, ReceivedBsm> receivedBsms = {};
 
   List<ItisCode> showTims = [];
   List<Polygon<HitValue>> drawnPolygons = [];
@@ -154,6 +183,11 @@ class MapState extends State<MapPage> {
   bool showLoadingIcon = true;
   bool showLightText = true;
 
+  bool showVehicleStats = false;
+  RxBool obdConnecting = false.obs;
+
+  OBDController obdController = Get.find<OBDController>();
+
   @override
   void initState() {
     super.initState();
@@ -161,14 +195,17 @@ class MapState extends State<MapPage> {
 
     _mapController = MapController();
     timingService.startAllUpdates();
-    bsmTemplate = asnService.decode(asnService.bsmTemplate);
-    asnService.randomizeBsmId(bsmTemplate);
 
-    psmTemplate = asnService.decode(asnService.psmTemplate);
-    asnService.randomizePsmId(psmTemplate);
+    bsmBuilder = BsmMessageBuilder();
+    psmBuilder = PsmMessageBuilder();
 
-    publishTopic =
-        "vzimp/1/GeoRelevance/${paramController.clientType.value}/${paramController.clientSubtype.value}/Public/${paramController.messageFormat}/BSM";
+    if (configController.isVehicleConfig.value) {
+      publishTopic =
+          "vzimp/1/GeoRelevance/${paramController.clientType.value}/${paramController.clientSubtype.value}/Public/${paramController.messageFormat}/BSM";
+    } else {
+      publishTopic =
+          "vzimp/1/GeoRelevance/${paramController.clientType.value}/${paramController.clientSubtype.value}/Public/${paramController.messageFormat}/PSM";
+    }
 
     publicGeoRelevanceSubscribeTopic = "vzimp/1/GeoRelevance/+/+/Public/j2735_gr/+/+";
     publicGeoRelevanceRawSubscribeTopic = "vzimp/1/GeoRelevance/+/+/Public/j2735/+/+";
@@ -198,9 +235,8 @@ class MapState extends State<MapPage> {
 
       // fakeSpatMessages(TestData.tfhrcFakeSpats);
 
-      SensorDataSharingMessage sdsm = asnService.decodeSDSM(TestData.sampleSDSM);
-
-      print("Turtle ${sdsm.refPos.lat.getDecimalLatitude()}");
+      // SensorDataSharingMessage sdsm = asnService.decodeSdsm(TestData.sampleSDSM);
+      fakeSdsmMessage();
     } else if (settingsController.demoMode.value) {
       TravelerInformation weatherTimDemo = asnService.decodeTim(TestData.tfhrcWeatherTIMDemo);
       timManager.addOrUpdate(weatherTimDemo, TestData.tfhrcWeatherTIMDemo);
@@ -225,6 +261,7 @@ class MapState extends State<MapPage> {
       updateConnectedStatus(ConnectedStatus.CONNECTED);
 
       if (debugMode) {
+        // tfhrcStaticPosition
         positionStream = fakePosition(TestData.tfhrcFakePosition).listen(updatePosition);
       } else if (settingsController.demoMode.value) {
         positionStream = fakePosition(TestData.tfhrcFakePosition).listen(updatePosition);
@@ -253,6 +290,15 @@ class MapState extends State<MapPage> {
         showLoadingIcon = true;
       });
     }
+  }
+
+  @override
+  void dispose() {
+    configController.stopSiren();
+    configController.isBusWarningOn.value = false;
+    configController.isIceCreamSongOn.value = false;
+    obdController.disconnect();
+    super.dispose();
   }
 
   void fakeSpatMessages(List<String> fakeSpats) {
@@ -302,6 +348,15 @@ class MapState extends State<MapPage> {
     });
   }
 
+  void fakeSdsmMessage() {
+    SensorDataSharingMessage sdsm = asnService.decodeSdsm(TestData.tfhrcSDSM);
+    Timer.periodic(const Duration(milliseconds: 100), (timer) async {
+      DateTime now = timingService.getKronosTime();
+      processNewSdsm(publicGeoRelevanceSubscribeTopic, TestData.tfhrcSDSM, now, now);
+      // await Future.delayed(const Duration(milliseconds: 100)); // Simulate an async task
+    });
+  }
+
   Stream<Position> fakePosition(List<List<double>> fakePosition) {
     return Stream<Position>.periodic(const Duration(milliseconds: 500), (count) {
       List<List<double>> route = fakePosition; //fakePosition.reversed.toList();
@@ -313,10 +368,16 @@ class MapState extends State<MapPage> {
 
       double heading = radianToDeg(atan2(pos[1] - lastPos[1], pos[0] - lastPos[0]));
 
+      num distance =
+          geometryService.geodesy.distanceBetweenTwoGeoPoints(LatLng(pos[1], pos[0]), LatLng(lastPos[1], lastPos[0]));
+
+      double speed = distance / 0.5;
+
       heading = -heading + 90;
       if (heading < 0) {
         heading += 360;
       }
+
       return Position(
           longitude: route[index][0],
           latitude: route[index][1],
@@ -326,7 +387,7 @@ class MapState extends State<MapPage> {
           altitudeAccuracy: 0,
           heading: heading,
           headingAccuracy: 0,
-          speed: 0,
+          speed: speed,
           speedAccuracy: 0);
     });
   }
@@ -440,7 +501,6 @@ class MapState extends State<MapPage> {
 
     String hex = ASNService.bytesToHex(decodedMessage.msgBytes);
 
-    print("Identified GEO $hex");
     processIncomingMessage(message.topic, hex, recTime, msgTime);
   }
 
@@ -448,95 +508,170 @@ class MapState extends State<MapPage> {
     addToAppLog("Received ASN1 Message");
     final recMess = message.payload as MqttPublishMessage;
     String hex = ASNService.bytesToHex(recMess.payload.message);
-    print("Identified Raw $hex");
     processIncomingMessage(message.topic, hex, recTime, null);
   }
 
   void processIncomingMessage(String topic, String hex, DateTime recTime, DateTime? sendTime) {
-    addToAppLog("Identified Message as BSM");
     MsgType msgType = asnService.determineHexMessageType(hex);
 
     if (msgType == MsgType.BSM) {
-      String trimmedHex = asnService.trimMessageHeaders(hex, asnService.BSM_START_FLAG)!;
-      BasicSafetyMessage bsm = asnService.decodeBsm(trimmedHex);
-
-      LatLng position = LatLng(bsm.coreData.lat.getDecimalLatitude(), bsm.coreData.long.getDecimalLongitude());
-      String vehicleID = ASNService.bytesToHex(bsm.coreData.id.temporaryID);
-
-      DateTime bsmTime = bsm.coreData.secMark.getDateTime(recTime);
-
-      if (receivedBsms.containsKey(vehicleID)) {
-        if (receivedBsms[vehicleID]!.dateTime.isBefore(bsmTime)) {
-          receivedBsms[vehicleID] = ReceivedBsm(vehicleID, bsmTime, position);
-        }
-      } else {
-        receivedBsms[vehicleID] = ReceivedBsm(vehicleID, bsmTime, position);
-      }
-
-      addToReceiveLog(topic, "BSM", recTime, sendTime, bsmTime, trimmedHex);
+      addToAppLog("Identified Message as BSM");
+      processNewBsm(topic, hex, recTime, sendTime);
+    } else if (msgType == MsgType.PSM) {
+      addToAppLog("Identified Message as PSM");
+      processNewPsm(topic, hex, recTime, sendTime);
+    } else if (msgType == MsgType.SPAT) {
+      addToAppLog("Identified Message as SPaT");
+      processNewSpat(topic, hex, recTime, sendTime);
+    } else if (msgType == MsgType.MAP) {
+      addToAppLog("Identified Message as MAP");
+      processNewMap(topic, hex, recTime, sendTime);
     } else if (msgType == MsgType.TIM) {
       addToAppLog("Identified Message as TIM");
-      String trimmedHex = asnService.trimMessageHeaders(
-          hex, asnService.TIM_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
-      TravelerInformation tim = asnService.decodeTim(trimmedHex);
-      print("TEST: " + trimmedHex);
-
-      timManager.addOrUpdate(tim, hex);
-      if (mounted) {
-        setState(() {
-          drawnPolygons = getPolygons();
-          drawnPolylines = getPolylines();
-        });
-      }
-      DateTime? generationTime = LeidosDateExtraction.extractDateFromTim(tim);
-
-      Future.delayed(const Duration(milliseconds: 0), () async {
-        String messageType = "TIM";
-        if (tim.dataFrames.travelerDataFrameList.isNotEmpty) {
-          ItisCode code =
-              await timManager.getItisRepresentationForDataFrame(tim.dataFrames.travelerDataFrameList.first);
-          messageType = "TIM ${code.description}";
-        }
-
-        addToReceiveLog(topic, messageType, recTime, sendTime, generationTime, trimmedHex);
-      });
-    } else if (msgType == MsgType.SPAT) {
-      addToAppLog("Identified Message as SPAT");
-      String trimmedHex = asnService.trimMessageHeaders(
-          hex, asnService.SPAT_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
-      Spat spat = asnService.decodeSpat(trimmedHex);
-
-      spatManager.addOrUpdate(spat);
-
-      if (mounted) {
-        setState(() {
-          drawnPolygons = getPolygons();
-          drawnPolylines = getPolylines();
-        });
-      }
-      DateTime? spatGenTime;
-      if (spat.intersections.intersectionStateList.isNotEmpty) {
-        spatGenTime = spat.intersections.intersectionStateList.first.getUtcTime();
-      }
-
-      addToReceiveLog(topic, "SPAT", recTime, sendTime, spatGenTime, trimmedHex);
-    } else if (msgType == MsgType.MAP) {
-      addToAppLog("Identified Message as MAP $hex");
-      String trimmedHex = asnService.trimMessageHeaders(
-          hex, asnService.MAP_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
-      MapData map = asnService.decodeMap(trimmedHex);
-
-      mapManager.addOrUpdate(map);
-
-      if (mounted) {
-        setState(() {
-          drawnPolygons = getPolygons();
-          drawnPolylines = getPolylines();
-        });
-      }
-
-      addToReceiveLog(topic, "MAP", recTime, sendTime, LeidosDateExtraction.extractDateFromMap(map), trimmedHex);
+      processNewTim(topic, hex, recTime, sendTime);
+    } else if (msgType == MsgType.SDSM) {
+      addToAppLog("Identified Message as SDSM");
+      processNewSdsm(topic, hex, recTime, sendTime);
+    } else {
+      addToAppLog("Unable to Identify Message Type");
     }
+  }
+
+  void processNewBsm(String topic, String hex, DateTime recTime, DateTime? sendTime) {
+    VehicleClass vehicleClass = VehicleClass.unknownVehicleClass;
+
+    String trimmedHex = asnService.trimMessageHeaders(hex, asnService.BSM_START_FLAG)!;
+    BasicSafetyMessage bsm = asnService.decodeBsm(trimmedHex);
+
+    LightbarInUse lights = LightbarInUse.unavailable;
+    SirenInUse sirens = SirenInUse.unavailable;
+    if (bsm.partII != null) {
+      for (BSMpartIIExtension ext in bsm.partII!) {
+        if (ext is SupplementalVehicleExtensions) {
+          if (ext.classification != null) {
+            vehicleClass = ext.classification!.getVehicleClass();
+          }
+        } else if (ext is SpecialVehicleExtensions) {
+          if (ext.vehicleAlerts != null) {
+            lights = ext.vehicleAlerts!.lightsUse;
+            sirens = ext.vehicleAlerts!.sirenUse;
+          }
+        }
+      }
+    }
+    LatLng position = LatLng(bsm.coreData.lat.getDecimalLatitude(), bsm.coreData.long.getDecimalLongitude());
+    String vehicleID = ASNService.bytesToHex(bsm.coreData.id.temporaryID);
+
+    DateTime bsmTime = bsm.coreData.secMark.getDateTime(recTime);
+
+    ReceivedMsg msg = ReceivedBsm(vehicleID, bsmTime, position, vehicleClass, lights, sirens);
+    messageManager.addOrUpdate(msg);
+    addToReceiveLog(topic, "BSM", recTime, sendTime, bsmTime, trimmedHex);
+  }
+
+  void processNewPsm(String topic, String hex, DateTime recTime, DateTime? sendTime) {
+    String trimmedHex = asnService.trimMessageHeaders(hex, asnService.PSM_START_FLAG)!;
+    PersonalSafetyMessage psm = asnService.decodePsm(trimmedHex);
+
+    LatLng position = LatLng(psm.position.lat.getDecimalLatitude(), psm.position.long.getDecimalLongitude());
+    String pedestrianID = ASNService.bytesToHex(psm.id.temporaryID);
+
+    DateTime psmTime = psm.secMark.getDateTime(recTime);
+
+    ReceivedMsg msg = ReceivedPsm(pedestrianID, psmTime, position, psm.basicType, psm.eventResponderType);
+    messageManager.addOrUpdate(msg);
+    addToReceiveLog(topic, "PSM", recTime, sendTime, psmTime, trimmedHex);
+  }
+
+  void processNewSpat(String topic, String hex, DateTime recTime, DateTime? sendTime) {
+    String trimmedHex = asnService.trimMessageHeaders(
+        hex, asnService.SPAT_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
+    Spat spat = asnService.decodeSpat(trimmedHex);
+
+    spatManager.addOrUpdate(spat);
+
+    if (mounted) {
+      setState(() {
+        drawnPolygons = getPolygons();
+        drawnPolylines = getPolylines();
+      });
+    }
+    DateTime? spatGenTime;
+    if (spat.intersections.intersectionStateList.isNotEmpty) {
+      spatGenTime = spat.intersections.intersectionStateList.first.getUtcTime();
+    }
+
+    addToReceiveLog(topic, "SPAT", recTime, sendTime, spatGenTime, trimmedHex);
+  }
+
+  void processNewMap(String topic, String hex, DateTime recTime, DateTime? sendTime) {
+    String trimmedHex = asnService.trimMessageHeaders(
+        hex, asnService.MAP_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
+    MapData map = asnService.decodeMap(trimmedHex);
+
+    mapManager.addOrUpdate(map);
+
+    if (mounted) {
+      setState(() {
+        drawnPolygons = getPolygons();
+        drawnPolylines = getPolylines();
+      });
+    }
+
+    addToReceiveLog(topic, "MAP", recTime, sendTime, LeidosDateExtraction.extractDateFromMap(map), trimmedHex);
+  }
+
+  void processNewTim(String topic, String hex, DateTime recTime, DateTime? sendTime) {
+    String trimmedHex = asnService.trimMessageHeaders(
+        hex, asnService.TIM_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
+    TravelerInformation tim = asnService.decodeTim(trimmedHex);
+
+    timManager.addOrUpdate(tim, hex);
+    if (mounted) {
+      setState(() {
+        drawnPolygons = getPolygons();
+        drawnPolylines = getPolylines();
+      });
+    }
+    DateTime? generationTime = LeidosDateExtraction.extractDateFromTim(tim);
+
+    Future.delayed(const Duration(milliseconds: 0), () async {
+      String messageType = "TIM";
+      if (tim.dataFrames.travelerDataFrameList.isNotEmpty) {
+        ItisCode code = await timManager.getItisRepresentationForDataFrame(tim.dataFrames.travelerDataFrameList.first);
+        messageType = "TIM ${code.description}";
+      }
+
+      addToReceiveLog(topic, messageType, recTime, sendTime, generationTime, trimmedHex);
+    });
+  }
+
+  void processNewSdsm(String topic, String hex, DateTime recTime, DateTime? sendTime) {
+    String trimmedHex = asnService.trimMessageHeaders(
+        hex, asnService.SDSM_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
+    SensorDataSharingMessage sdsm = asnService.decodeSdsm(trimmedHex);
+    // sdsmManager.addOrUpdateWithTime(sdsm, hex, recTime);
+    sdsm.sDSMTimeStamp.year ??= DYear(recTime.year);
+    sdsm.sDSMTimeStamp.month ??= DMonth(recTime.month);
+    sdsm.sDSMTimeStamp.day ??= DDay(recTime.day);
+    sdsm.sDSMTimeStamp.hour ??= DHour(recTime.hour);
+    sdsm.sDSMTimeStamp.minute ??= DMinute(recTime.minute);
+    sdsm.sDSMTimeStamp.second ??= DSecond(recTime.second);
+
+    LatLng refPos = LatLng(sdsm.refPos.lat.getDecimalLatitude(), sdsm.refPos.long.getDecimalLongitude());
+    int msgCount = sdsm.msgCnt.msgCount;
+
+    for (DetectedObjectData object in sdsm.objects.objects) {
+      String id = "${sdsm.sourceID}_${object.detObjCommon.objectID.objectID}";
+      DateTime objectTime =
+          recTime.add(Duration(milliseconds: object.detObjCommon.measurementTime.mesurementTimeOffset));
+
+      geometryService.shiftLatLng(refPos, object.detObjCommon.pos.offsetX.getDistanceInMeters(),
+          object.detObjCommon.pos.offsetY.getDistanceInMeters());
+      messageManager.addOrUpdate(ReceivedSdsm(id, objectTime, refPos, object.detObjCommon.objType));
+    }
+
+    addToReceiveLog(topic, "SDSM", recTime, sendTime, sdsm.sDSMTimeStamp.getAsDateTime(), trimmedHex);
   }
 
   void addToReceiveLog(
@@ -564,7 +699,6 @@ class MapState extends State<MapPage> {
 
     String record =
         "$topic, ${msgType.toString().split('.').last}, ${recTime.millisecondsSinceEpoch},$logSendTime,$messageGenerationTime,$delta,$generationDelta,$longitude,$latitude,$mqttConnectionURL,$hex\n";
-
     recDataQueue.addItem(record);
   }
 
@@ -580,10 +714,10 @@ class MapState extends State<MapPage> {
 
   void startSendingBSM() {
     // Stop any previous timer
-    bsmMessageTimer?.cancel();
+    sendMessageTimer?.cancel();
 
     // Set the timer to call _runFunction every 100 milliseconds
-    bsmMessageTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+    sendMessageTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
       sendMessage();
       if (!isConnected()) {
         stopSendingBSM();
@@ -594,49 +728,70 @@ class MapState extends State<MapPage> {
 
   void sendMessage() async {
     protobuf.GeoRoutedMsg msg = protobuf.GeoRoutedMsg();
-
     protobuf.Position pos = protobuf.Position();
-
     if (currentPosition == null) {
       addToAppLog("Cannot Send BSM. Location is Null");
       updateConnectedStatus(ConnectedStatus.PARTIAl);
       return;
     }
 
-    pos.longitude = currentPosition!.longitude;
-    pos.latitude = currentPosition!.latitude;
-
     DateTime sendTime = timingService.getKronosTime();
 
     Uint8Buffer buffer = Uint8Buffer();
     msg.position = pos;
+    String hex = "";
 
-    asnService.setBsmLongLat(bsmTemplate, pos.longitude, pos.latitude);
-    asnService.incrementBsmMsgCnt(bsmTemplate);
-    asnService.setBsmTime(bsmTemplate, sendTime);
+    pos.latitude = currentPosition!.latitude;
+    pos.longitude = currentPosition!.longitude;
 
-    String hex = asnService.encode(bsmTemplate);
+    // Switch to PSM messages depending on config settings.
+    if (configController.isVehicleConfig.value) {
+      bsmBuilder.setPosition(currentPosition!);
+      bsmBuilder.incrementMsgCnt();
+      bsmBuilder.setTime(sendTime);
 
-    msg.msgBytes = ASNService.hexToBytes(hex);
+      bsmBuilder.setVehicleClass(
+          BasicVehicleClass(VehicleType.toVehicleClass(configController.selectedVehicle.value.classification).code));
 
-    msg.time = Utils.dateTimeToTimestamp(sendTime);
+      LightbarInUse lightStatus = LightbarInUse.unavailable;
+      SirenInUse sirenUse = SirenInUse.unavailable;
 
-    buffer.addAll(msg.writeToBuffer());
+      if (configController.isBusWarningOn.value || configController.isIceCreamSongOn.value) {
+        lightStatus = LightbarInUse.inUse;
+      }
 
-    int messageID = mqtt.publishBytes(buffer, publishTopic);
-    updateConnectedStatus(ConnectedStatus.CONNECTED);
-    NetworkStatus networkStatus = await ConnectionNetworkType().currentNetworkStatus();
-    String netStat = "Unavailable";
-    if (Platform.isAndroid) {
-      netStat = await getNetworkField();
+      if (configController.isSirenOn.value) {
+        sirenUse = SirenInUse.inUse;
+      }
+
+      bsmBuilder.setEmergencyVehicleLights(lightStatus, sirenUse);
+
+      hex = bsmBuilder.build();
+    } else {
+      psmBuilder.setPosition(currentPosition!);
+      psmBuilder.incrementMsgCnt();
+      psmBuilder.setTime(sendTime);
+      psmBuilder.setPersonalDeviceUserType(configController.selectedPedestrian);
+      hex = psmBuilder.build();
     }
+
+    if (hex != "") {
+      msg.msgBytes = ASNService.hexToBytes(hex);
+      msg.time = Utils.dateTimeToTimestamp(sendTime);
+      buffer.addAll(msg.writeToBuffer());
+      mqtt.publishBytes(buffer, publishTopic);
+      updateConnectedStatus(ConnectedStatus.CONNECTED);
+      NetworkStatus networkStatus = await ConnectionNetworkType().currentNetworkStatus();
+    }
+
+    String netStat = "Unavailable";
     String record =
-        "$publishTopic,${sendTime.millisecondsSinceEpoch},${pos.longitude},${pos.latitude},$netStat,$mqttConnectionURL,$hex\n";
+        "$publishTopic,${sendTime.millisecondsSinceEpoch},${currentPosition!.longitude},${currentPosition!.latitude},$netStat,$mqttConnectionURL,$hex\n";
     pubDataQueue.addItem(record);
   }
 
   void stopSendingBSM() {
-    bsmMessageTimer?.cancel();
+    sendMessageTimer?.cancel();
   }
 
   DateTime prevNtp = DateTime.now();
@@ -650,8 +805,6 @@ class MapState extends State<MapPage> {
 
     DateTime ntp = timingService.getNtpTime();
     DateTime kronos = timingService.getKronosTime();
-
-    final timeDelta = now.millisecondsSinceEpoch - prevLocal.millisecondsSinceEpoch;
 
     prevNtp = ntp;
     prevKronos = kronos;
@@ -669,6 +822,9 @@ class MapState extends State<MapPage> {
     }
 
     List<TravelerDataFrame> newActiveTims = [];
+    List<ReceivedMsg> newReceivedMessages = messageManager.getNewReceivedMessages(
+        LatLng(currentPosition!.latitude, currentPosition!.longitude), currentPosition!.heading);
+    List<ItisCode> receivedMessageItisCodes = messageManager.convertToItisCodes(newReceivedMessages);
 
     secureStorage.getNotificationsEnabled().then((enabled) {
       if (enabled) {
@@ -677,6 +833,10 @@ class MapState extends State<MapPage> {
             await VehicleNotificationManager.notifyVehicleFromItisCode(code);
           }
         });
+
+        for (ItisCode code in receivedMessageItisCodes) {
+          VehicleNotificationManager.notifyVehicleFromDescriptionImage(code.description, code.image!);
+        }
       }
     });
 
@@ -687,6 +847,10 @@ class MapState extends State<MapPage> {
             String message = ItisConverter.getItisListAsString(code.associatedCodes);
             await flutterTts.speak(message);
           }
+
+          for (ItisCode code in receivedMessageItisCodes) {
+            await flutterTts.speak(code.description);
+          }
         });
       }
     });
@@ -695,7 +859,6 @@ class MapState extends State<MapPage> {
 
     // if speed is less than 1 meter / second (~2.2 mph)
     if (position.speed < 1) {
-      print("Getting TIM Messages to Show ${settingsController.demoMode.value}");
       newActiveTims = timManager.getNewActiveTims(
           position.longitude, position.latitude, position.heading, true, settingsController.demoMode.value);
 
@@ -712,11 +875,15 @@ class MapState extends State<MapPage> {
     updateTimeToChange();
 
     List<ItisCode> codes = await timManager.getItisRepresentationForDataFrames(frames);
+    List<ItisCode> msgs = messageManager.convertToItisCodes(
+        messageManager.getActiveMessages(LatLng(position.latitude, position.longitude), position.heading));
 
     List<String> hex = timManager.getUniqueAsnFromDataFrames(frames);
     for (String str in hex) {
       addToTimLog("ALERT", str);
     }
+
+    codes.addAll(msgs);
 
     if (mounted) {
       setState(() {
@@ -845,6 +1012,15 @@ class MapState extends State<MapPage> {
     Position? pos = currentPosition;
 
     if (pos != null) {
+      Marker userMarker = Marker(
+        point: getUserLocation(),
+        width: 60,
+        height: 60,
+        child: iconBase(getSenderIcon(), Colors.blue[900]!,
+            sirensOn: configController.isIceCreamSongOn.value || configController.isSirenOn.value,
+            busWarningOn: configController.isBusWarningOn.value),
+      );
+      markerList.add(userMarker);
       if (_mapController.camera.zoom > 17.5) {
         // Get Maps that the user is near or in
         List<GeoMap> geoMaps = mapManager.getActiveMaps(pos.longitude, pos.latitude);
@@ -884,18 +1060,6 @@ class MapState extends State<MapPage> {
           }
         }
       }
-
-      Marker userMarker = Marker(
-        width: 80.0,
-        height: 80.0,
-        point: getUserLocation(),
-        child: const Icon(
-          Icons.directions_car,
-          color: Colors.red,
-        ),
-      );
-
-      markerList.add(userMarker);
     }
 
     DateTime compTime = timingService.getKronosTime();
@@ -903,29 +1067,103 @@ class MapState extends State<MapPage> {
     DateTime startTime = compTime.subtract(const Duration(seconds: 1));
 
     List<String> removeKeys = [];
+    for (String key in messageManager.receivedMsgs.keys) {
+      ReceivedMsg msg = messageManager.receivedMsgs[key]!;
 
-    for (String key in receivedBsms.keys) {
-      ReceivedBsm bsm = receivedBsms[key]!;
-
-      if (bsm.dateTime.isAfter(startTime) && bsm.dateTime.isBefore(endTime)) {
-        Marker remoteMarker = Marker(
-          width: 80.0,
-          height: 80.0,
-          point: bsm.position,
-          child: Icon(Icons.directions_car, color: Colors.blue[900]),
-        );
-
-        markerList.add(remoteMarker);
+      if (msg.dateTime.isAfter(startTime) && msg.dateTime.isBefore(endTime)) {
+        if (msg is ReceivedBsm) {
+          Marker remoteMarker = Marker(
+            point: msg.position,
+            width: 60,
+            height: 60,
+            child: iconBase(IconManager.getReceivedMessageIcon(msg), Colors.grey[700]!,
+                sirensOn: msg.sirens == SirenInUse.inUse, busWarningOn: msg.lights == LightbarInUse.inUse),
+          );
+          markerList.add(remoteMarker);
+        } else {
+          Marker remoteMarker = Marker(
+            point: msg.position,
+            width: 60,
+            height: 60,
+            child: iconBase(IconManager.getReceivedMessageIcon(msg), Colors.grey[700]!),
+          );
+          markerList.add(remoteMarker);
+        }
       } else {
         removeKeys.add(key);
       }
     }
 
     for (String key in removeKeys) {
-      receivedBsms.remove(key);
+      messageManager.receivedMsgs.remove(key);
+      if (messageManager.shown.containsKey(key)) {
+        messageManager.shown.remove(key);
+      }
     }
-
     return markerList;
+  }
+
+  IconData getSenderIcon() {
+    if (configController.isVehicleConfig()) {
+      return IconManager.getIconForBSM(configController.selectedVehicle.value.classification);
+    } else {
+      return IconManager.getIconForPSM(
+          configController.selectedPedestrian, configController.selectedPublicSafetyWorker);
+    }
+  }
+
+  Widget iconBase(IconData icon, Color color, {bool sirensOn = false, bool busWarningOn = false}) {
+    sendMessageTimer;
+    return sirensOn
+        ? Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              //color: Colors.red,
+              gradient: RadialGradient(
+                colors: [Colors.white.withOpacity(0.8), Colors.red, Colors.transparent],
+                stops: [0.4, 0.6, 1.0], // Adjust the gradient spread
+              ),
+            ),
+            child: Icon(
+              icon,
+              size: 25,
+              color: color,
+            ),
+          )
+        : busWarningOn
+            ? Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  //color: Colors.red,
+                  gradient: RadialGradient(
+                    colors: [Colors.white.withOpacity(0.8), Colors.orange, Colors.transparent],
+                    stops: [0.4, 0.6, 1.0], // Adjust the gradient spread
+                  ),
+                ),
+                child: Icon(
+                  icon,
+                  size: 25,
+                  color: color,
+                ),
+              )
+            : Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.8),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: color,
+                      width: 2,
+                    ),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 25,
+                    color: color,
+                  ),
+                ),
+              );
   }
 
   MovementPhaseState getDominantMovementPhaseState(MovementPhaseState a, MovementPhaseState b) {
@@ -1041,13 +1279,6 @@ class MapState extends State<MapPage> {
             hitValue: (name: "Lane: ${lane.laneID}"),
           );
           polylines.add(hitPoly);
-
-          // Add Connecting Lines for Map
-          // if(lane.connectsTo != null){
-          //   for(Connection connection in lane.connectsTo!.connectsTo){
-          //     GenericLane connectingLane = connection.
-          //   }
-          // }
         }
       }
     }
@@ -1080,6 +1311,21 @@ class MapState extends State<MapPage> {
       }
     }
 
+    // // Uncomment this to show the polygon region in the forward arc
+    // if (currentPosition != null && currentPosition!.speed > 5) {
+    //   List<LatLng> polygon = geometryService.convertGeometryToLatLngList(geometryService.getConicSectionProjection(
+    //       LatLng(currentPosition!.latitude, currentPosition!.longitude), currentPosition!.heading, 10, 90, 100));
+
+    //   polygon.remove(polygon.last);
+    //   Polygon<HitValue> hitPoly = Polygon(
+    //     points: polygon,
+    //     borderColor: Colors.greenAccent,
+    //     color: const Color.fromARGB(128, 252, 173, 89),
+    //     borderStrokeWidth: 1,
+    //   );
+    //   polygons.add(hitPoly);
+    // }
+
     return polygons;
   }
 
@@ -1108,13 +1354,6 @@ class MapState extends State<MapPage> {
     }
   }
 
-  Future<String> getNetworkField() async {
-    String networkType = "UNKNOWN";
-    String signalStrength = "NONE_OR_UNKNOWN";
-
-    return "$networkType $signalStrength";
-  }
-
   String enumToString(Object o) => o.toString().split('.').last;
 
   @override
@@ -1128,7 +1367,7 @@ class MapState extends State<MapPage> {
         leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () {
-              bsmMessageTimer?.cancel();
+              sendMessageTimer?.cancel();
               positionStream?.cancel();
               uploadTimer?.cancel();
               mqtt.disconnect();
@@ -1139,130 +1378,96 @@ class MapState extends State<MapPage> {
             }),
         title: const Text(appTitle),
         actions: <Widget>[
-          IconButton(
-              icon: const Icon(Icons.settings),
-              onPressed: () {
-                Get.to(() => SettingsPage());
-              }),
+          navigationMenu(context),
         ],
       ),
-      body: Stack(alignment: AlignmentDirectional.topStart, children: [
-        Center(child: map(context, _mapController)),
-        Align(
-          alignment: Alignment.topRight,
-          child: showLightText && nextLightText.isNotEmpty
-              ? Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Container(
-                      width: screenWidth * 0.20,
-                      // height: screenHeight * 0.25,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.yellow.shade600, width: 2.0), // Box border
-                        borderRadius: BorderRadius.circular(8.0), // Optional: Rounded corners
-                        color: Colors.grey.shade800, // Optional: Background color
+      body: showVehicleStats
+          ? Container(
+              width: screenWidth,
+              height: screenHeight,
+              color: lightGrey,
+              child: Stack(alignment: AlignmentDirectional.topStart, children: [
+                Positioned(
+                  top: 50,
+                  child: Obx(() => vehicleStatsPage()),
+                ),
+                Align(
+                  alignment: Alignment.topRight,
+                  child: vehicleStatsBar(),
+                ),
+              ]),
+            )
+          : Stack(alignment: AlignmentDirectional.topStart, children: [
+              Center(child: map(context, _mapController)),
+              Align(
+                  alignment: Alignment.topLeft,
+                  child: configController.isVehicleConfig.value ? vehicleStatsBar() : Container()),
+              Positioned(
+                top: 60,
+                right: 0,
+                child: showLightText && nextLightText.isNotEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Container(
+                            width: screenWidth * 0.20,
+                            // height: screenHeight * 0.25,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.yellow.shade600, width: 2.0), // Box border
+                              borderRadius: BorderRadius.circular(8.0), // Optional: Rounded corners
+                              color: Colors.grey.shade800, // Optional: Background color
+                            ),
+                            child: Column(mainAxisSize: MainAxisSize.min, children: [
+                              const Text("Current Light State",
+                                  textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                              SizedBox(
+                                  width: screenWidth * 0.15, height: screenHeight * 0.15, child: currentLightState),
+                              Text(nextLightText, textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                            ])))
+                    : (!showLightText && nextLightText.isNotEmpty)
+                        ? SizedBox(width: screenWidth * 0.15, height: screenHeight * 0.15, child: currentLightState)
+                        : Container(),
+              ),
+              Positioned(
+                  top: configController.isVehicleConfig.value ? 60 : 0,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(children: [
+                      managementButtons(),
+                      verticalSpaceSmall,
+                      configController.hasASiren()
+                          ? sirenButton()
+                          : (configController.isVehicleConfig.value &&
+                                  configController.selectedVehicle.value.classification == VehicleType.BUS)
+                              ? busWarningButton()
+                              : (configController.isVehicleConfig.value &&
+                                      configController.selectedVehicle.value.classification ==
+                                          VehicleType.ICE_CREAM_TRUCK)
+                                  ? iceCreamSongButton()
+                                  : Container(width: 60),
+                    ]),
+                  )),
+              Align(
+                  alignment: Alignment.bottomLeft,
+                  child: SizedBox(
+                    height: 170,
+                    child: Row(children: [
+                      Expanded(
+                        child: timsDisplay(),
                       ),
-                      child: Column(mainAxisSize: MainAxisSize.min, children: [
-                        const Text("Current Light State",
-                            textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
-                        SizedBox(width: screenWidth * 0.15, height: screenHeight * 0.15, child: currentLightState),
-                        Text(nextLightText, textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
-                      ])))
-              : (!showLightText && nextLightText.isNotEmpty)
-                  ? SizedBox(width: screenWidth * 0.15, height: screenHeight * 0.15, child: currentLightState)
-                  : Container(),
-        ),
-        Align(
-            alignment: Alignment.topLeft,
-            child: Column(children: [
-              ElevatedButton(
-                onPressed: () {
-                  updateConnectedStatus(ConnectedStatus.DISCONNECTED);
-                  stopSendingBSM();
-                  connectToMqttBroker();
-                },
-                style: ElevatedButton.styleFrom(
-                  shape: const CircleBorder(),
-                  padding: const EdgeInsets.all(10),
-                  backgroundColor: connectedButtonColor, // <-- Button color
-                  foregroundColor: Colors.black, // <-- Splash color
-                  shadowColor: Colors.black,
-                ),
-                // child: Icon(Icons.menu, color: Colors.white),
-                child: const Icon(Icons.connect_without_contact_rounded, color: Colors.white),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  followUser = true;
-                  _mapController.moveAndRotate(
-                      getUserLocation(), _mapController.camera.zoom, _mapController.camera.rotation);
-                },
-                style: ElevatedButton.styleFrom(
-                  shape: const CircleBorder(),
-                  padding: const EdgeInsets.all(10),
-                  backgroundColor: followUser ? Colors.green : Colors.blue, // <-- Button color
-                  foregroundColor: Colors.black, // <-- Splash color
-                  shadowColor: Colors.black,
-                ),
-                // child: Icon(Icons.menu, color: Colors.white),
-                child: const Icon(Icons.directions_car, color: Colors.white),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  addToAppLog("Upload Log Files");
-                  uploadAllLogs();
-                },
-                style: ElevatedButton.styleFrom(
-                  shape: const CircleBorder(),
-                  padding: const EdgeInsets.all(10),
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.black, // <-- Splash color
-                  shadowColor: Colors.black,
-                ),
-                // child: Icon(Icons.menu, color: Colors.white),
-                child: const Icon(Icons.upload, color: Colors.white),
-              ),
-            ])),
-        Align(
-            alignment: Alignment.bottomCenter,
-            child: CarouselSlider(
-              options: CarouselOptions(height: 150.0, viewportFraction: 0.3, enableInfiniteScroll: false),
-              items: showTims.map((displayCode) {
-                Color borderColor = Colors.blue;
-
-                if (displayCode.status == ITIS_CODE_STATUS.VALID) {
-                  borderColor = Colors.green;
-                } else if (displayCode.status == ITIS_CODE_STATUS.UNKNOWN) {
-                  borderColor = Colors.yellow;
-                } else if (displayCode.status == ITIS_CODE_STATUS.ERROR) {
-                  borderColor = Colors.red;
-                }
-
-                return Builder(
-                  builder: (BuildContext context) {
-                    return Container(
-                        width: MediaQuery.of(context).size.width,
-                        margin: const EdgeInsets.symmetric(horizontal: 5.0),
-                        child: displayCode.image != null
-                            ? Image(image: displayCode.image!)
-                            : Text(
-                                displayCode.description,
-                                style: const TextStyle(fontSize: 16.0),
-                              ));
-                  },
-                );
-              }).toList(),
-            )),
-        Align(
-          alignment: Alignment.center,
-          child: showLoadingIcon
-              ? const SpinKitSpinningLines(
-                  color: Colors.white,
-                  size: 140,
-                  lineWidth: 4,
-                )
-              : null,
-        )
-      ]),
+                      configController.isVehicleConfig.value ? speedMarker() : Container(),
+                    ]),
+                  )),
+              Align(
+                alignment: Alignment.center,
+                child: showLoadingIcon
+                    ? const SpinKitSpinningLines(
+                        color: Colors.white,
+                        size: 140,
+                        lineWidth: 4,
+                      )
+                    : null,
+              )
+            ]),
     );
   }
 
@@ -1372,6 +1577,602 @@ class MapState extends State<MapPage> {
             ]),
       ),
     );
+  }
+
+  Widget vehicleStatsBar() {
+    return Container(
+        height: 50,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [mediumGrey, lightGrey, Colors.white],
+            stops: const [0, 0.2, 1],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.8),
+              spreadRadius: 1,
+              blurRadius: 5,
+              offset: const Offset(-1, 3), // changes position of shadow
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(children: [
+            const Text("Vehicle Stats", style: TextStyle(color: Colors.black, fontSize: 20)),
+            Expanded(child: Container()),
+            IconButton(
+                icon: Icon(showVehicleStats ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, color: Colors.black),
+                onPressed: () {
+                  showVehicleStats = !showVehicleStats;
+                })
+          ]),
+        ));
+  }
+
+  Widget managementButtons() {
+    return Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(35.0),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.8),
+              spreadRadius: 1,
+              blurRadius: 5,
+              offset: const Offset(-1, 3), // changes position of shadow
+            ),
+          ],
+        ),
+        child: Column(children: [
+          verticalSpaceSmall,
+          ElevatedButton(
+            onPressed: () {
+              updateConnectedStatus(ConnectedStatus.DISCONNECTED);
+              stopSendingBSM();
+              connectToMqttBroker();
+            },
+            style: ElevatedButton.styleFrom(
+              shape: const CircleBorder(),
+              padding: const EdgeInsets.all(10),
+              backgroundColor: connectedButtonColor, // <-- Button color
+              foregroundColor: Colors.black, // <-- Splash color
+              shadowColor: Colors.black,
+              elevation: 4,
+            ),
+            // child: Icon(Icons.menu, color: Colors.white),
+            child: const Icon(Icons.connect_without_contact_rounded, color: Colors.white),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              followUser = true;
+              _mapController.moveAndRotate(
+                  getUserLocation(), _mapController.camera.zoom, _mapController.camera.rotation);
+            },
+            style: ElevatedButton.styleFrom(
+              shape: const CircleBorder(),
+              padding: const EdgeInsets.all(10),
+              backgroundColor: followUser ? Colors.green : Colors.blue, // <-- Button color
+              foregroundColor: Colors.black, // <-- Splash color
+              shadowColor: Colors.black,
+              elevation: 4,
+            ),
+            // child: Icon(Icons.menu, color: Colors.white),
+            child: const Icon(Icons.directions_car, color: Colors.white),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              addToAppLog("Upload Log Files");
+              uploadAllLogs();
+            },
+            style: ElevatedButton.styleFrom(
+              shape: const CircleBorder(),
+              padding: const EdgeInsets.all(10),
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.black, // <-- Splash color
+              shadowColor: Colors.black,
+              elevation: 4,
+            ),
+            // child: Icon(Icons.menu, color: Colors.white),
+            child: const Icon(Icons.upload, color: Colors.white),
+          ),
+          verticalSpaceSmall,
+        ]));
+  }
+
+  Widget sirenButton() {
+    return Obx(() => GestureDetector(
+          onTap: () {
+            if (configController.isSirenOn.value) {
+              configController.stopSiren();
+            } else {
+              configController.startSiren();
+            }
+          },
+          child: Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: lightGrey,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: configController.isSirenOn.value ? Colors.red : mediumGrey,
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.8),
+                  spreadRadius: 1,
+                  blurRadius: 5,
+                  offset: const Offset(-1, 3), // changes position of shadow
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: Image.asset(
+                configController.isSirenOn.value
+                    ? configController.images[configController.sirenPhotoIndex.value]
+                    : "assets/images/Siren/siren_bw.png",
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+        ));
+  }
+
+  Widget busWarningButton() {
+    return Obx(() => GestureDetector(
+          onTap: () {
+            configController.isBusWarningOn.value = !configController.isBusWarningOn.value;
+          },
+          child: Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: lightGrey,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: configController.isBusWarningOn.value ? Colors.orange : mediumGrey,
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.8),
+                  spreadRadius: 1,
+                  blurRadius: 5,
+                  offset: const Offset(-1, 3), // changes position of shadow
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: Image.asset(
+                configController.isBusWarningOn.value
+                    ? "assets/images/Bus/bus_warning.png"
+                    : "assets/images/Bus/bus_warning_bw.png",
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+        ));
+  }
+
+  Widget iceCreamSongButton() {
+    return Obx(() => GestureDetector(
+          onTap: () async {
+            configController.isIceCreamSongOn.value = !configController.isIceCreamSongOn.value;
+            if (configController.isIceCreamSongOn.value && settingsController.soundEffectsEnabled.value) {
+              configController.playIceCreamSong();
+            } else if (!configController.isIceCreamSongOn.value && settingsController.soundEffectsEnabled.value) {
+              configController.stopIceCreamSong();
+            }
+          },
+          child: Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: lightGrey,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: configController.isIceCreamSongOn.value ? const Color.fromARGB(255, 255, 94, 148) : mediumGrey,
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.8),
+                  spreadRadius: 1,
+                  blurRadius: 5,
+                  offset: const Offset(-1, 3), // changes position of shadow
+                ),
+              ],
+            ),
+            child: Icon(
+              configController.isIceCreamSongOn.value ? Icons.music_note : Icons.music_off,
+              color: configController.isIceCreamSongOn.value ? const Color.fromARGB(255, 255, 94, 148) : mediumGrey,
+              size: 30,
+            ),
+          ),
+        ));
+  }
+
+  Widget speedMarker() {
+    return Padding(
+      padding: const EdgeInsets.all(10),
+      child: Container(
+        width: 100,
+        height: 150,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          color: lightGrey,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.8),
+              spreadRadius: 1,
+              blurRadius: 5,
+              offset: const Offset(-1, 3), // changes position of shadow
+            ),
+          ],
+          /*border: Border.all(
+            color: primaryColor,
+            width: 2.0,
+          ), */ // Box border
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Stack(
+              children: [
+                // Outline layers
+                Text(
+                  ((currentPosition?.speed ?? 0) * 2.23694).toStringAsFixed(0),
+                  style: TextStyle(
+                    fontSize: 52.0,
+                    foreground: Paint()
+                      ..style = PaintingStyle.stroke
+                      ..strokeWidth = 3.0
+                      ..color = primaryColor.withOpacity(0.5), // Outline color
+                  ),
+                ),
+                // Main text
+                Text(
+                  ((currentPosition?.speed ?? 0) * 2.23694).toStringAsFixed(0),
+                  style: TextStyle(
+                    fontSize: 52.0,
+                    color: Colors.black, // Fill color
+                  ),
+                ),
+              ],
+            ),
+            Stack(
+              children: [
+                // Outline layers
+                Text(
+                  "MPH",
+                  style: TextStyle(
+                    fontSize: 32.0,
+                    foreground: Paint()
+                      ..style = PaintingStyle.stroke
+                      ..strokeWidth = 2.0
+                      ..color = primaryColor.withOpacity(0.5), // Outline color
+                  ),
+                ),
+                // Main text
+                const Text(
+                  "MPH",
+                  style: TextStyle(
+                    fontSize: 32.0,
+                    color: Colors.black, // Fill color
+                  ),
+                ),
+              ],
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Widget timsDisplay() {
+    List<Widget> timIcons = [];
+    for (ItisCode code in showTims) {
+      Widget icon = code.image != null
+          ? Image(
+              image: code.image!,
+            )
+          : Text(
+              code.description,
+              style: const TextStyle(fontSize: 16.0),
+            );
+      timIcons.add(icon);
+    }
+    if (timIcons.length <= 4) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: timIcons.map((icon) {
+          // Dynamically calculate the size based on the number of icons
+          double iconSize = timIcons.length <= 1 ? 140 : (timIcons.length <= 2 ? 100 : 70);
+          return SizedBox(
+            width: iconSize,
+            height: iconSize,
+            child: icon,
+          );
+        }).toList(),
+      );
+    } else {
+      // Create a grid with 2 rows
+      return GridView.count(
+        shrinkWrap: true,
+        crossAxisCount: 4, // 2 columns
+        mainAxisSpacing: 8.0,
+        crossAxisSpacing: 8.0,
+        children: timIcons,
+      );
+    }
+  }
+
+  Widget vehicleStatsPage() {
+    return Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: (obdController.isConnected.value && obdController.vinCollected.value)
+            ? obdStatsDisplay()
+            : notConnectedToOBDPage());
+  }
+
+  Widget notConnectedToOBDPage() {
+    return Container(
+      width: screenWidth(context),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          verticalSpaceMedium,
+          Obx(() => obdConnecting.value
+              ? const Column(children: [
+                  Text("Connecting to OBD-II...", style: TextStyle(fontSize: 24)),
+                  verticalSpaceLarge,
+                  SpinKitSpinningLines(color: Colors.black, size: 90)
+                ])
+              : ElevatedButton(
+                  onPressed: () async {
+                    bool successfulConnection = false;
+                    if (!obdController.bluetoothInitialized.value) {
+                      await obdController.initialize();
+                    }
+                    if (configController.selectedVehicle.value.obdIIBluetoothAddress != null) {
+                      obdConnecting.value = true;
+                      await obdController
+                          .connectToDevice(configController.selectedVehicle.value.obdIIBluetoothAddress!);
+
+                      if (obdController.isConnected.value) {
+                        successfulConnection = true;
+                        await obdController.startGettingData();
+                      }
+                    }
+                    if (!successfulConnection) {
+                      Device? device;
+
+                      device = await Get.dialog(bluetoothDialog());
+                      if (device != null) {
+                        obdConnecting.value = true;
+                        await obdController.connectToDevice(device.address);
+                        if (obdController.isConnected.value) {
+                          await obdController.startGettingData();
+                        }
+                      }
+                    }
+                    obdConnecting.value = false;
+                  },
+                  child: const Text("Connect to OBD-II"),
+                )),
+        ],
+      ),
+    );
+  }
+
+  Widget obdStatsDisplay() {
+    return Column(
+      children: [
+        verticalSpaceMedium,
+        Obx(() => SizedBox(
+              width: screenWidth(context) * 0.8,
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(
+                  "${obdController.vehicleInfo.value?['Year'] ?? ''} ${obdController.vehicleInfo.value?['Make'] ?? ''} ${obdController.vehicleInfo.value?['Model'] ?? ''}",
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  "${obdController.vehicleInfo.value?['Type'] ?? ''}",
+                  style: TextStyle(fontSize: 16),
+                ),
+              ]),
+            )),
+        verticalSpaceMedium,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [speedDisplay(), rpmDisplay()],
+          ),
+        )
+      ],
+    );
+  }
+
+  Widget speedDisplay() {
+    return Container(
+        width: 175,
+        height: 175,
+        decoration: BoxDecoration(
+          //color: Colors.black,
+          gradient: LinearGradient(
+            colors: [lightGrey, darkGrey],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.5),
+              spreadRadius: 2,
+              blurRadius: 7,
+              offset: const Offset(0, 3), // changes position of shadow
+            ),
+          ],
+        ),
+        child: Center(
+          child: Container(
+              width: 160,
+              height: 160,
+              decoration: BoxDecoration(
+                //color: Color.fromARGB(255, 231, 231, 231),
+                gradient: RadialGradient(
+                  colors: [Colors.black, darkGrey, Colors.white],
+                  stops: const [0.9, 0.98, 1],
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Container(
+                  width: 150,
+                  height: 150,
+                  decoration: const BoxDecoration(
+                    color: Colors.black,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Stack(children: [
+                    Align(
+                      alignment: Alignment(0, 0.8),
+                      child: Text("MPH", style: TextStyle(color: Colors.white, fontSize: 24)),
+                    ),
+                    Center(
+                      child: Obx(() => Text(
+                            "${obdController.speed.value.round()}",
+                            style: TextStyle(
+                              fontSize: 58.0,
+                              foreground: Paint()
+                                ..style = PaintingStyle.stroke
+                                ..strokeWidth = 3.0
+                                ..color = primaryColor, // Outline color
+                            ),
+                          )),
+                    ),
+                    Center(
+                      child: Obx(() => Text(
+                            "${obdController.speed.value.round()}",
+                            style: TextStyle(
+                              fontSize: 58.0,
+                              color: Colors.white, // Fill color
+                            ),
+                          )),
+                    ),
+                    speedArc(),
+                  ]),
+                ),
+              )),
+        ));
+  }
+
+  Widget rpmDisplay() {
+    return Container(
+        width: 175,
+        height: 175,
+        decoration: BoxDecoration(
+          //color: Colors.black,
+          gradient: LinearGradient(
+            colors: [lightGrey, darkGrey],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.5),
+              spreadRadius: 2,
+              blurRadius: 7,
+              offset: const Offset(0, 3), // changes position of shadow
+            ),
+          ],
+        ),
+        child: Center(
+          child: Container(
+              width: 160,
+              height: 160,
+              decoration: BoxDecoration(
+                //color: Color.fromARGB(255, 231, 231, 231),
+                gradient: RadialGradient(
+                  colors: [Colors.black, darkGrey, Colors.white],
+                  stops: const [0.9, 0.98, 1],
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Container(
+                  width: 150,
+                  height: 150,
+                  decoration: const BoxDecoration(
+                    color: Colors.black,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Stack(children: [
+                    Align(
+                      alignment: Alignment(0, 0.8),
+                      child: Text("RPM", style: TextStyle(color: Colors.white, fontSize: 24)),
+                    ),
+                    Center(
+                      child: Obx(() => Text(
+                            "${obdController.rpm.value.round()}",
+                            style: TextStyle(
+                              fontSize: 40.0,
+                              foreground: Paint()
+                                ..style = PaintingStyle.stroke
+                                ..strokeWidth = 3.0
+                                ..color = primaryColor, // Outline color
+                            ),
+                          )),
+                    ),
+                    Center(
+                      child: Obx(() => Text(
+                            "${obdController.rpm.value.round()}",
+                            style: const TextStyle(
+                              fontSize: 40.0,
+                              color: Colors.white, // Fill color
+                            ),
+                          )),
+                    ),
+                    rpmArc(),
+                  ]),
+                ),
+              )),
+        ));
+  }
+
+  Widget speedArc() {
+    return Obx(() {
+      final speed = obdController.speed.value;
+      final percent = (speed / 200.0).clamp(0.0, 1.0);
+      return CustomPaint(
+        painter: ArcPainter(percent: percent, color: primaryColor),
+        child: Container(
+          width: 175,
+          height: 175,
+        ),
+      );
+    });
+  }
+
+  Widget rpmArc() {
+    return Obx(() {
+      final rpm = obdController.rpm.value;
+      final percent = (rpm / 7000.0).clamp(0.0, 1.0);
+      return CustomPaint(
+        painter: ArcPainter(percent: percent, color: Colors.red),
+        child: Container(
+          width: 175,
+          height: 175,
+        ),
+      );
+    });
   }
 
   void _openTouchedGonsModal(

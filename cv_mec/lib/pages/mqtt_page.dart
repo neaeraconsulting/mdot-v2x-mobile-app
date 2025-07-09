@@ -18,8 +18,10 @@ import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_data_frame.
 import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_information.dart';
 import 'package:asn1_plugin/j2735/2024/traveler_information/work_zone.dart';
 import 'package:connection_network_type/connection_network_type.dart';
+import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/models/data_queue.dart';
 import 'package:cv_mec/models/leidos_date_extraction.dart';
+import 'package:cv_mec/models/message_builders/bsm_message_builder.dart';
 import 'package:cv_mec/models/protobuf_models/geo_routed_msg.pb.dart' as protobuf;
 import 'package:cv_mec/models/itis_code.dart';
 import 'package:cv_mec/models/itis_parser.dart';
@@ -98,6 +100,8 @@ class _MQTTTestingState extends State<MQTTTesting> {
 
   late Pointer<Pointer<Void>> bsmTemplate;
 
+  BsmMessageBuilder bsmBuilder = BsmMessageBuilder();
+
   // Map<String, TravelerInformation> receivedTims = <String, TravelerInformation>{};
   TimManager timManager = TimManager();
 
@@ -105,7 +109,6 @@ class _MQTTTestingState extends State<MQTTTesting> {
 
   _MQTTTestingState() {
     _locationService = Get.find<LocationService>();
-    bsmTemplate = asn.decode(asn.bsmTemplate);
 
     _positionStream = _locationService.locationStream.listen(updatePosition);
 
@@ -165,7 +168,6 @@ class _MQTTTestingState extends State<MQTTTesting> {
     _timer?.cancel();
     //_positionStream?.cancel();
     _positionStream = _locationService.locationStream.listen(updatePosition);
-    asn.randomizeBsmId(bsmTemplate);
 
     // Set the timer to call _runFunction every 100 milliseconds
     _timer = Timer.periodic(Duration(milliseconds: messageDelay), (timer) {
@@ -340,14 +342,13 @@ class _MQTTTestingState extends State<MQTTTesting> {
       Uint8Buffer buffer = Uint8Buffer();
       msg.position = pos;
 
-      asn.setBsmLongLat(bsmTemplate, pos.longitude, pos.latitude);
-      asn.incrementBsmMsgCnt(bsmTemplate);
-
-      asn.setBsmTime(bsmTemplate, sendTime);
+      bsmBuilder.setPositionLatLng(pos.latitude, pos.longitude);
+      bsmBuilder.incrementMsgCnt();
+      bsmBuilder.setTime(sendTime);
 
       // msg.msgBytes = utf8.encode(asn.encode(bsmTemplate));
 
-      String hex = asn.encode(bsmTemplate);
+      String hex = bsmBuilder.build();
 
       msg.msgBytes = ASNService.hexToBytes(hex);
 
@@ -400,6 +401,7 @@ class _MQTTTestingState extends State<MQTTTesting> {
   }
 
   void getPermission() async {
+    print("went HERE");
     await Geolocator.requestPermission();
   }
 

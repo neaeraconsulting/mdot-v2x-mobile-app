@@ -23,6 +23,7 @@
 import 'package:asn1_plugin/generated_bindings.dart' as C;
 import 'package:asn1_plugin/j2735/2024/common/emergency_details.dart';
 import 'dart:ffi';
+import 'package:ffi/ffi.dart';
 import 'package:asn1_plugin/j2735/2024/common/minute_of_the_year.dart';
 import 'package:asn1_plugin/j2735/2024/common/response_type.dart';
 import 'package:asn1_plugin/j2735/2024/common/temporary_id.dart';
@@ -44,6 +45,9 @@ class EmergencyVehicleAlert {
   VehicleGroupAffected? vehicleType = null;
   IncidentResponseEquipment? responseEquip = null;
   ResponderGroupAffected? responderType = null;
+
+  EmergencyVehicleAlert(this.rsaMsg) {}
+
   EmergencyVehicleAlert.fromC(C.EmergencyVehicleAlert c_obj) {
     if (c_obj.timeStamp.address != 0) {
       timeStamp = MinuteOfTheYear(c_obj.timeStamp.value);
@@ -81,5 +85,17 @@ class EmergencyVehicleAlert {
     if (c_obj.responderType.address != 0) {
       responderType = ResponderGroupAffected.values[c_obj.responderType.value];
     }
+  }
+
+  Pointer<C.EmergencyVehicleAlert> toC() {
+    Pointer<C.EmergencyVehicleAlert> alert = calloc<C.EmergencyVehicleAlert>();
+
+    if (timeStamp != null) {
+      Pointer<Long> value = calloc<Long>();
+      value.value = timeStamp!.minuteOfTheYear;
+      alert.ref.timeStamp = value;
+    }
+
+    return alert;
   }
 }

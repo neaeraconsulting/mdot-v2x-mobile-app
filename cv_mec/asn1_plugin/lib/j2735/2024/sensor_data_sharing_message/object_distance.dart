@@ -23,4 +23,8 @@
 class ObjectDistance {
   late int objectDistance;
   ObjectDistance(this.objectDistance);
+
+  double getDistanceInMeters() {
+    return objectDistance * 0.1;
+  }
 }

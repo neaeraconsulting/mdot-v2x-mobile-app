@@ -1,7 +1,7 @@
 import 'dart:async';
 
+import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/models/itis_code.dart';
-import 'package:cv_mec/pages/settings_page.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -45,6 +45,7 @@ class VehicleNotificationManager {
     if (!settingsController.notificationsEnabled.value) {
       return;
     }
+    print("Sending notification: $message");
     platform.invokeMethod<int>('notify', <String, dynamic>{
       'id': id,
       'description': message,
@@ -58,6 +59,12 @@ class VehicleNotificationManager {
       int id = DateTime.now().millisecondsSinceEpoch;
       _sendNotificationCommand(id, code.description, imageB64String);
     }
+  }
+
+  static Future<void> notifyVehicleFromDescriptionImage(String description, ImageProvider image) async {
+    String imageB64String = await _convertImageProviderToBase64(image);
+    int id = DateTime.now().millisecondsSinceEpoch;
+    _sendNotificationCommand(id, description, imageB64String);
   }
 
   static Future<void> notifyVehicleFromMessageAndImage(String message, ImageProvider<Object> image) async {
