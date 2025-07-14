@@ -88,6 +88,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:logger/logger.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:cv_mec/models/protobuf_models/geo_routed_msg.pb.dart' as protobuf;
 import 'package:typed_data/typed_data.dart';
@@ -176,10 +177,12 @@ class MapState extends State<MapPage> {
     MovementPhaseState.CAUTION_CONFLICTING_TRAFFIC: Image.asset("assets/images/Lights/traffic-light-icon-yellow.png")
   };
 
+  final Logger _logger = Logger();
+
   late Image currentLightState;
   late String nextLightText = "";
 
-  bool debugMode = false;
+  bool debugMode = true;
   bool showLoadingIcon = true;
   bool showLightText = true;
 
@@ -461,7 +464,7 @@ class MapState extends State<MapPage> {
     }
 
     mqttConnectionURL = await apiService.getConnection(token, registration!.deviceID,
-        paramController.fakeLatitude.value, paramController.fakeLongitude.value, vzString);
+        paramController.registrationLatitude.value, paramController.registrationLongitude.value, vzString);
 
     int result = await mqtt.connect(mqttConnectionURL!, registration!);
     if (result != 0) {
@@ -704,11 +707,11 @@ class MapState extends State<MapPage> {
 
   void showError(String message) {
     addToAppLog("ERROR: $message");
-    // TODO
+    _logger.e("ERROR: $message");
   }
 
   void addToAppLog(String message) {
-    print("APPLOG: $message");
+    _logger.i("APPLOG: $message");
     appLogQueue.addItem("$message\n");
   }
 
@@ -910,7 +913,7 @@ class MapState extends State<MapPage> {
     if (currentPosition != null) {
       return LatLng(currentPosition!.latitude, currentPosition!.longitude);
     } else {
-      return LatLng(paramController.fakeLatitude.value, paramController.fakeLongitude.value);
+      return LatLng(paramController.registrationLatitude.value, paramController.registrationLongitude.value);
     }
   }
 
@@ -1311,21 +1314,6 @@ class MapState extends State<MapPage> {
       }
     }
 
-    // // Uncomment this to show the polygon region in the forward arc
-    // if (currentPosition != null && currentPosition!.speed > 5) {
-    //   List<LatLng> polygon = geometryService.convertGeometryToLatLngList(geometryService.getConicSectionProjection(
-    //       LatLng(currentPosition!.latitude, currentPosition!.longitude), currentPosition!.heading, 10, 90, 100));
-
-    //   polygon.remove(polygon.last);
-    //   Polygon<HitValue> hitPoly = Polygon(
-    //     points: polygon,
-    //     borderColor: Colors.greenAccent,
-    //     color: const Color.fromARGB(128, 252, 173, 89),
-    //     borderStrokeWidth: 1,
-    //   );
-    //   polygons.add(hitPoly);
-    // }
-
     return polygons;
   }
 
@@ -1479,8 +1467,8 @@ class MapState extends State<MapPage> {
         child: FlutterMap(
             mapController: mapController,
             options: MapOptions(
-              initialCenter: LatLng(paramController.fakeLatitude.value,
-                  paramController.fakeLongitude.value), //LatLng(, paramController.fakeLongitude.value),
+              initialCenter: LatLng(paramController.registrationLatitude.value,
+                  paramController.registrationLongitude.value), //LatLng(, paramController.fakeLongitude.value),
               initialZoom: 16,
               onMapReady: () {
                 // controller.mapController = mapController;
@@ -1504,7 +1492,7 @@ class MapState extends State<MapPage> {
               },
             ),
             children: [
-              Text("${paramController.fakeLatitude.value}"),
+              Text("${paramController.registrationLatitude.value}"),
               TileLayer(
                 urlTemplate: 'https://api.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}',
                 additionalOptions: {

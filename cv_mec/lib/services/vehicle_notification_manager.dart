@@ -45,7 +45,6 @@ class VehicleNotificationManager {
     if (!settingsController.notificationsEnabled.value) {
       return;
     }
-    print("Sending notification: $message");
     platform.invokeMethod<int>('notify', <String, dynamic>{
       'id': id,
       'description': message,

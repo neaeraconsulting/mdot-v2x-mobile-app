@@ -211,8 +211,6 @@ class _MQTTTestingState extends State<MQTTTesting> {
 
     String hex = ASNService.bytesToHex(decodedMessage.msgBytes);
 
-    // String hex = utf8.decode(decodedMessage.msgBytes);
-
     print("Hex Message Test: $hex");
 
     MsgType msgType = asn.determineHexMessageType(hex);
@@ -333,8 +331,8 @@ class _MQTTTestingState extends State<MQTTTesting> {
         pos.longitude = currentPosition!.longitude;
         pos.latitude = currentPosition!.latitude;
       } else {
-        pos.latitude = controller.fakeLatitude.value;
-        pos.longitude = controller.fakeLongitude.value;
+        pos.latitude = controller.registrationLatitude.value;
+        pos.longitude = controller.registrationLongitude.value;
       }
 
       DateTime sendTime = timingService.getKronosTime();
@@ -691,8 +689,12 @@ class _MQTTTestingState extends State<MQTTTesting> {
                     if (registration != null) {
                       fileService.saveRegistration(registration!);
                       addToAppLog("Acquired Certificates for DeviceID: ${registration!.deviceID}");
-                      mqttConnectionURL = await api.getConnection(token, registration!.deviceID,
-                          controller.fakeLatitude.value, controller.fakeLongitude.value, controller.networkType.value);
+                      mqttConnectionURL = await api.getConnection(
+                          token,
+                          registration!.deviceID,
+                          controller.registrationLatitude.value,
+                          controller.registrationLongitude.value,
+                          controller.networkType.value);
                       addToAppLog("Acquired MQTT Connection String: $mqttConnectionURL");
                     } else {
                       addToAppLog("Failed to Register application");

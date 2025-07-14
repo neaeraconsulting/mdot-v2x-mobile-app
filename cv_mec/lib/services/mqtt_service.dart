@@ -7,14 +7,15 @@ import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
 import 'package:get/get.dart';
 import 'dart:convert';
-
 import 'package:typed_data/typed_data.dart';
+import 'package:logger/logger.dart';
 
 class MqttService extends GetxService {
   MqttServerClient? client;
   Map<String, Function(MqttReceivedMessage<MqttMessage?>, DateTime)> subscriberList = {};
   var pongCount = 0; // Pong counter
   Timing timingService = Get.find<Timing>();
+  final Logger _logger = Logger();
 
   Future<int> connect(String connectionURL, Registration registration) async {
     try {
@@ -52,7 +53,7 @@ class MqttService extends GetxService {
 
       client!.pongCallback = pong;
     } catch (e) {
-      print('CV_MEC::Certificate Error - $e');
+      _logger.e('CV_MEC::Certificate Error - $e');
       return -1;
     }
 
@@ -60,20 +61,21 @@ class MqttService extends GetxService {
       await client!.connect();
     } on NoConnectionException catch (e) {
       // Raised by the client when connection fails.
-      print('CV_MEC::client exception - $e');
+      _logger.e('CV_MEC::client exception - $e');
       // client!.disconnect();
     } on SocketException catch (e) {
       // Raised by the socket layer
-      print('CV_MEC::socket exception - $e');
+      _logger.e('CV_MEC::socket exception - $e');
       // client!.disconnect();
     }
 
     /// Check we are connected
     if (client!.connectionStatus!.state == MqttConnectionState.connected) {
-      print('CV_MEC::Mosquitto client connected');
+      _logger.i('CV_MEC::Mosquitto client connected');
     } else {
       /// Use status here rather than state if you also want the broker return code.
-      print('CV_MEC::ERROR Mosquitto client connection failed - disconnecting, status is ${client!.connectionStatus}');
+      _logger
+          .e('CV_MEC::ERROR Mosquitto client connection failed - disconnecting, status is ${client!.connectionStatus}');
       client!.disconnect();
       return -1;
     }
@@ -111,41 +113,41 @@ class MqttService extends GetxService {
   }
 
   void onSubscribed(String topic) {
-    print('CV_MEC::Subscription confirmed for topic $topic');
+    _logger.i('CV_MEC::Subscription confirmed for topic $topic');
   }
 
   void onDisconnected() {
-    print('CV_MEC::OnDisconnected client callback - Client disconnection');
+    _logger.w('CV_MEC::OnDisconnected client callback - Client disconnection');
     if (client!.connectionStatus!.disconnectionOrigin == MqttDisconnectionOrigin.solicited) {
-      print('CV_MEC::OnDisconnected callback is solicited, this is correct');
+      _logger.i('CV_MEC::OnDisconnected callback is solicited, this is correct');
     } else {
-      print('CV_MEC::OnDisconnected callback is unsolicited or none, this is incorrect - exiting');
+      _logger.w('CV_MEC::OnDisconnected callback is unsolicited or none, this is incorrect - exiting');
     }
     if (pongCount == 3) {
-      print('CV_MEC:: Pong count is correct');
+      _logger.i('CV_MEC:: Pong count is correct');
     } else {
-      print('CV_MEC:: Pong count is incorrect, expected 3. actual $pongCount');
+      _logger.w('CV_MEC:: Pong count is incorrect, expected 3. actual $pongCount');
     }
   }
 
   void onConnected() {
-    print('CV_MEC::OnConnected client callback - Client connection was successful');
+    _logger.i('CV_MEC::OnConnected client callback - Client connection was successful');
   }
 
   void pong() {
-    print('CV_MEC::Ping response client callback invoked');
+    _logger.i('CV_MEC::Ping response client callback invoked');
     pongCount++;
   }
 
   void subscribe(String topicName, Function(MqttReceivedMessage<MqttMessage?>, DateTime) callback) async {
-    print('CV_MEC::Subscribing to the $topicName topic');
+    _logger.i('CV_MEC::Subscribing to the $topicName topic');
 
     int retryCount = 0;
     while (client!.connectionStatus!.state != MqttConnectionState.connected) {
       await MqttUtilities.asyncSleep(1);
       retryCount += 1;
       if (retryCount > 3) {
-        print('CV_MEC::Unable to Subscribe to Topic. Client is not Connected to Broker');
+        _logger.e('CV_MEC::Unable to Subscribe to Topic. Client is not Connected to Broker');
         return;
       }
     }
@@ -155,7 +157,7 @@ class MqttService extends GetxService {
   }
 
   void unsubsubscribe(String topicName) {
-    print('CV_MEC::Unsubscribing');
+    _logger.i('CV_MEC::Unsubscribing');
     if (client != null) {
       client!.unsubscribe(topicName);
     }
@@ -166,10 +168,9 @@ class MqttService extends GetxService {
     final builder = MqttClientPayloadBuilder();
     builder.addString(message);
     if (client != null && client!.connectionStatus!.state == MqttConnectionState.connected) {
-      // print('EXAMPLE::Publishing $message to topic $topicName');
       return client!.publishMessage(topicName, MqttQos.atMostOnce, builder.payload!);
     } else {
-      print('CV_MEC::Unable to Send Message. Client is not connected');
+      _logger.e('CV_MEC::Unable to Send Message. Client is not connected');
       return -1;
     }
   }
@@ -178,22 +179,21 @@ class MqttService extends GetxService {
     final builder = MqttClientPayloadBuilder();
     builder.addBuffer(message);
     if (client != null && client!.connectionStatus!.state == MqttConnectionState.connected) {
-      // print('EXAMPLE::Publishing $message to topic $topicName');
       return client!.publishMessage(topicName, MqttQos.atMostOnce, builder.payload!);
     } else {
-      print('CV_MEC::Unable to Send Message. Client is not connected');
+      _logger.e('CV_MEC::Unable to Send Message. Client is not connected');
       return -1;
     }
   }
 
   void disconnect() {
     if (client != null && client!.connectionStatus!.state == MqttConnectionState.connected) {
-      print('CV_MEC::Disconnecting from MQTT Broker');
+      _logger.i('CV_MEC::Disconnecting from MQTT Broker');
       client!.disconnect();
       subscriberList.clear();
-      print('CV_MEC::Disconnection Complete');
+      _logger.i('CV_MEC::Disconnection Complete');
     } else {
-      print('CV_MEC::Cannot Disconnect. MQTT Client Already Disconnected');
+      _logger.w('CV_MEC::Cannot Disconnect. MQTT Client Already Disconnected');
     }
   }
 }
