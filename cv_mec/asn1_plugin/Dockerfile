@@ -48,10 +48,6 @@ RUN tar -xaf /build/asn1/2024.tar.gz -C /build/src
 RUN rm /build/src/generated-files/2024/converter-example.c
 RUN rm /build/src/generated-files/2024/converter-example.mk
 
-# Copy in some override files for a handful of problem classes
-#RUN cp /build/asn1/NodeOffsetPointLL.h /build/src/generated-files/2024/NodeOffsetPointLL.h
-#RUN cp /build/asn1/NodeOffsetPointLL.c /build/src/generated-files/2024/NodeOffsetPointLL.c
-
 RUN cp /build/asn1/overrides/GeneralizedTime_ber.c /build/src/generated-files/2024/GeneralizedTime_ber.c
 RUN cp /build/asn1/overrides/GeneralizedTime_print.c /build/src/generated-files/2024/GeneralizedTime_print.c
 RUN cp /build/asn1/overrides/GeneralizedTime_xer.c /build/src/generated-files/2024/GeneralizedTime_xer.c
@@ -76,34 +72,5 @@ RUN flutter pub run ffigen
 FROM scratch AS ffi
 COPY --from=build /build/lib/generated_bindings.dart /generated_bindings.dart
 COPY --from=build /build/src/generated-files/2024/ /generated-files/2024/
-
-# ENTRYPOINT [ "" ]
-#ENTRYPOINT ["tail", "-f", "/dev/null"]
-
-#RUN tar -xaf 2024.tar.gz
-
-
-
-
-# Resolve app dependencies.
-
-# COPY pubspec.* ./
-# RUN dart pub get
-
-# # Copy app source code and AOT compile it.
-# COPY . .
-# # Ensure packages are still up-to-date if anything has changed
-# RUN dart pub get --offline
-# RUN dart compile exe bin/server.dart -o bin/server
-
-# # Build minimal serving image from AOT-compiled `/server` and required system
-# # libraries and configuration files stored in `/runtime/` from the build stage.
-# FROM scratch
-# COPY --from=build /runtime/ /
-# COPY --from=build /app/bin/server /app/bin/
-
-# # Start server.
-# EXPOSE 8080
-# CMD ["/app/bin/server"]
 
 #ENTRYPOINT ["tail", "-f", "/dev/null"]
