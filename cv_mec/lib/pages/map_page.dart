@@ -517,26 +517,33 @@ class MapState extends State<MapPage> {
   void processIncomingMessage(String topic, String hex, DateTime recTime, DateTime? sendTime) {
     MsgType msgType = asnService.determineHexMessageType(hex);
 
-    if (msgType == MsgType.BSM) {
-      addToAppLog("Identified Message as BSM");
-      processNewBsm(topic, hex, recTime, sendTime);
-    } else if (msgType == MsgType.PSM) {
-      addToAppLog("Identified Message as PSM");
-      processNewPsm(topic, hex, recTime, sendTime);
-    } else if (msgType == MsgType.SPAT) {
-      addToAppLog("Identified Message as SPaT");
-      processNewSpat(topic, hex, recTime, sendTime);
-    } else if (msgType == MsgType.MAP) {
-      addToAppLog("Identified Message as MAP");
-      processNewMap(topic, hex, recTime, sendTime);
-    } else if (msgType == MsgType.TIM) {
-      addToAppLog("Identified Message as TIM");
-      processNewTim(topic, hex, recTime, sendTime);
-    } else if (msgType == MsgType.SDSM) {
-      addToAppLog("Identified Message as SDSM");
-      processNewSdsm(topic, hex, recTime, sendTime);
-    } else {
-      addToAppLog("Unable to Identify Message Type");
+    switch (msgType) {
+      case MsgType.BSM:
+        addToAppLog("Identified Message as BSM");
+        processNewBsm(topic, hex, recTime, sendTime);
+        break;
+      case MsgType.PSM:
+        addToAppLog("Identified Message as PSM");
+        processNewPsm(topic, hex, recTime, sendTime);
+        break;
+      case MsgType.SPAT:
+        addToAppLog("Identified Message as SPaT");
+        processNewSpat(topic, hex, recTime, sendTime);
+        break;
+      case MsgType.MAP:
+        addToAppLog("Identified Message as MAP");
+        processNewMap(topic, hex, recTime, sendTime);
+        break;
+      case MsgType.TIM:
+        addToAppLog("Identified Message as TIM");
+        processNewTim(topic, hex, recTime, sendTime);
+        break;
+      case MsgType.SDSM:
+        addToAppLog("Identified Message as SDSM");
+        processNewSdsm(topic, hex, recTime, sendTime);
+        break;
+      default:
+        addToAppLog("Unable to Identify Message Type: $msgType");
     }
   }
 
