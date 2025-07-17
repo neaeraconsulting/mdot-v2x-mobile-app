@@ -54,7 +54,6 @@ enum VehicleType {
   const VehicleType(this.code);
 
   static VehicleType fromVehicleClass(VehicleClass code) {
-    print("Icon ${VehicleClass.lightTruckVehicleTypeOther.code}");
     if (code.code <= 11) {
       return VehicleType.PASSENGER_VEHICLE;
     } else if (code.code >= 20 && code.code <= 20) {

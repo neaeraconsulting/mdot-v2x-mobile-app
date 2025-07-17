@@ -3,25 +3,25 @@ import 'dart:convert';
 
 import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/models/imp/registration.dart';
-import 'package:cv_mec/pages/settings_page.dart';
 import 'package:get/get.dart';
 
 import 'package:http/http.dart' as http;
+import 'package:logger/logger.dart';
 
 class ApiService extends GetxController {
-  //final String baseURI = "http://cvmecapidns.eastus.azurecontainer.io:8080"; //SETTINGS Configuration
   SettingsController settingsController = Get.find<SettingsController>();
+  final Logger _logger = Logger();
 
   Future getToken() async {
     try {
-      print("generating token from api");
+      _logger.i("generating token from api");
 
       String uri = "${settingsController.baseUri.value}/auth/token";
       final Map<String, String> headers = {"Content-Type": "application/json", "Accept": "application/json"};
       //SETTINGS Configuration
       final Map<String, String> body = {
-        "username": settingsController.username.value, //"user", //TODO
-        "password": settingsController.password.value, //"12345" //TODO
+        "username": settingsController.username.value,
+        "password": settingsController.password.value,
       };
 
       try {
@@ -38,15 +38,14 @@ class ApiService extends GetxController {
 
       return null;
     } on SocketException catch (e) {
-      print("Caught exception when attempting to register app with API: $e");
+      _logger.e("Caught exception when attempting to register app with API: $e");
       return null;
     }
   }
 
   Future getRegistration(String token, String clientType, String clientSubtype) async {
     try {
-      print("Registring Device");
-      // String imei = await DeviceImei().getDeviceImei() ?? "";
+      _logger.i("Registering Device");
       final String uri = "${settingsController.baseUri.value}/prd/v2/registration";
       final Map<String, String> headers = {"Content-Type": "application/json", "Authorization": "Bearer $token"};
 
@@ -64,21 +63,20 @@ class ApiService extends GetxController {
 
         return registration;
       } else {
-        print(response.body.toString());
+        _logger.e(response.body.toString());
       }
     } on SocketException catch (e) {
-      print("Caught exception when attempting to register app with API: $e");
+      _logger.e("Caught exception when attempting to register app with API: $e");
       return null;
     } catch (e) {
-      print("Unable to Register app for unknown reasons");
+      _logger.e("Unable to Register app for unknown reasons");
       return null;
     }
   }
 
   Future getConnection(String token, String deviceID, double lat, double long, String networkType) async {
     try {
-      print("Registring Device");
-      // String imei = await DeviceImei().getDeviceImei() ?? "";
+      _logger.i("Registering Device");
       final String uri = "${settingsController.baseUri.value}/prd/v2/connection";
 
       final Map<String, String> headers = {"Content-Type": "application/json", "Authorization": "Bearer $token"};
@@ -88,14 +86,14 @@ class ApiService extends GetxController {
       var response = await http.post(Uri.parse(uri), headers: headers, body: body);
 
       Map<String, dynamic> json = jsonDecode(response.body.toString());
-      print(response.body.toString());
+      _logger.i(response.body.toString());
       if (json.containsKey("MqttURL")) {
         return json["MqttURL"];
       }
 
       return "";
     } on SocketException catch (e) {
-      print("Caught exception when attempting to register app with API: $e");
+      _logger.e("Caught exception when attempting to register app with API: $e");
       return null;
     }
   }

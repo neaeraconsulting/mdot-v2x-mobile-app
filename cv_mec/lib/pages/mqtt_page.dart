@@ -211,7 +211,7 @@ class _MQTTTestingState extends State<MQTTTesting> {
 
     String hex = ASNService.bytesToHex(decodedMessage.msgBytes);
 
-    print("Hex Message Test: $hex");
+    addToAppLog("Hex Message Test: $hex");
 
     MsgType msgType = asn.determineHexMessageType(hex);
 
@@ -375,7 +375,6 @@ class _MQTTTestingState extends State<MQTTTesting> {
 
   void addToAppLog(String message) {
     if (mounted) {
-      print("Mounted Setting State");
       setState(() {
         appLog.add(message);
         if (appLogQueue != null) {
@@ -399,7 +398,6 @@ class _MQTTTestingState extends State<MQTTTesting> {
   }
 
   void getPermission() async {
-    print("went HERE");
     await Geolocator.requestPermission();
   }
 
@@ -674,7 +672,7 @@ class _MQTTTestingState extends State<MQTTTesting> {
                   //fileService.requestPermissions();
                   addToAppLog("Getting Token from Server");
                   String? token = await api.getToken();
-                  print("Got Token $token");
+                  addToAppLog("Got Token $token");
                   addToAppLog("Retrieving Certificates");
 
                   if (token != null) {
