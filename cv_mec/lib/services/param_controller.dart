@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ParamController extends GetxController {
   RxString clientType = ''.obs;
@@ -9,8 +10,8 @@ class ParamController extends GetxController {
   RxBool networkTypeToggle = true.obs;
   RxBool useFakePositionToggle = false.obs;
   bool usingFakePosition = false;
-  RxDouble fakeLatitude = 0.0.obs;
-  RxDouble fakeLongitude = 0.0.obs;
+  RxDouble registrationLatitude = 0.0.obs;
+  RxDouble registrationLongitude = 0.0.obs;
   RxInt messageDelay = 0.obs;
   RxBool geoRelevanceOrPrivateToggle = true.obs; //false is geo, true is private
   bool geoRelevanceOrPrivate = true; //false is geo, true is private
@@ -31,17 +32,11 @@ class ParamController extends GetxController {
     useFakePositionToggle.value = false;
     usingFakePosition = false;
 
-    // Turner Fairbanks
-    fakeLatitude.value = 38.9555;
-    fakeLongitude.value = -77.1494;
-
-    // Colorado
-    // fakeLatitude.value = 39.58937188602476;
-    // fakeLongitude.value = -105.0912699992925;
-
-    // Atlanta
-    // fakeLatitude.value = 34.05640313666031;
-    // fakeLongitude.value = -84.2769675541679;
+    // Set Default Registration Coordinates to TFHRC, load from .env file if available
+    registrationLatitude.value =
+        dotenv.env['REGISTRATION_LATITUDE'] != null ? double.parse(dotenv.env['REGISTRATION_LATITUDE']!) : 38.9555;
+    registrationLongitude.value =
+        dotenv.env['REGISTRATION_LONGITUDE'] != null ? double.parse(dotenv.env['REGISTRATION_LONGITUDE']!) : -77.1494;
 
     messageDelay.value = 1000;
     geoRelevanceOrPrivateToggle.value = true;
@@ -63,8 +58,8 @@ class ParamController extends GetxController {
     this.messageFormat.value = messageFormat;
     networkType.value = networkTypeToggle.value ? "VZ" : "non-VZ";
     usingFakePosition = useFakePositionToggle.value;
-    this.fakeLatitude.value = fakeLatitude;
-    this.fakeLongitude.value = fakeLongitude;
+    this.registrationLatitude.value = fakeLatitude;
+    this.registrationLongitude.value = fakeLongitude;
     this.messageDelay.value = messageDelay;
     geoRelevanceOrPrivate = geoRelevanceOrPrivateToggle.value;
     this.privateDeviceID.value = privateDeviceID;

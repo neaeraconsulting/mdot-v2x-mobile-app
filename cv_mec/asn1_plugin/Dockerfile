@@ -27,7 +27,6 @@ RUN apt-get update && apt-get install dart
 RUN wget https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.24.0-stable.tar.xz
 RUN mkdir /build/flutter
 RUN tar -xaf /build/flutter_linux_3.24.0-stable.tar.xz -C /build/flutter
-# RUN export PATH="/build/flutter/flutter/bin:$PATH"
 ENV PATH="$PATH:/build/flutter/flutter/bin"
 RUN git config --global --add safe.directory /build/flutter/flutter
 RUN flutter
@@ -36,12 +35,6 @@ RUN flutter
 
 # Add Sources and Extract them
 ADD . /build
-
-
-#ADD ./asn1/2024.tar.gz /build
-
-# Modify Includes on all files
-#ADD ./asn1/change_includes.py /build
 
 # Extract Raw C Sources
 RUN tar -xaf /build/asn1/2024.tar.gz -C /build/src
@@ -64,42 +57,9 @@ RUN python3 /build/asn1/change_includes.py
 
 # Generate FFI Components
 RUN flutter pub get
-# RUN dart pub get
-# RUN dart run ffigen
 RUN flutter pub run ffigen
 
 
 FROM scratch AS ffi
 COPY --from=build /build/lib/generated_bindings.dart /generated_bindings.dart
 COPY --from=build /build/src/generated-files/2024/ /generated-files/2024/
-
-# ENTRYPOINT [ "" ]
-#ENTRYPOINT ["tail", "-f", "/dev/null"]
-
-#RUN tar -xaf 2024.tar.gz
-
-
-
-
-# Resolve app dependencies.
-
-# COPY pubspec.* ./
-# RUN dart pub get
-
-# # Copy app source code and AOT compile it.
-# COPY . .
-# # Ensure packages are still up-to-date if anything has changed
-# RUN dart pub get --offline
-# RUN dart compile exe bin/server.dart -o bin/server
-
-# # Build minimal serving image from AOT-compiled `/server` and required system
-# # libraries and configuration files stored in `/runtime/` from the build stage.
-# FROM scratch
-# COPY --from=build /runtime/ /
-# COPY --from=build /app/bin/server /app/bin/
-
-# # Start server.
-# EXPOSE 8080
-# CMD ["/app/bin/server"]
-
-#ENTRYPOINT ["tail", "-f", "/dev/null"]

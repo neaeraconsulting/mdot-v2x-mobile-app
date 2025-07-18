@@ -1,16 +1,6 @@
-import 'package:cv_mec/controllers/configuration_controller.dart';
+import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/pages/dev_page.dart';
-import 'package:cv_mec/pages/map_page.dart';
-import 'package:cv_mec/pages/mqtt_page.dart';
-import 'package:cv_mec/services/api_service.dart';
-import 'package:cv_mec/services/asn_service.dart';
-import 'package:cv_mec/services/aws_service.dart';
-import 'package:cv_mec/services/file_service.dart';
-import 'package:cv_mec/services/geometry_service.dart';
-import 'package:cv_mec/services/location_service.dart';
-import 'package:cv_mec/services/mqtt_service.dart';
-import 'package:cv_mec/services/param_controller.dart';
-import 'package:cv_mec/services/timing.dart';
+import 'package:cv_mec/styles/app_colors.dart';
 import 'package:cv_mec/styles/screen_size.dart';
 import 'package:cv_mec/styles/spacing.dart';
 import 'package:cv_mec/styles/widgets/appbar.dart';
@@ -19,25 +9,12 @@ import 'package:cv_mec/views/pedestrian_selection_dialog.dart';
 import 'package:cv_mec/views/vehicle_selection_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:cv_mec/pages/settings_page.dart';
-
-import '../styles/app_colors.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
   @override
   Widget build(BuildContext context) {
-    Get.put(LocationService()); //TODO: Move all of these to a load page before redirecting to home
-    Get.put(Timing());
-    SettingsController controller = Get.put(SettingsController());
-    Get.put(ParamController());
-    Get.put(ApiService());
-    Get.put(ASNService());
-    Get.put(FileService());
-    Get.put(MqttService());
-    Get.put(GeometryService());
-    Get.put(S3Service());
-    Get.put(ConfigurationController());
+    SettingsController controller = Get.find<SettingsController>();
     return Scaffold(
         resizeToAvoidBottomInset: false,
         appBar: CVMecAppBar(title: "Home"),
@@ -84,8 +61,7 @@ class HomePage extends StatelessWidget {
             children: [
               GestureDetector(
                 onTap: () {
-                  //Get.to(() => const VehicleConfigSelection());
-                  Get.dialog(VehicleConfigSelectionDialog());
+                  Get.dialog(const VehicleConfigSelectionDialog());
                 },
                 child: Container(
                   width: screenWidth(context) * 0.35,

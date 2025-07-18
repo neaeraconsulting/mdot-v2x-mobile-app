@@ -22,5 +22,83 @@
 
 class BasicVehicleClass {
   late int basicVehicleClass;
-  BasicVehicleClass(int basicVehicleClass);
+
+  BasicVehicleClass(int vehicleClassNumber) {
+    basicVehicleClass = vehicleClassNumber;
+  }
+
+  VehicleClass getVehicleClass() {
+    return VehicleClass.values
+        .firstWhere((e) => e.code == basicVehicleClass, orElse: () => VehicleClass.unknownVehicleClass);
+  }
+}
+
+enum VehicleClass {
+  unknownVehicleClass(0),
+  specialVehicleClass(1),
+
+  passengerVehicleTypeUnknown(10),
+  passengerVehicleTypeOther(11),
+
+  lightTruckVehicleTypeUnknown(20),
+  lightTruckVehicleTypeOther(21),
+
+  truckVehicleTypeUnknown(25),
+  truckVehicleTypeOther(26),
+  truckAxleCnt2(27),
+  truckAxleCnt3(28),
+  truckAxleCnt4(29),
+  truckAxleCnt4Trailer(30),
+  truckAxleCnt5Trailer(31),
+  truckAxleCnt6Trailer(32),
+  truckAxleCnt5MultiTrailer(33),
+  truckAxleCnt6MultiTrailer(34),
+  truckAxleCnt7MultiTrailer(35),
+
+  motorcycleTypeUnknown(40),
+  motorcycleTypeOther(41),
+  motorcycleCruiserStandard(42),
+  motorcycleSportUnclad(43),
+  motorcycleSportTouring(44),
+  motorcycleSuperSport(45),
+  motorcycleTouring(46),
+  motorcycleTrike(47),
+  motorcyclePassengers(48),
+
+  transitTypeUnknown(50),
+  transitTypeOther(51),
+  transitBRT(52),
+  transitExpressBus(53),
+  transitLocalBus(54),
+  transitSchoolBus(55),
+  transitFixedGuideway(56),
+  transitParatransit(57),
+  transitParatransitAmbulance(58),
+
+  emergencyTypeUnknown(60),
+  emergenctTypeOther(61),
+  emergencyFireLightVehicle(62),
+  emergencyFireHeavyVehicle(63),
+  emergencyFireParamedicVehicle(64),
+  emergencyFireAmbulanceVehicle(65),
+  emergencyPoliceLightVehicle(66),
+  emergencyPoliceHeavyVehicle(67),
+  emergencyOtherResponder(68),
+  emergencyOtherAmbulance(69),
+
+  otherTravelerTypeUnknown(80),
+  otherTravelerTypeOther(81),
+  otherTravelerPedestrian(82),
+  otherTravelerVisuallyDisabled(83),
+  otherTravelerPhysicallyDistabled(84),
+  otherTravelerBicycle(85),
+  otherTravelerVultnerableRoadWorker(86),
+
+  infrastructureTypeUnknown(90),
+  infrastructureFixed(91),
+  infrastructureMovable(92),
+  equippedCargoTrailer(93);
+
+  final int code;
+  const VehicleClass(this.code);
 }

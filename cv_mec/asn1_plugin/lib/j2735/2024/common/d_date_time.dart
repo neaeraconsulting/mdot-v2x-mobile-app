@@ -46,4 +46,9 @@ class DDateTime {
       offset = DOffset(c_dDateTime.offset.value);
     }
   }
+
+  DateTime getAsDateTime() {
+    return DateTime(this.year?.dYear ?? 0, this.month?.dMonth ?? 0, this.day?.dDay ?? 0, this.hour?.dHour ?? 0,
+        this.minute?.dMinute ?? 0, this.second?.dSecond ?? 0);
+  }
 }

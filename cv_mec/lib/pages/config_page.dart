@@ -22,8 +22,8 @@ class ConfigDialogTwo extends StatelessWidget {
     clientSubtypeController.text = controller.clientSubtype.value;
     messageFormatController.text = controller.messageFormat.value;
     v2xTypeController.text = controller.v2xType.value;
-    fakeLatitudeController.text = controller.fakeLatitude.value.toString();
-    fakeLongitudeController.text = controller.fakeLongitude.value.toString();
+    fakeLatitudeController.text = controller.registrationLatitude.value.toString();
+    fakeLongitudeController.text = controller.registrationLongitude.value.toString();
     messageDelayController.text = controller.messageDelay.value.toString();
     privateDeviceIDController.text = controller.privateDeviceID.value;
 
@@ -38,13 +38,11 @@ class ConfigDialogTwo extends StatelessWidget {
                   controller: clientTypeController,
                 ),
                 TextField(
-                  decoration:
-                      const InputDecoration(labelText: 'Client Subtype'),
+                  decoration: const InputDecoration(labelText: 'Client Subtype'),
                   controller: clientSubtypeController,
                 ),
                 TextField(
-                  decoration:
-                      const InputDecoration(labelText: 'Message Format'),
+                  decoration: const InputDecoration(labelText: 'Message Format'),
                   controller: messageFormatController,
                 ),
                 TextField(
@@ -52,9 +50,7 @@ class ConfigDialogTwo extends StatelessWidget {
                   controller: v2xTypeController,
                 ),
                 SwitchListTile(
-                  title: controller.networkTypeToggle.value
-                      ? const Text('VZ Network')
-                      : const Text('Non-VZ Network'),
+                  title: controller.networkTypeToggle.value ? const Text('VZ Network') : const Text('Non-VZ Network'),
                   value: controller.networkTypeToggle.value,
                   onChanged: (value) {
                     controller.networkTypeToggle.value = value;
@@ -69,15 +65,13 @@ class ConfigDialogTwo extends StatelessWidget {
                 ),
                 controller.useFakePositionToggle.value
                     ? TextField(
-                        decoration:
-                            const InputDecoration(labelText: 'Fake Latitude'),
+                        decoration: const InputDecoration(labelText: 'Fake Latitude'),
                         controller: fakeLatitudeController,
                       )
                     : Container(),
                 controller.useFakePositionToggle.value
                     ? TextField(
-                        decoration:
-                            const InputDecoration(labelText: 'Fake Longitude'),
+                        decoration: const InputDecoration(labelText: 'Fake Longitude'),
                         controller: fakeLongitudeController,
                       )
                     : Container(),
@@ -88,7 +82,9 @@ class ConfigDialogTwo extends StatelessWidget {
                 // Removing this to Disable Private Topics
                 SwitchListTile(
                   title: const Text("Geo or Private"),
-                  subtitle: controller.geoRelevanceOrPrivateToggle.value ? const Text('Private') : const Text('Geo Relevance'),
+                  subtitle: controller.geoRelevanceOrPrivateToggle.value
+                      ? const Text('Private')
+                      : const Text('Geo Relevance'),
                   value: controller.geoRelevanceOrPrivateToggle.value,
                   onChanged: (value) {
                     controller.geoRelevanceOrPrivateToggle.value = value;
@@ -96,8 +92,7 @@ class ConfigDialogTwo extends StatelessWidget {
                 ),
                 controller.geoRelevanceOrPrivateToggle.value
                     ? TextField(
-                        decoration: const InputDecoration(
-                            labelText: 'Private Device ID'),
+                        decoration: const InputDecoration(labelText: 'Private Device ID'),
                         controller: privateDeviceIDController,
                       )
                     : Container(),
@@ -113,12 +108,9 @@ class ConfigDialogTwo extends StatelessWidget {
             clientSubtypeController.text = controller.clientSubtype.value;
             messageFormatController.text = controller.messageFormat.value;
             v2xTypeController.text = controller.v2xType.value;
-            fakeLatitudeController.text =
-                controller.fakeLatitude.value.toString();
-            fakeLongitudeController.text =
-                controller.fakeLongitude.value.toString();
-            messageDelayController.text =
-                controller.messageDelay.value.toString();
+            fakeLatitudeController.text = controller.registrationLatitude.value.toString();
+            fakeLongitudeController.text = controller.registrationLongitude.value.toString();
+            messageDelayController.text = controller.messageDelay.value.toString();
             privateDeviceIDController.text = controller.privateDeviceID.value;
             Get.back();
             Get.dialog(ConfigDialogTwo());
@@ -127,12 +119,9 @@ class ConfigDialogTwo extends StatelessWidget {
         ),
         TextButton(
           onPressed: () {
-            controller.useFakePositionToggle.value =
-                controller.usingFakePosition;
-            controller.networkTypeToggle.value =
-                controller.networkType.value == "VZ";
-            controller.geoRelevanceOrPrivateToggle.value =
-                controller.geoRelevanceOrPrivate;
+            controller.useFakePositionToggle.value = controller.usingFakePosition;
+            controller.networkTypeToggle.value = controller.networkType.value == "VZ";
+            controller.geoRelevanceOrPrivateToggle.value = controller.geoRelevanceOrPrivate;
             Get.back(); // Close the dialog
           },
           child: const Text('Close'),
