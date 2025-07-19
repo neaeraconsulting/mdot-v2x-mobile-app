@@ -18,7 +18,7 @@ class ApiService extends GetxController {
 
       String uri = "${settingsController.baseUri.value}/auth/token";
       final Map<String, String> headers = {"Content-Type": "application/json", "Accept": "application/json"};
-      //SETTINGS Configuration
+
       final Map<String, String> body = {
         "username": settingsController.username.value,
         "password": settingsController.password.value,

@@ -4,16 +4,17 @@ import 'package:asn1_plugin/asn1.dart';
 import 'package:asn1_plugin/j2735/2024/personal_safety_message/personal_safety_message.dart';
 import 'package:asn1_plugin/j2735/2024/sensor_data_sharing_message/sensor_data_sharing_message.dart';
 import 'package:asn1_plugin/j2735/2024/spat/spat.dart';
-import 'package:asn1_plugin/j2735/2024/sensor_data_sharing_message/sensor_data_sharing_message.dart';
 import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_information.dart';
 import 'package:asn1_plugin/j2735/2024/basic_safety_message/basic_safety_message.dart';
 import 'package:asn1_plugin/j2735/2024/map_data/map_data.dart';
 import 'package:cv_mec/models/msg_types.dart';
-
 import 'package:get/get.dart';
 import 'dart:ffi';
 import 'package:ffi/ffi.dart';
+import 'package:logger/logger.dart';
 import 'dart:math';
+import 'dart:io';
+import 'package:path/path.dart' as p;
 
 class ASNService extends GetxController {
   late C.NativeBindings _bindings;
@@ -36,8 +37,19 @@ class ASNService extends GetxController {
   late final Map<String, MsgType> messageTypeMap;
   Random random = Random();
 
+  final Logger _logger = Logger();
   ASNService() {
-    _bindings = Asn1.getBindings();
+    if (Platform.isLinux) {
+      DynamicLibrary dylib;
+      final exeDir = File(Platform.resolvedExecutable).parent.path;
+      final soPath = p.join(exeDir, 'lib', 'libasn1parser.so');
+      dylib = DynamicLibrary.open(soPath);
+      _bindings = C.NativeBindings(dylib);
+    } else {
+      // dylib = DynamicLibrary.process();
+      _bindings = Asn1.getBindings();
+    }
+
     checkStartFlags = [
       TIM_START_FLAG,
       BSM_START_FLAG,
@@ -252,7 +264,7 @@ class ASNService extends GetxController {
       C.asn_dec_rval_s rval = _bindings.uper_decode(optCodecCtxPtr, typeDescriptorPtr, ptrToPtr, bufferPtr, size, 0, 0);
 
       if (rval.code != 0) {
-        print("DECODE: Failed to Decode Message ${hexInput}");
+        _logger.w("DECODE: Failed to Decode Message ${hexInput}");
       }
 
       calloc.free(optCodecCtxPtr);
@@ -260,7 +272,7 @@ class ASNService extends GetxController {
       calloc.free(dataPtr);
     } catch (e) {
       // No specified type, handles all
-      print('Unknown Failure during decoding: $e');
+      _logger.w('Unknown Failure during decoding: $e, $hexInput');
     }
 
     return ptrToPtr;

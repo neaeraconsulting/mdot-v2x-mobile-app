@@ -4,7 +4,7 @@ project(runner LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
-set(BINARY_NAME "basic_app")
+set(BINARY_NAME "cv-mec")
 # The unique GTK application identifier for this application. See:
 # https://wiki.gnome.org/HowDoI/ChooseApplicationID
 set(APPLICATION_ID "com.neaera.cv_mec")
@@ -91,13 +91,19 @@ set_target_properties(${BINARY_NAME}
 # them to the application.
 include(flutter/generated_plugins.cmake)
 
+list(APPEND PLUGIN_BUNDLED_LIBRARIES
+  "${CMAKE_CURRENT_SOURCE_DIR}/../asn1_plugin/linux/libasn1parser.so"
+)
+
 
 # === Installation ===
 # By default, "installing" just makes a relocatable bundle in the build
 # directory.
 set(BUILD_BUNDLE_DIR "${PROJECT_BINARY_DIR}/bundle")
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-  set(CMAKE_INSTALL_PREFIX "${BUILD_BUNDLE_DIR}" CACHE PATH "..." FORCE)
+  set(CMAKE_INSTALL_PREFIX
+    "${CMAKE_CURRENT_BINARY_DIR}/bundle"
+    CACHE PATH "Install path prefix" FORCE)
 endif()
 
 # Start with a clean build bundle directory every time.

@@ -37,7 +37,7 @@ class MqttService extends GetxService {
 
       // Configure Client
       client!.secure = true;
-      client!.logging(on: true);
+      client!.logging(on: false);
       client!.setProtocolV311(); // Will print out version 4
       client!.keepAlivePeriod = 20;
       client!.connectTimeoutPeriod = 5000; // milliseconds
@@ -82,7 +82,7 @@ class MqttService extends GetxService {
 
     // Setup Universal Subscriber. This will get parsed to individual subscribers as they are registered
     client!.updates!.listen((List<MqttReceivedMessage<MqttMessage?>>? receivedMessages) {
-      DateTime recTime = timingService.getKronosTime();
+      DateTime recTime = timingService.getTime();
       for (MqttReceivedMessage<MqttMessage?> message in receivedMessages!) {
         for (String key in subscriberList.keys) {
           if (matchTopic(message.topic, key)) {

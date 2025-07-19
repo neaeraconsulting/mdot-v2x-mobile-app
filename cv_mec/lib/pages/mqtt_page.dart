@@ -113,7 +113,7 @@ class _MQTTTestingState extends State<MQTTTesting> {
     _positionStream = _locationService.locationStream.listen(updatePosition);
 
     Future.delayed(Duration.zero, () async {
-      DateTime logTime = timingService.getKronosTime();
+      DateTime logTime = timingService.getTime();
 
       appLogQueue = DataQueue("APP_LOG_${logTime.millisecondsSinceEpoch}.log");
       timDataQueue = DataQueue("TIM_LOG_${logTime.millisecondsSinceEpoch}.csv");
@@ -335,7 +335,7 @@ class _MQTTTestingState extends State<MQTTTesting> {
         pos.longitude = controller.registrationLongitude.value;
       }
 
-      DateTime sendTime = timingService.getKronosTime();
+      DateTime sendTime = timingService.getTime();
 
       Uint8Buffer buffer = Uint8Buffer();
       msg.position = pos;
@@ -589,10 +589,7 @@ class _MQTTTestingState extends State<MQTTTesting> {
     }
 
     if ((isLogging && Platform.isIOS) || (isLogging && await Permission.phone.request().isGranted)) {
-      // await Permission.manageExternalStorage.isGranted;
-      // await fileService.requestPermissions();
-
-      DateTime logTime = timingService.getKronosTime();
+      DateTime logTime = timingService.getTime();
 
       recDataQueue = DataQueue("MQTT_SUB_LOG_${logTime.millisecondsSinceEpoch}.csv");
       pubDataQueue = DataQueue("MQTT_PUB_LOG_${logTime.millisecondsSinceEpoch}.csv");

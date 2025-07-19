@@ -1,6 +1,6 @@
 {
-    "name": "basic_app",
-    "short_name": "basic_app",
+    "name": "cv-mec",
+    "short_name": "cv-mec",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#hexcode",
