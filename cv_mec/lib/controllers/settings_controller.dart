@@ -40,10 +40,6 @@ class SettingsController extends GetxController {
   RxString s3DestDir = (dotenv.env['S3_DESTINATION'] ?? "").obs;
 
   initialize() async {
-    // print("ENV USERNAME  = ${dotenv.env['USERNAME']}");
-    // print("STORED USERNAME = ${await secureStorage.getUsername()}");
-    // print("controller.username = ${username.value}");
-    // print("ENV PASSWORD  = ${dotenv.env['PASSWORD']}");
     username.value = await secureStorage.getUsername();
     password.value = await secureStorage.getPassword();
     baseUri.value = await secureStorage.getBaseURI();
