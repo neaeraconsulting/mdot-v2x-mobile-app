@@ -33,12 +33,9 @@ class GeometryService {
       TravelerDataFrame travelerDataFrame = tim.dataFrames.travelerDataFrameList[i];
       List<GeometryDirection> timGeometryList = [];
       for (int j = 0; j < travelerDataFrame.regions.length; j++) {
-        print("Frog 1");
         Geometry? timGeometry = getGeometryFromPath(travelerDataFrame.regions[j]);
-        print("Frog 2");
 
         HeadingSlice? direction = travelerDataFrame.regions[j].direction;
-        print("Frog 3");
         if (travelerDataFrame.regions[j].description is GeometricProjection) {
           direction = (travelerDataFrame.regions[j].description as GeometricProjection).direction;
         }
@@ -65,10 +62,8 @@ class GeometryService {
         return null;
       }
     } else if (path.description is GeometricProjection) {
-      print("Duck 2");
       return getGeometryFromGeometricProjection(path.description as GeometricProjection);
     } else {
-      print("Duck 3");
       _logger.w("Unable to Parse Path. Path is not OffsetSystem or Geometric Projection");
       return null;
     }
@@ -76,13 +71,10 @@ class GeometryService {
 
   Geometry? getGeometryFromOffsetSystem(OffsetSystem offsetSystem, Position3D anchor, double laneWidth) {
     if (offsetSystem.offset is NodeListXY) {
-      print("GeoOffset 1");
       return getGeometryFromNodeListXY(offsetSystem.offset as NodeListXY, anchor, laneWidth);
     } else if (offsetSystem.offset is NodeListLL) {
-      print("GeoOffset 2");
       return getGeometryFromNodeListLL(offsetSystem.offset as NodeListLL, anchor, laneWidth);
     } else {
-      print("GeoOffset 3");
       _logger.w("Unable to Identify the Type of OffsetSystem");
     }
     return null;
