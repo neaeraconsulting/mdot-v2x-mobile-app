@@ -34,7 +34,6 @@ class GeometryService {
       List<GeometryDirection> timGeometryList = [];
       for (int j = 0; j < travelerDataFrame.regions.length; j++) {
         Geometry? timGeometry = getGeometryFromPath(travelerDataFrame.regions[j]);
-
         HeadingSlice? direction = travelerDataFrame.regions[j].direction;
         if (travelerDataFrame.regions[j].description is GeometricProjection) {
           direction = (travelerDataFrame.regions[j].description as GeometricProjection).direction;
