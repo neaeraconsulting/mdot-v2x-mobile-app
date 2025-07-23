@@ -3,9 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:cv_mec/services/secure_storage.dart';
-
-import '../services/secure_storage.dart';
-import '../services/shared_pref.dart';
+import 'package:cv_mec/services/shared_pref.dart';
 import 'package:flutter/scheduler.dart';
 import 'dart:io';
 
@@ -22,6 +20,7 @@ class SettingsController extends GetxController {
   RxString password = dotenv.env['PASSWORD']!.obs;
   RxString baseUri = dotenv.env['API_ENDPOINT']!.obs;
   RxString vendorID = dotenv.env['VENDOR_ID']!.obs;
+  RxString pc5BrokerUrl = (dotenv.env['PC5_MQTT_BROKER'] ?? "").obs;
   RxString gpsUsername = (dotenv.env['GPS_USERNAME'] ?? "").obs;
   RxString gpsPassword = (dotenv.env['GPS_PASSWORD'] ?? "").obs;
   RxString gpsIP = (dotenv.env['GPS_IP'] ?? "").obs;
@@ -32,6 +31,9 @@ class SettingsController extends GetxController {
   Rx<bool> readMessages = false.obs;
   Rx<bool> remoteGPS = true.obs;
 
+  // Automatically enable PC5 if the environment variable is configured
+  Rx<bool> enablePC5 = dotenv.env['PC5_MQTT_BROKER'] != null ? true.obs : false.obs;
+
   RxString deviceID = ''.obs;
   RxString s3AccessKey = (dotenv.env['S3_ACCESS_KEY'] ?? "").obs;
   RxString s3SecretKey = (dotenv.env['S3_SECRET_KEY'] ?? "").obs;
@@ -40,6 +42,10 @@ class SettingsController extends GetxController {
   RxString s3DestDir = (dotenv.env['S3_DESTINATION'] ?? "").obs;
 
   initialize() async {
+    // print("ENV USERNAME  = ${dotenv.env['USERNAME']}");
+    // print("STORED USERNAME = ${await secureStorage.getUsername()}");
+    // print("controller.username = ${username.value}");
+    // print("ENV PASSWORD  = ${dotenv.env['PASSWORD']}");
     username.value = await secureStorage.getUsername();
     password.value = await secureStorage.getPassword();
     baseUri.value = await secureStorage.getBaseURI();
@@ -47,6 +53,7 @@ class SettingsController extends GetxController {
     gpsPassword.value = await secureStorage.getGPSPassword();
     gpsIP.value = await secureStorage.getGPSIP();
     vendorID.value = await secureStorage.getVendorID();
+    pc5BrokerUrl.value = await secureStorage.getPC5BrokerUrl();
     vzMode.value = await secureStorage.getVZMode();
     deviceID.value = await secureStorage.getDeviceID();
     notificationsEnabled.value = await secureStorage.getNotificationsEnabled();
@@ -55,6 +62,7 @@ class SettingsController extends GetxController {
     developerMode.value = await secureStorage.getDeveloperMode();
     remoteGPS.value = await secureStorage.getGPSMode();
     soundEffectsEnabled.value = await secureStorage.getSoundEffectsEnabled();
+    enablePC5.value = await secureStorage.getPC5Enabled();
 
     s3AccessKey.value = await secureStorage.getS3AccessKey();
     s3SecretKey.value = await secureStorage.getS3SecretKey();

@@ -9,6 +9,7 @@ import 'package:get/get.dart';
 import 'dart:convert';
 import 'package:typed_data/typed_data.dart';
 import 'package:logger/logger.dart';
+import 'package:uuid/uuid.dart';
 
 class MqttService extends GetxService {
   MqttServerClient? client;
@@ -16,27 +17,31 @@ class MqttService extends GetxService {
   var pongCount = 0; // Pong counter
   Timing timingService = Get.find<Timing>();
   final Logger _logger = Logger();
+  // final String mqttBrokerIdentifier;
 
-  Future<int> connect(String connectionURL, Registration registration) async {
+  static const String etxTag = "ETX";
+  static const String pc5Tag = "PC5";
+
+  Future<int> connect(String connectionURL, Registration? registration) async {
     try {
-      String clientId = registration.deviceID;
+      String clientId = 'cv-mec-${const Uuid().v4().substring(0, 16)}';
 
-      // Trim The MQTT Connection String to work with Dart
-      String headerPrefix = "mqtt://";
-      String portSuffix = ":8883";
-      String trimmedString = connectionURL.substring(
-          connectionURL.indexOf("headerPrefix") + headerPrefix.length + 1, connectionURL.indexOf(portSuffix));
+      if (registration != null) {
+        clientId = registration.deviceID;
+      }
+
+      final uri = Uri.tryParse(connectionURL);
+      if (uri == null || uri.scheme != 'mqtt') {
+        throw const FormatException('Invalid MQTT URL');
+      }
+      final host = uri.host;
+      final port = uri.hasPort ? uri.port : 1883; // Default MQTT port
 
       // Create New Client
-      client = MqttServerClient.withPort(trimmedString, clientId, 8883);
-      final context = SecurityContext.defaultContext;
-      context.setClientAuthoritiesBytes(Uint8List.fromList(utf8.encode(registration.certificates.ca)));
-      context.setTrustedCertificatesBytes(Uint8List.fromList(utf8.encode(registration.certificates.ca)));
-      context.useCertificateChainBytes(Uint8List.fromList(utf8.encode(registration.certificates.cert)));
-      context.usePrivateKeyBytes(Uint8List.fromList(utf8.encode(registration.certificates.key)));
+      client = MqttServerClient.withPort(host, clientId, port);
 
       // Configure Client
-      client!.secure = true;
+      client!.secure = false;
       client!.logging(on: false);
       client!.setProtocolV311(); // Will print out version 4
       client!.keepAlivePeriod = 20;
@@ -45,8 +50,17 @@ class MqttService extends GetxService {
       client!.onConnected = onConnected;
       client!.onSubscribed = onSubscribed;
       client!.autoReconnect = true;
-      client!.securityContext = context;
       client!.autoReconnect = false;
+
+      if (registration != null) {
+        final context = SecurityContext.defaultContext;
+        context.setClientAuthoritiesBytes(Uint8List.fromList(utf8.encode(registration.certificates.ca)));
+        context.setTrustedCertificatesBytes(Uint8List.fromList(utf8.encode(registration.certificates.ca)));
+        context.useCertificateChainBytes(Uint8List.fromList(utf8.encode(registration.certificates.cert)));
+        context.usePrivateKeyBytes(Uint8List.fromList(utf8.encode(registration.certificates.key)));
+        client!.secure = true;
+        client!.securityContext = context;
+      }
 
       final connMess = MqttConnectMessage().withClientIdentifier(clientId).startClean();
       client!.connectionMessage = connMess;
@@ -92,6 +106,8 @@ class MqttService extends GetxService {
       }
     });
 
+    _logger.i("Completed MQTT Connection to $connectionURL");
+
     return 0;
   }
 
@@ -104,7 +120,7 @@ class MqttService extends GetxService {
     }
 
     for (int i = 0; i < topicParts.length; i++) {
-      if (topicParts[i] != matchTopicParts[i] && matchTopicParts[i] != '+') {
+      if (topicParts[i] != matchTopicParts[i] && matchTopicParts[i] != '+' && matchTopicParts[i] != "#") {
         return false;
       }
     }
@@ -143,17 +159,22 @@ class MqttService extends GetxService {
     _logger.i('CV_MEC::Subscribing to the $topicName topic');
 
     int retryCount = 0;
-    while (client!.connectionStatus!.state != MqttConnectionState.connected) {
-      await MqttUtilities.asyncSleep(1);
-      retryCount += 1;
-      if (retryCount > 3) {
-        _logger.e('CV_MEC::Unable to Subscribe to Topic. Client is not Connected to Broker');
-        return;
-      }
-    }
 
-    client!.subscribe(topicName, MqttQos.atMostOnce);
-    subscriberList[topicName] = callback;
+    if (client != null) {
+      while (client!.connectionStatus!.state != MqttConnectionState.connected) {
+        await MqttUtilities.asyncSleep(1);
+        retryCount += 1;
+        if (retryCount > 3) {
+          _logger.e('CV_MEC::Unable to Subscribe to Topic. Client is not Connected to Broker');
+          return;
+        }
+      }
+
+      client!.subscribe(topicName, MqttQos.atMostOnce);
+      subscriberList[topicName] = callback;
+    } else {
+      _logger.w("Unable to subscribe to $topicName. Client is null");
+    }
   }
 
   void unsubsubscribe(String topicName) {

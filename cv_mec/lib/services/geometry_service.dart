@@ -19,11 +19,13 @@ import 'package:cv_mec/models/geometry_direction.dart';
 import 'package:cv_mec/models/data_frame_geometry.dart';
 import 'package:dart_jts/dart_jts.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:logger/logger.dart';
 import 'package:geodesy/geodesy.dart' as geo;
 
 class GeometryService {
   GeometryFactory geometryFactory = GeometryFactory.defaultPrecision();
   final geodesy = geo.Geodesy();
+  final Logger _logger = Logger();
 
   Map<TravelerDataFrame, DataFrameGeometry> getTimPolyRegion(TravelerInformation tim) {
     Map<TravelerDataFrame, DataFrameGeometry> dataFrameRegions = <TravelerDataFrame, DataFrameGeometry>{};
@@ -31,10 +33,12 @@ class GeometryService {
       TravelerDataFrame travelerDataFrame = tim.dataFrames.travelerDataFrameList[i];
       List<GeometryDirection> timGeometryList = [];
       for (int j = 0; j < travelerDataFrame.regions.length; j++) {
+        print("Frog 1");
         Geometry? timGeometry = getGeometryFromPath(travelerDataFrame.regions[j]);
+        print("Frog 2");
 
         HeadingSlice? direction = travelerDataFrame.regions[j].direction;
-
+        print("Frog 3");
         if (travelerDataFrame.regions[j].description is GeometricProjection) {
           direction = (travelerDataFrame.regions[j].description as GeometricProjection).direction;
         }
@@ -53,23 +57,33 @@ class GeometryService {
 
   Geometry? getGeometryFromPath(GeographicalPath path) {
     if (path.description is OffsetSystem) {
-      return getGeometryFromOffsetSystem(
-          path.description as OffsetSystem, path.anchor!, path.laneWidth!.getLaneWidthMeters());
+      if (path.anchor != null && path.laneWidth != null) {
+        return getGeometryFromOffsetSystem(
+            path.description as OffsetSystem, path.anchor!, path.laneWidth!.getLaneWidthMeters());
+      } else {
+        _logger.w("Unable to Parse Path. OffsetSystem requires Anchor and Lane Width");
+        return null;
+      }
     } else if (path.description is GeometricProjection) {
+      print("Duck 2");
       return getGeometryFromGeometricProjection(path.description as GeometricProjection);
     } else {
-      print("Unable to Parse Path. Path is not OffsetSystem or Geometric Projection");
+      print("Duck 3");
+      _logger.w("Unable to Parse Path. Path is not OffsetSystem or Geometric Projection");
       return null;
     }
   }
 
   Geometry? getGeometryFromOffsetSystem(OffsetSystem offsetSystem, Position3D anchor, double laneWidth) {
     if (offsetSystem.offset is NodeListXY) {
+      print("GeoOffset 1");
       return getGeometryFromNodeListXY(offsetSystem.offset as NodeListXY, anchor, laneWidth);
     } else if (offsetSystem.offset is NodeListLL) {
+      print("GeoOffset 2");
       return getGeometryFromNodeListLL(offsetSystem.offset as NodeListLL, anchor, laneWidth);
     } else {
-      print("Unable to Identify the Type of OffsetSystem");
+      print("GeoOffset 3");
+      _logger.w("Unable to Identify the Type of OffsetSystem");
     }
     return null;
   }
@@ -78,10 +92,10 @@ class GeometryService {
     if (nodeListXY.nodeListXY is NodeSetXY) {
       return getGeometryFromNodeSetXY(nodeListXY.nodeListXY as NodeSetXY, anchor, laneWidth);
     } else if (nodeListXY.nodeListXY is ComputedLane) {
-      print("Unable to Parse Computed NodeListXY System. Not Supported");
+      _logger.w("Unable to Parse Computed NodeListXY System. Not Supported");
       return null;
     } else {
-      print("Unable to Identify the Type of NodeListXY");
+      _logger.w("Unable to Identify the Type of NodeListXY");
     }
     return null;
   }
@@ -93,7 +107,7 @@ class GeometryService {
       Geometry timGeometry = convertCoordinatesToGeoPoly(polygon, anchor);
       return timGeometry;
     } else {
-      print("Unable to Add Geometry. Anchor Point: $anchor, Coordinate Length: ${polygon.length}");
+      _logger.w("Unable to Add Geometry. Anchor Point: $anchor, Coordinate Length: ${polygon.length}");
     }
 
     return null;
@@ -107,7 +121,7 @@ class GeometryService {
       Geometry timGeometry = convertCoordinatesToGeoPoly(polygon, anchor);
       return timGeometry;
     } else {
-      print("Unable to Add Geometry. Anchor Point: $anchor, Coordinate Length: ${polygon.length}");
+      _logger.w("Unable to Add Geometry. Anchor Point: $anchor, Coordinate Length: ${polygon.length}");
       return null;
     }
   }
@@ -406,7 +420,6 @@ class GeometryService {
     Coordinate negativeCorner =
         negativeOffsetCoordinate + Coordinate(h * cos(radians - fovRadians), h * sin(radians - fovRadians));
 
-    // coordinates.add(Coordinate(0, 0));
     coordinates.add(positiveOffsetCoordinate);
     coordinates.add(positiveCorner);
     coordinates.add(negativeCorner);
@@ -414,14 +427,11 @@ class GeometryService {
     coordinates.add(positiveOffsetCoordinate);
 
     List<Coordinate> latLngCoordinates = [];
-    // print("Coordinate:");
     for (int i = 0; i < coordinates.length; i++) {
       final converted = shiftLatLng(position, coordinates[i].x, coordinates[i].y);
       latLngCoordinates.add(Coordinate(converted.longitude, converted.latitude));
     }
 
     return geometryFactory.createPolygonFromCoords(latLngCoordinates);
-
-    // return latLngCoordinates;
   }
 }
