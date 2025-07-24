@@ -63,6 +63,7 @@ import 'package:cv_mec/models/light_change_time.dart';
 import 'package:cv_mec/models/utils.dart';
 import 'package:cv_mec/models/vehicle.dart';
 import 'package:cv_mec/services/api_service.dart';
+import 'package:cv_mec/services/remote_gps.dart';
 import 'package:cv_mec/services/asn_service.dart';
 import 'package:cv_mec/services/aws_service.dart';
 import 'package:cv_mec/services/file_service.dart';
@@ -112,6 +113,7 @@ class MapState extends State<MapPage> {
   GeometryService geometryService = Get.find<GeometryService>();
   ASNService asnService = Get.find<ASNService>();
   ApiService apiService = Get.find<ApiService>();
+  RemoteGPSService gpsService = Get.find<RemoteGPSService>();
   Timing timingService = Get.find<Timing>();
   FileService fileService = Get.find<FileService>();
   MqttService mqtt = Get.find<MqttService>();
@@ -159,6 +161,7 @@ class MapState extends State<MapPage> {
   late DataQueue timDataQueue;
 
   final LayerHitNotifier<HitValue> _hitNotifier = ValueNotifier(null);
+  final LayerHitNotifier<PolyLineHitValue> _polyLineHitNotifier = ValueNotifier(null);
   List<HitValue>? _prevHitValues;
   List<Polygon<HitValue>>? _hoverGons;
 
@@ -182,7 +185,7 @@ class MapState extends State<MapPage> {
   late Image currentLightState;
   late String nextLightText = "";
 
-  bool debugMode = true;
+  bool debugMode = false;
   bool showLoadingIcon = true;
   bool showLightText = true;
 
@@ -219,26 +222,6 @@ class MapState extends State<MapPage> {
     currentLightState = lightStateMap[MovementPhaseState.UNAVAILABLE]!;
 
     if (debugMode) {
-      // TravelerInformation tim =
-      //     asnService.decodeTim(TestData.pedestrianCrossingTim);
-      // timManager.addOrUpdate(tim, TestData.pedestrianCrossingTim);
-
-      // TravelerInformation tim2 = asnService.decodeTim(asnService.verizonTim2);
-      // timManager.addOrUpdate(tim2, asnService.verizonTim2);
-
-      // TravelerInformation tim3 = asnService.decodeTim(asnService.longQueueTim);
-      // timManager.addOrUpdate(tim3, asnService.queueTim);
-      // TravelerInformation tim4 = asnService.decodeTim(asnService.testTimTemplate);
-      // timManager.addOrUpdate(tim4, asnService.testTimTemplate);
-
-      // MapData map = asnService.decodeMap(TestData.cdotTestMap12110);
-      // PersonalSafetyMessage psm = asnService.decodePsm(TestData.testPsm);
-
-      // mapManager.addOrUpdate(map);
-
-      // fakeSpatMessages(TestData.tfhrcFakeSpats);
-
-      // SensorDataSharingMessage sdsm = asnService.decodeSdsm(TestData.sampleSDSM);
       fakeSdsmMessage();
     } else if (settingsController.demoMode.value) {
       TravelerInformation weatherTimDemo = asnService.decodeTim(TestData.tfhrcWeatherTIMDemo);
@@ -261,6 +244,11 @@ class MapState extends State<MapPage> {
         return;
       }
 
+      int gpsConnected = await checkRemoteGPSConnection();
+      if (connected != 0) {
+        addToAppLog("COULDN'T CONNECT TO GPS");
+      }
+
       updateConnectedStatus(ConnectedStatus.CONNECTED);
 
       if (debugMode) {
@@ -268,8 +256,21 @@ class MapState extends State<MapPage> {
         positionStream = fakePosition(TestData.tfhrcFakePosition).listen(updatePosition);
       } else if (settingsController.demoMode.value) {
         positionStream = fakePosition(TestData.tfhrcFakePosition).listen(updatePosition);
+      } else if (!(Platform.isAndroid || Platform.isIOS)) {
+        // Force Linux Builds to use Remote GPS
+        positionStream = gpsService.positionStream(interval: const Duration(milliseconds: 500)).listen(
+              updatePosition,
+              onError: (err) => showError("GPS stream error: $err"),
+            );
       } else {
-        positionStream = locationService.locationStream.listen(updatePosition);
+        if (settingsController.remoteGPS.value) {
+          positionStream = gpsService.positionStream(interval: const Duration(milliseconds: 500)).listen(
+                updatePosition,
+                onError: (err) => showError("GPS stream error: $err"),
+              );
+        } else {
+          positionStream = locationService.locationStream.listen(updatePosition);
+        }
       }
 
       if (Platform.isIOS) {
@@ -305,8 +306,8 @@ class MapState extends State<MapPage> {
   }
 
   void fakeSpatMessages(List<String> fakeSpats) {
-    int spatSimStartTime = timingService.getKronosTime().toUtc().millisecondsSinceEpoch;
-    int yearStartMs = DateTime(timingService.getKronosTime().year, 1, 1).millisecondsSinceEpoch;
+    int spatSimStartTime = timingService.getTime().toUtc().millisecondsSinceEpoch;
+    int yearStartMs = DateTime(timingService.getTime().year, 1, 1).millisecondsSinceEpoch;
 
     int revision = 0;
 
@@ -314,8 +315,7 @@ class MapState extends State<MapPage> {
     int maxEndTime = 0;
 
     Timer.periodic(const Duration(milliseconds: 100), (timer) async {
-      DateTime now = timingService.getKronosTime().toUtc().subtract(DateTime.now().timeZoneOffset);
-
+      DateTime now = timingService.getTime().toUtc().subtract(DateTime.now().timeZoneOffset);
       int deltaMs = (now.millisecondsSinceEpoch - spatSimStartTime);
 
       int index = (deltaMs ~/ 100) % fakeSpats.length;
@@ -354,7 +354,7 @@ class MapState extends State<MapPage> {
   void fakeSdsmMessage() {
     SensorDataSharingMessage sdsm = asnService.decodeSdsm(TestData.tfhrcSDSM);
     Timer.periodic(const Duration(milliseconds: 100), (timer) async {
-      DateTime now = timingService.getKronosTime();
+      DateTime now = timingService.getTime();
       processNewSdsm(publicGeoRelevanceSubscribeTopic, TestData.tfhrcSDSM, now, now);
       // await Future.delayed(const Duration(milliseconds: 100)); // Simulate an async task
     });
@@ -396,7 +396,7 @@ class MapState extends State<MapPage> {
   }
 
   Future<int> enableLogging() async {
-    DateTime logTime = timingService.getKronosTime();
+    DateTime logTime = timingService.getTime();
 
     recDataQueue = DataQueue("MQTT_SUB_LOG_${logTime.millisecondsSinceEpoch}.csv");
     pubDataQueue = DataQueue("MQTT_PUB_LOG_${logTime.millisecondsSinceEpoch}.csv");
@@ -414,6 +414,17 @@ class MapState extends State<MapPage> {
     uploadTimer = Timer.periodic(Duration(minutes: 5), (timer) {
       uploadAllLogs();
     });
+
+    return 0;
+  }
+
+  Future<int> checkRemoteGPSConnection() async {
+    Map<String, String>? gpsToken = await gpsService.getToken();
+
+    if (gpsToken == null) {
+      showError("Unable to get GPS token");
+      return 1;
+    }
 
     return 0;
   }
@@ -442,6 +453,8 @@ class MapState extends State<MapPage> {
       addToAppLog("Loading Registration from Server");
       registration = await apiService.getRegistration(
           token, paramController.clientType.value, paramController.clientSubtype.value);
+
+      addToAppLog("CREATED REGISTRATION");
 
       if (registration != null) {
         fileService.saveRegistration(registration!);
@@ -480,7 +493,9 @@ class MapState extends State<MapPage> {
     //cdotFakePosition
 
     startSendingBSM();
-    WakelockPlus.enable();
+    if (Platform.isAndroid || Platform.isIOS) {
+      WakelockPlus.enable();
+    }
 
     if (mounted) {
       setState(() {
@@ -745,7 +760,7 @@ class MapState extends State<MapPage> {
       return;
     }
 
-    DateTime sendTime = timingService.getKronosTime();
+    DateTime sendTime = timingService.getTime();
 
     Uint8Buffer buffer = Uint8Buffer();
     msg.position = pos;
@@ -791,7 +806,6 @@ class MapState extends State<MapPage> {
       buffer.addAll(msg.writeToBuffer());
       mqtt.publishBytes(buffer, publishTopic);
       updateConnectedStatus(ConnectedStatus.CONNECTED);
-      NetworkStatus networkStatus = await ConnectionNetworkType().currentNetworkStatus();
     }
 
     String netStat = "Unavailable";
@@ -807,6 +821,7 @@ class MapState extends State<MapPage> {
   DateTime prevNtp = DateTime.now();
   DateTime prevKronos = DateTime.now();
   DateTime prevLocal = DateTime.now();
+  DateTime prevSystemTime = DateTime.now();
 
   Future<void> updatePosition(Position position) async {
     currentPosition = position;
@@ -814,7 +829,7 @@ class MapState extends State<MapPage> {
     DateTime now = DateTime.now();
 
     DateTime ntp = timingService.getNtpTime();
-    DateTime kronos = timingService.getKronosTime();
+    DateTime kronos = timingService.getTime();
 
     prevNtp = ntp;
     prevKronos = kronos;
@@ -908,7 +923,9 @@ class MapState extends State<MapPage> {
     updateConnectedStatus(ConnectedStatus.DISCONNECTED);
     stopSendingBSM();
     mqtt.subscriberList.clear();
-    WakelockPlus.disable();
+    if (Platform.isAndroid || Platform.isIOS) {
+      WakelockPlus.disable();
+    }
     uploadTimer?.cancel();
   }
 
@@ -941,7 +958,7 @@ class MapState extends State<MapPage> {
   }
 
   void updateTimeToChange() {
-    DateTime now = timingService.getKronosTime();
+    DateTime now = timingService.getTime();
     LightChangeTime? next;
     Position? pos = currentPosition;
     if (pos != null) {
@@ -1038,7 +1055,7 @@ class MapState extends State<MapPage> {
         for (GeoMap map in geoMaps) {
           // Get SPaT messages associated with the relavent MAP messages
           List<IntersectionState> states =
-              spatManager.getActiveSpats(map.intersectionGeometry.id.id.intersectionID, timingService.getKronosTime());
+              spatManager.getActiveSpats(map.intersectionGeometry.id.id.intersectionID, timingService.getTime());
 
           for (IntersectionState state in states) {
             // This code indexes light colors by signal group to allow easy lookup down the line
@@ -1071,8 +1088,7 @@ class MapState extends State<MapPage> {
         }
       }
     }
-
-    DateTime compTime = timingService.getKronosTime();
+    DateTime compTime = timingService.getTime();
     DateTime endTime = compTime.add(const Duration(seconds: 1));
     DateTime startTime = compTime.subtract(const Duration(seconds: 1));
 
@@ -1207,9 +1223,8 @@ class MapState extends State<MapPage> {
       List<GeoMap> geoMaps = mapManager.getActiveMaps(pos.longitude, pos.latitude);
 
       for (GeoMap map in geoMaps) {
-        // Get SPaT messages associated with the relavent MAP messages
         List<IntersectionState> states =
-            spatManager.getActiveSpats(map.intersectionGeometry.id.id.intersectionID, timingService.getKronosTime());
+            spatManager.getActiveSpats(map.intersectionGeometry.id.id.intersectionID, timingService.getTime());
 
         for (IntersectionState state in states) {
           // This code indexes light colors by signal group to allow easy lookup down the line
@@ -1304,8 +1319,6 @@ class MapState extends State<MapPage> {
     for (DataFrameGeometry frame in dataFrames) {
       TravelerDataFrame tdFrame = frame.frame;
 
-      // ItisCode code = await timManager.getItisRepresentationForDataFrame(tdFrame);
-
       for (GeometryDirection geoDir in frame.geometry) {
         List<LatLng> polyPoints = geometryService.convertGeometryToLatLngList(geoDir.geometry);
 
@@ -1327,9 +1340,9 @@ class MapState extends State<MapPage> {
   addToTimLog(String action, String asn1) {
     if (currentPosition != null) {
       timDataQueue.addItem(
-          "$action, ${timingService.getKronosTime().millisecondsSinceEpoch}, ${currentPosition!.longitude}, ${currentPosition!.latitude}, ${currentPosition!.heading}, $asn1\n");
+          "$action, ${timingService.getTime().millisecondsSinceEpoch}, ${currentPosition!.longitude}, ${currentPosition!.latitude}, ${currentPosition!.heading}, $asn1\n");
     } else {
-      timDataQueue.addItem("$action, ${timingService.getKronosTime().millisecondsSinceEpoch}, 0, 0, 0, $asn1\n");
+      timDataQueue.addItem("$action, ${timingService.getTime().millisecondsSinceEpoch}, 0, 0, 0, $asn1\n");
     }
   }
 
@@ -1469,8 +1482,6 @@ class MapState extends State<MapPage> {
   Widget map(BuildContext context, MapController mapController) {
     return Obx(
       () => SizedBox(
-        // width: screenWidthPercentage(context, percentage: orientation == Orientation.portrait ? 0.8 : 0.4),
-        // height: screenHeightPercentage(context, percentage: orientation == Orientation.portrait ? 0.45 : 0.7),
         child: FlutterMap(
             mapController: mapController,
             options: MapOptions(
@@ -1546,18 +1557,13 @@ class MapState extends State<MapPage> {
                   }
                 },
                 child: GestureDetector(
-                  // onTap: () => _openTouchedGonsModal(
-                  //   'Tapped',
-                  //   _hitNotifier.value!.hitValues,
-                  //   _hitNotifier.value!.coordinate,
-                  // ),
                   child: Stack(children: [
-                    PolylineLayer(
-                      hitNotifier: _hitNotifier,
+                    PolylineLayer<PolyLineHitValue>(
+                      hitNotifier: _polyLineHitNotifier,
                       polylines: [...drawnPolylines],
                       simplificationTolerance: 0,
                     ),
-                    PolygonLayer(
+                    PolygonLayer<HitValue>(
                       hitNotifier: _hitNotifier,
                       simplificationTolerance: 0,
                       polygons: [...drawnPolygons, ...?_hoverGons],
@@ -1808,10 +1814,6 @@ class MapState extends State<MapPage> {
               offset: const Offset(-1, 3), // changes position of shadow
             ),
           ],
-          /*border: Border.all(
-            color: primaryColor,
-            width: 2.0,
-          ), */ // Box border
         ),
         child: Padding(
           padding: const EdgeInsets.all(8.0),
@@ -2186,9 +2188,6 @@ class MapState extends State<MapPage> {
               'TIM Message',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-            // Text(
-            //   '$eventType at point: (${coords.latitude.toStringAsFixed(6)}, ${coords.longitude.toStringAsFixed(6)})',
-            // ),
             const SizedBox(height: 8),
             Expanded(
               child: ListView.builder(

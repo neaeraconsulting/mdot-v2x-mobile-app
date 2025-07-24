@@ -1,0 +1,23 @@
+display_name: CV MEC
+package_name: CV-MEC
+maintainer:
+  name: Neaera Consulting
+  email: adarash@neaeraconsulting.com
+priority: optional
+section: x11
+installed_size: 6604
+essential: false
+icon: linux/packaging/deb/assets/appIcon.png
+
+postinstall_scripts:
+  - echo "Installed CV_MEC"
+postuninstall_scripts:
+  - echo "Uninstalled CV_MEC"
+
+keywords:
+  - CV_MEC
+
+startup_notify: true
+# You can also specify [metainfo](https://freedesktop.org/software/appstream/docs/chap-Quickstart.html) file
+# which contains metadata of the app.
+# metainfo: linux/packaging/myappid.appdata.xml

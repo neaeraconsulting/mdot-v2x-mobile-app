@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cv_mec/controllers/configuration_controller.dart';
 import 'package:cv_mec/controllers/obd_controller.dart';
 import 'package:cv_mec/controllers/settings_controller.dart';
@@ -21,7 +23,7 @@ class Load extends StatelessWidget {
   Future _init() async {
     LocationService locationService = Get.put(LocationService());
     await locationService.init();
-    if (!(await locationService.isPermissionGranted())) {
+    if ((Platform.isAndroid || Platform.isIOS) && !(await locationService.isPermissionGranted())) {
       Get.off(() => const MissingPermissions());
     } else {
       Get.put(Timing());

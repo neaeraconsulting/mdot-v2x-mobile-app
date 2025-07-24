@@ -59,7 +59,7 @@ class CreateVehicleConfigDialog extends StatelessWidget {
         height: screenHeight(context) * 0.5,
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(20),
             child: Obx(() => Column(
                   children: [
                     Row(children: [

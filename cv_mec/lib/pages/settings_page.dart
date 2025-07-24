@@ -13,6 +13,7 @@ class SettingsPage extends StatelessWidget {
   TextEditingController baseUriController = TextEditingController();
   TextEditingController vendorIDController = TextEditingController();
   TextEditingController deviceIDController = TextEditingController();
+  TextEditingController gpsIPController = TextEditingController();
 
   FileService fileService = Get.find<FileService>();
 
@@ -24,6 +25,7 @@ class SettingsPage extends StatelessWidget {
     baseUriController.text = controller.baseUri.value;
     vendorIDController.text = controller.vendorID.value;
     deviceIDController.text = controller.deviceID.value;
+    gpsIPController.text = controller.gpsIP.value;
     return Scaffold(
         appBar: AppBar(
           title: const Text("Settings Page"),
@@ -122,7 +124,19 @@ class SettingsPage extends StatelessWidget {
           },
         ),
         verticalSpaceMedium,
-        SwitchListTile(
+        TextField(
+          decoration: const InputDecoration(labelText: 'GPS IP'),
+          controller: gpsIPController,
+          obscureText: false,
+          onChanged: (value) async {
+            if (value != controller.gpsIP.value) {
+              controller.gpsIP.value = value;
+              await controller.secureStorage.setGPSIP(value);
+            }
+          },
+        ),
+        verticalSpaceMedium,
+        Obx(() => SwitchListTile(
             title: const Text("VZ Mode"),
             value: controller.vzMode.value,
             onChanged: (value) async {
@@ -130,9 +144,9 @@ class SettingsPage extends StatelessWidget {
                 controller.vzMode.value = value;
                 await controller.secureStorage.setVZMode(value);
               }
-            }),
+            })),
         verticalSpaceMedium,
-        SwitchListTile(
+        Obx(() => SwitchListTile(
             title: const Text("Enable Notifications"),
             value: controller.notificationsEnabled.value,
             onChanged: (value) async {
@@ -145,9 +159,9 @@ class SettingsPage extends StatelessWidget {
                       "Notifications Enabled!", const AssetImage('assets/images/cv_mec_notification_icon.png'));
                 }
               }
-            }),
+            })),
         verticalSpaceMedium,
-        SwitchListTile(
+        Obx(() => SwitchListTile(
             title: const Text("Read Messages"),
             value: controller.readMessages.value,
             onChanged: (value) async {
@@ -155,9 +169,9 @@ class SettingsPage extends StatelessWidget {
                 controller.readMessages.value = value;
                 await controller.secureStorage.setReadMessages(value);
               }
-            }),
+            })),
         verticalSpaceMedium,
-        SwitchListTile(
+        Obx(() => SwitchListTile(
             title: const Text("Enable Demo Mode"),
             value: controller.demoMode.value,
             onChanged: (value) async {
@@ -165,7 +179,17 @@ class SettingsPage extends StatelessWidget {
                 controller.demoMode.value = value;
                 await controller.secureStorage.setDemoMode(value);
               }
-            }),
+            })),
+        verticalSpaceMedium,
+        Obx(() => SwitchListTile(
+            title: const Text("Enable Remote GPS"),
+            value: controller.remoteGPS.value,
+            onChanged: (value) async {
+              if (value != controller.remoteGPS.value) {
+                controller.remoteGPS.value = value;
+                await controller.secureStorage.setGPSMode(value);
+              }
+            })),
         verticalSpaceMedium,
       ],
     );

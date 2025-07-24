@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:cv_mec/services/location_service.dart';
@@ -76,11 +77,15 @@ class Timing extends GetxController {
   }
 
   void _updateKronosTime(DateTime currTime) async {
-    final result = await Future.wait([
-      FlutterKronosPlus.getCurrentTimeMs,
-      FlutterKronosPlus.getCurrentNtpTimeMs,
-    ]);
-    kronosTime.value = DateTime.fromMillisecondsSinceEpoch(result[0]!).toUtc();
+    if (Platform.isAndroid || Platform.isIOS) {
+      final result = await Future.wait([
+        FlutterKronosPlus.getCurrentTimeMs,
+        FlutterKronosPlus.getCurrentNtpTimeMs,
+      ]);
+      kronosTime.value = DateTime.fromMillisecondsSinceEpoch(result[0]!).toUtc();
+    } else {
+      kronosTime.value = DateTime.now().toUtc();
+    }
   }
 
   DateTime getKronosTime() {
@@ -93,10 +98,17 @@ class Timing extends GetxController {
     return ntpTime.value;
   }
 
+  DateTime getTime() {
+    if (Platform.isAndroid || Platform.isIOS) {
+      return getKronosTime();
+    } else {
+      return DateTime.now().toUtc();
+    }
+  }
+
   void startLocationUpdates() {
     _positionStream?.cancel();
-    _positionStream =
-        _locationService.locationStream.listen((Position position) {
+    _positionStream = _locationService.locationStream.listen((Position position) {
       _setGeospatialTimeOffset(position.timestamp, update: true);
     });
   }
@@ -106,10 +118,7 @@ class Timing extends GetxController {
   }
 
   Future<void> handleNtpUpdate(Timer _) async {
-    _setNtpTimeOffset(await NTP.now(
-        lookUpAddress: "time.aws.com",
-        port: 123,
-        timeout: Duration(seconds: 5)));
+    _setNtpTimeOffset(await NTP.now(lookUpAddress: "time.aws.com", port: 123, timeout: Duration(seconds: 5)));
   }
 
   void startNtpTimeUpdates() {
@@ -117,8 +126,7 @@ class Timing extends GetxController {
     if (ntpUpdatesActive()) {
       _ntpTimer?.cancel();
     }
-    _ntpTimer =
-        Timer.periodic(const Duration(milliseconds: 5000), handleNtpUpdate);
+    _ntpTimer = Timer.periodic(const Duration(milliseconds: 5000), handleNtpUpdate);
   }
 
   void stopNtpTimeUpdates() {
@@ -134,8 +142,7 @@ class Timing extends GetxController {
     if (systemTimeUpdatesActive()) {
       _systemTimer?.cancel();
     }
-    _systemTimer =
-        Timer.periodic(const Duration(milliseconds: 5), handleSystemTimeUpdate);
+    _systemTimer = Timer.periodic(const Duration(milliseconds: 5), handleSystemTimeUpdate);
   }
 
   void stopSystemTimeUpdates() {
@@ -146,8 +153,7 @@ class Timing extends GetxController {
     FlutterKronosPlus.sync();
 
     int? currentTime = await FlutterKronosPlus.getCurrentTimeMs;
-    kronosTime.value =
-        DateTime.fromMillisecondsSinceEpoch(currentTime!).toUtc();
+    kronosTime.value = DateTime.fromMillisecondsSinceEpoch(currentTime!).toUtc();
   }
 
   void stopKronosTimeUpdates() {}

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/models/itis_code.dart';
@@ -78,10 +79,12 @@ class VehicleNotificationManager {
   }
 
   static void requestPermissions() async {
-    await Permission.notification.isDenied.then((value) {
-      if (value) {
-        Permission.notification.request();
+    if (Platform.isAndroid || Platform.isIOS) {
+      final status = await Permission.notification.status;
+      if (status.isDenied) {
+        await Permission.notification.request();
       }
-    });
+    }
+    return;
   }
 }

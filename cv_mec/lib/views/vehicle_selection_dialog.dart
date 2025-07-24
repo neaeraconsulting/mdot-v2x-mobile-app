@@ -23,87 +23,95 @@ class VehicleConfigSelectionDialog extends StatelessWidget {
         width: screenWidth(context) * 0.8,
         height: screenHeight(context) * 0.5,
         child: Center(
-          child: Obx(() => Column(
-                children: [
-                  verticalSpaceMedium,
-                  SizedBox(
-                    width: screenWidth(context) * 0.7,
-                    child: Row(
-                      children: [
-                        const CVMECText.styleTwo("Choose a vehicle"),
-                        const Spacer(),
-                        IconButton(
-                          icon: const Icon(Icons.delete),
-                          onPressed: () {
-                            deleteConfigMode.value = !deleteConfigMode.value;
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  verticalSpaceSmall,
-                  SizedBox(
-                    width: screenWidth(context) * 0.75,
-                    height: screenHeight(context) * 0.35,
-                    child: ListView(
-                      shrinkWrap: true,
-                      children: [
-                        ...configController.vehicleConfigs
-                            .map((vehicle) => ListTile(
-                                  leading: vehicleAvatar(vehicle),
-                                  title: Text(vehicle.name),
-                                  subtitle: Text(vehicle.classification.name.replaceAll("_", " ").capitalizeFirst ?? "",
-                                      style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
-                                  trailing: !(deleteConfigMode.value)
-                                      ? IconButton(
-                                          icon: Icon(Icons.arrow_forward_ios,
-                                              color: Theme.of(context).colorScheme.onSurface),
-                                          onPressed: () {
-                                            configController.vehicleBeingEditedIndex.value =
-                                                configController.vehicleConfigs.indexOf(vehicle);
-                                            //Get.to(() => CreateVehicleConfig());
-                                            Get.dialog(CreateVehicleConfigDialog());
-                                          },
-                                        )
-                                      : IconButton(
-                                          icon: Icon(Icons.delete, color: Theme.of(context).colorScheme.onSurface),
-                                          onPressed: () {
-                                            configController.deleteVehicleConfig(vehicle);
-                                            deleteConfigMode.value = false;
-                                          },
-                                        ),
-                                  onTap: () {
-                                    configController.selectedVehicle.value = vehicle;
-                                    configController.isVehicleConfig.value = true;
-                                    Get.off(() => MapPage());
-                                  },
-                                ))
-                            .toList(),
-                        ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: Theme.of(context).primaryColor,
-                            child: Icon(Icons.add),
+          child: Obx(() => Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Column(
+                  children: [
+                    verticalSpaceMedium,
+                    SizedBox(
+                      width: screenWidth(context) * 0.8,
+                      child: Row(
+                        children: [
+                          horizontalSpaceMedium,
+                          const CVMECText.styleTwo("Choose a vehicle"),
+                          const Spacer(),
+                          IconButton(
+                            icon: const Icon(Icons.delete),
+                            onPressed: () {
+                              deleteConfigMode.value = !deleteConfigMode.value;
+                            },
                           ),
-                          title: Text("Add New"),
-                          onTap: () {
-                            //Get.to(() => CreateVehicleConfig());
-                            Get.dialog(CreateVehicleConfigDialog());
-                          },
-                        )
-                      ],
+                          horizontalSpaceMedium,
+                        ],
+                      ),
                     ),
-                  ),
-                  Expanded(child: Container()),
-                  ClickableText(
-                    text: "Skip",
-                    onTap: () {
-                      configController.setVehicleToDefault();
-                      configController.isVehicleConfig.value = true;
-                      Get.off(() => const MapPage());
-                    },
-                  ),
-                  verticalSpaceMedium,
-                ],
+                    verticalSpaceSmall,
+                    SizedBox(
+                      width: screenWidth(context) * 0.75,
+                      height: screenHeight(context) * 0.35,
+
+                      /*Expanded(*/
+                      child: ListView(
+                        shrinkWrap: true,
+                        children: [
+                          ...configController.vehicleConfigs
+                              .map((vehicle) => ListTile(
+                                    leading: vehicleAvatar(vehicle),
+                                    title: Text(vehicle.name),
+                                    subtitle: Text(
+                                        vehicle.classification.name.replaceAll("_", " ").capitalizeFirst ?? "",
+                                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+                                    trailing: !(deleteConfigMode.value)
+                                        ? IconButton(
+                                            icon: Icon(Icons.arrow_forward_ios,
+                                                color: Theme.of(context).colorScheme.onSurface),
+                                            onPressed: () {
+                                              configController.vehicleBeingEditedIndex.value =
+                                                  configController.vehicleConfigs.indexOf(vehicle);
+                                              //Get.to(() => CreateVehicleConfig());
+                                              Get.dialog(CreateVehicleConfigDialog());
+                                            },
+                                          )
+                                        : IconButton(
+                                            icon: Icon(Icons.delete, color: Theme.of(context).colorScheme.onSurface),
+                                            onPressed: () {
+                                              configController.deleteVehicleConfig(vehicle);
+                                              deleteConfigMode.value = false;
+                                            },
+                                          ),
+                                    onTap: () {
+                                      configController.selectedVehicle.value = vehicle;
+                                      configController.isVehicleConfig.value = true;
+                                      Get.off(() => MapPage());
+                                    },
+                                  ))
+                              .toList(),
+                          ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: Theme.of(context).primaryColor,
+                              child: Icon(Icons.add),
+                            ),
+                            title: Text("Add New"),
+                            onTap: () {
+                              //Get.to(() => CreateVehicleConfig());
+                              Get.dialog(CreateVehicleConfigDialog());
+                            },
+                          )
+                        ],
+                      ),
+                    ),
+                    Expanded(child: Container()),
+                    ClickableText(
+                      text: "Skip",
+                      onTap: () {
+                        configController.setVehicleToDefault();
+                        configController.isVehicleConfig.value = true;
+                        Get.off(() => const MapPage());
+                      },
+                    ),
+                    verticalSpaceMedium,
+                  ],
+                ),
               )),
         ),
       ),
