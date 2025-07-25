@@ -1843,51 +1843,65 @@ class MapState extends State<MapPage> {
         child: Padding(
           padding: const EdgeInsets.all(8.0),
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Stack(
-              children: [
-                // Outline layers
-                Text(
-                  ((currentPosition?.speed ?? 0) * 2.23694).toStringAsFixed(0),
-                  style: TextStyle(
-                    fontSize: 52.0,
-                    foreground: Paint()
-                      ..style = PaintingStyle.stroke
-                      ..strokeWidth = 3.0
-                      ..color = primaryColor.withOpacity(0.5), // Outline color
-                  ),
+            SizedBox(
+              width: (heightBottomDisplay * (2/3) - 16) * 0.8, // Constrain width
+              height: heightBottomDisplay * 0.5, // Constrain height
+              child: FittedBox(
+                fit: BoxFit.contain,
+                child: Stack(
+                  children: [
+                    // Outline layers
+                    Text(
+                      ((currentPosition?.speed ?? 0) * 2.23694).toStringAsFixed(0),
+                      style: TextStyle(
+                        fontSize: 52.0,
+                        foreground: Paint()
+                          ..style = PaintingStyle.stroke
+                          ..strokeWidth = 3.0
+                          ..color = primaryColor.withOpacity(0.5), // Outline color
+                      ),
+                    ),
+                    // Main text
+                    Text(
+                      ((currentPosition?.speed ?? 0) * 2.23694).toStringAsFixed(0),
+                      style: TextStyle(
+                        fontSize: 52.0,
+                        color: Colors.black, // Fill color
+                      ),
+                    ),
+                  ],
                 ),
-                // Main text
-                Text(
-                  ((currentPosition?.speed ?? 0) * 2.23694).toStringAsFixed(0),
-                  style: TextStyle(
-                    fontSize: 52.0,
-                    color: Colors.black, // Fill color
-                  ),
-                ),
-              ],
+              ),
             ),
-            Stack(
-              children: [
-                // Outline layers
-                Text(
-                  "MPH",
-                  style: TextStyle(
-                    fontSize: 32.0,
-                    foreground: Paint()
-                      ..style = PaintingStyle.stroke
-                      ..strokeWidth = 2.0
-                      ..color = primaryColor.withOpacity(0.5), // Outline color
+            SizedBox(
+              width: (heightBottomDisplay * (2/3) - 16) * 0.8, // Constrain width
+              height: heightBottomDisplay * 0.3, // Constrain height
+              child: FittedBox (  
+                fit: BoxFit.contain,
+                child: Stack(
+                children: [
+                  // Outline layers
+                  Text(
+                    "MPH",
+                    style: TextStyle(
+                      fontSize: 32.0,
+                      foreground: Paint()
+                        ..style = PaintingStyle.stroke
+                        ..strokeWidth = 2.0
+                        ..color = primaryColor.withOpacity(0.5), // Outline color
+                    ),
                   ),
-                ),
-                // Main text
-                const Text(
-                  "MPH",
-                  style: TextStyle(
-                    fontSize: 32.0,
-                    color: Colors.black, // Fill color
+                  // Main text
+                  const Text(
+                    "MPH",
+                    style: TextStyle(
+                      fontSize: 32.0,
+                      color: Colors.black, // Fill color
+                    ),
                   ),
-                ),
-              ],
+                ],
+              )
+              ),
             ),
           ]),
         ),
