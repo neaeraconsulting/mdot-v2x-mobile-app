@@ -1922,7 +1922,6 @@ class MapState extends State<MapPage> {
               style: const TextStyle(fontSize: 16.0),
             );
       timIcons.add(icon);
-      //Duplicate the line above to test tims display sizes
     }
     if (timIcons.length <= maxTimsInRow) {
       return Row(
@@ -1930,13 +1929,12 @@ class MapState extends State<MapPage> {
         children: timIcons.map((icon) {
           // Dynamically calculate the size based on the number of icons
           double timsDisplayWidth = screenWidth - ((heightBottomDisplay * (2 / 3)) + 20);
-          double iconSizeTwo = (timsDisplayWidth / timIcons.length) > heightBottomDisplay
+          double iconSize = (timsDisplayWidth / timIcons.length) > heightBottomDisplay
               ? heightBottomDisplay
               : timsDisplayWidth / timIcons.length;
-          //double iconSize = timIcons.length <= 1 ? fullHeight : (timIcons.length <= 2 ? mediumHeight : smallHeight);
           return SizedBox(
-            width: iconSizeTwo,
-            height: iconSizeTwo,
+            width: iconSize,
+            height: iconSize,
             child: icon,
           );
         }).toList(),
