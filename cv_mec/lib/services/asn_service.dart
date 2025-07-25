@@ -46,7 +46,6 @@ class ASNService extends GetxController {
       dylib = DynamicLibrary.open(soPath);
       _bindings = C.NativeBindings(dylib);
     } else {
-      // dylib = DynamicLibrary.process();
       _bindings = Asn1.getBindings();
     }
 

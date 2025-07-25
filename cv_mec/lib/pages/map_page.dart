@@ -20,6 +20,7 @@ import 'package:asn1_plugin/j2735/2024/common/node_set_xy.dart';
 import 'package:asn1_plugin/j2735/2024/common/siren_in_use.dart';
 import 'package:asn1_plugin/j2735/2024/map_data/generic_lane.dart';
 import 'package:asn1_plugin/j2735/2024/map_data/map_data.dart';
+import 'package:asn1_plugin/j2735/2024/personal_safety_message/personal_device_user_type.dart';
 import 'package:asn1_plugin/j2735/2024/personal_safety_message/personal_safety_message.dart';
 import 'package:asn1_plugin/j2735/2024/sensor_data_sharing_message/detected_object_data.dart';
 import 'package:asn1_plugin/j2735/2024/sensor_data_sharing_message/sensor_data_sharing_message.dart';
@@ -32,7 +33,6 @@ import 'package:asn1_plugin/j2735/2024/spat/time_mark.dart';
 import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_data_frame.dart';
 import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_information.dart';
 import 'package:bluetooth_classic/models/device.dart';
-import 'package:connection_network_type/connection_network_type.dart';
 import 'package:cv_mec/controllers/obd_controller.dart';
 import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/models/data_queue.dart';
@@ -95,7 +95,6 @@ import 'package:cv_mec/models/protobuf_models/geo_routed_msg.pb.dart' as protobu
 import 'package:typed_data/typed_data.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:cv_mec/controllers/configuration_controller.dart';
-import 'package:asn1_plugin/j2735/2024/common/siren_in_use.dart';
 
 enum ConnectedStatus { UNKNOWN, DISCONNECTED, CONNECTED, PARTIAl }
 
@@ -817,6 +816,9 @@ class MapState extends State<MapPage> {
       psmBuilder.incrementMsgCnt();
       psmBuilder.setTime(sendTime);
       psmBuilder.setPersonalDeviceUserType(configController.selectedPedestrian);
+      if (configController.selectedPedestrian == PersonalDeviceUserType.APUBLICSAFETYWORKER) {
+        psmBuilder.setPublicSafetyWorkerType(configController.selectedPublicSafetyWorker);
+      }
       hex = psmBuilder.build();
     }
 
