@@ -244,9 +244,11 @@ class MapState extends State<MapPage> {
         return;
       }
 
-      int gpsConnected = await checkRemoteGPSConnection();
-      if (connected != 0) {
-        addToAppLog("COULDN'T CONNECT TO GPS");
+      if(settingsController.remoteGPS.value) {
+        int gpsConnected = await checkRemoteGPSConnection();
+        if (gpsConnected != 0) {
+          addToAppLog("COULDN'T CONNECT TO GPS");
+        }
       }
 
       updateConnectedStatus(ConnectedStatus.CONNECTED);
@@ -419,7 +421,12 @@ class MapState extends State<MapPage> {
   }
 
   Future<int> checkRemoteGPSConnection() async {
-    Map<String, String>? gpsToken = await gpsService.getToken();
+    Map<String, String>? gpsToken;
+    try {
+      gpsToken = await gpsService.getToken().timeout(Duration(seconds: 30));
+    } catch (e) {
+      addToAppLog('GPS token request timed out or failed: $e');
+    }
 
     if (gpsToken == null) {
       showError("Unable to get GPS token");
