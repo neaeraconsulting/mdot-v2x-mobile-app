@@ -249,10 +249,10 @@ class MapState extends State<MapPage> {
         return;
       }
 
-      int gpsConnected = await checkRemoteGPSConnection();
-      if (connected != 0) {
-        addToAppLog("COULDN'T CONNECT TO GPS");
-      }
+      // int gpsConnected = await checkRemoteGPSConnection();
+      // if (connected != 0) {
+      //   addToAppLog("COULDN'T CONNECT TO GPS");
+      // }
 
       updateConnectedStatus(ConnectedStatus.CONNECTED);
 
@@ -1388,6 +1388,7 @@ class MapState extends State<MapPage> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+    final heightBottomDisplay = screenHeight * 0.18;
 
     const String appTitle = "MAP";
     return Scaffold(
@@ -1478,12 +1479,12 @@ class MapState extends State<MapPage> {
               Align(
                   alignment: Alignment.bottomLeft,
                   child: SizedBox(
-                    height: 170,
+                    height: screenHeight * 0.2,
                     child: Row(children: [
                       Expanded(
-                        child: timsDisplay(),
+                        child: timsDisplay(heightBottomDisplay, screenWidth),
                       ),
-                      configController.isVehicleConfig.value ? speedMarker() : Container(),
+                      configController.isVehicleConfig.value ? speedMarker(heightBottomDisplay) : Container(),
                     ]),
                   )),
               Align(
@@ -1821,12 +1822,12 @@ class MapState extends State<MapPage> {
         ));
   }
 
-  Widget speedMarker() {
+  Widget speedMarker(double heightBottomDisplay) {
     return Padding(
       padding: const EdgeInsets.all(10),
       child: Container(
-        width: 100,
-        height: 150,
+        width: heightBottomDisplay * (2/3),
+        height: heightBottomDisplay,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
           color: lightGrey,
@@ -1894,7 +1895,7 @@ class MapState extends State<MapPage> {
     );
   }
 
-  Widget timsDisplay() {
+  Widget timsDisplay(double heightBottomDisplay, double screenWidth) {
     List<Widget> timIcons = [];
     for (ItisCode code in showTims) {
       Widget icon = code.image != null
@@ -1906,16 +1907,31 @@ class MapState extends State<MapPage> {
               style: const TextStyle(fontSize: 16.0),
             );
       timIcons.add(icon);
+      timIcons.add(icon);
+      timIcons.add(icon);
+      timIcons.add(icon);
+      timIcons.add(icon);
+      timIcons.add(icon);
+      timIcons.add(icon);
+      timIcons.add(icon);
+      timIcons.add(icon);
+      timIcons.add(icon);
+      timIcons.add(icon);
+      timIcons.add(icon);
     }
     if (timIcons.length <= 4) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: timIcons.map((icon) {
           // Dynamically calculate the size based on the number of icons
-          double iconSize = timIcons.length <= 1 ? 140 : (timIcons.length <= 2 ? 100 : 70);
+          double timsDisplayWidth = screenWidth - ((heightBottomDisplay * (2 / 3)) + 20);
+          double iconSizeTwo = (timsDisplayWidth / timIcons.length) > heightBottomDisplay
+              ? heightBottomDisplay
+              : timsDisplayWidth / timIcons.length;
+          //double iconSize = timIcons.length <= 1 ? fullHeight : (timIcons.length <= 2 ? mediumHeight : smallHeight);
           return SizedBox(
-            width: iconSize,
-            height: iconSize,
+            width: iconSizeTwo,
+            height: iconSizeTwo,
             child: icon,
           );
         }).toList(),
