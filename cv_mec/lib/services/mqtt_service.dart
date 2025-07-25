@@ -17,7 +17,6 @@ class MqttService extends GetxService {
   var pongCount = 0; // Pong counter
   Timing timingService = Get.find<Timing>();
   final Logger _logger = Logger();
-  // final String mqttBrokerIdentifier;
 
   static const String etxTag = "ETX";
   static const String pc5Tag = "PC5";
@@ -76,11 +75,9 @@ class MqttService extends GetxService {
     } on NoConnectionException catch (e) {
       // Raised by the client when connection fails.
       _logger.e('CV_MEC::client exception - $e');
-      // client!.disconnect();
     } on SocketException catch (e) {
       // Raised by the socket layer
       _logger.e('CV_MEC::socket exception - $e');
-      // client!.disconnect();
     }
 
     /// Check we are connected
