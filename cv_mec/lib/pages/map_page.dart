@@ -185,7 +185,7 @@ class MapState extends State<MapPage> {
   late Image currentLightState;
   late String nextLightText = "";
 
-  bool debugMode = false;
+  bool debugMode = true;
   bool showLoadingIcon = true;
   bool showLightText = true;
 
@@ -256,8 +256,19 @@ class MapState extends State<MapPage> {
       updateConnectedStatus(ConnectedStatus.CONNECTED);
 
       if (debugMode) {
+        TravelerInformation itswcTim1 = asnService.decodeTim(TestData.itswcTim1);
+      timManager.addOrUpdate(itswcTim1, TestData.itswcTim1);
+
+      TravelerInformation itswcTim2 = asnService.decodeTim(TestData.itswcTim2);
+      timManager.addOrUpdate(itswcTim2, TestData.itswcTim2);
+
+      TravelerInformation itswcTim3 = asnService.decodeTim(TestData.itswcTim3);
+      timManager.addOrUpdate(itswcTim3, TestData.itswcTim3);
+
+      TravelerInformation itswcTim4 = asnService.decodeTim(TestData.itswcTim4);
+      timManager.addOrUpdate(itswcTim4, TestData.itswcTim4);
         // tfhrcStaticPosition
-        positionStream = fakePosition(TestData.tfhrcFakePosition).listen(updatePosition);
+        positionStream = fakePosition(TestData.itswcFakePosition).listen(updatePosition);
       } else if (settingsController.demoMode.value) {
         positionStream = fakePosition(TestData.tfhrcFakePosition).listen(updatePosition);
       } else if (!(Platform.isAndroid || Platform.isIOS)) {
