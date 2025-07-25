@@ -1897,6 +1897,7 @@ class MapState extends State<MapPage> {
 
   Widget timsDisplay(double heightBottomDisplay, double screenWidth) {
     List<Widget> timIcons = [];
+    final int maxTimsInRow = (screenWidth / (heightBottomDisplay / 2)).floor();
     for (ItisCode code in showTims) {
       Widget icon = code.image != null
           ? Image(
@@ -1907,19 +1908,9 @@ class MapState extends State<MapPage> {
               style: const TextStyle(fontSize: 16.0),
             );
       timIcons.add(icon);
-      timIcons.add(icon);
-      timIcons.add(icon);
-      timIcons.add(icon);
-      timIcons.add(icon);
-      timIcons.add(icon);
-      timIcons.add(icon);
-      timIcons.add(icon);
-      timIcons.add(icon);
-      timIcons.add(icon);
-      timIcons.add(icon);
-      timIcons.add(icon);
+      //Duplicate the line above to test tims display sizes
     }
-    if (timIcons.length <= 4) {
+    if (timIcons.length <= maxTimsInRow) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: timIcons.map((icon) {
@@ -1940,7 +1931,7 @@ class MapState extends State<MapPage> {
       // Create a grid with 2 rows
       return GridView.count(
         shrinkWrap: true,
-        crossAxisCount: 4, // 2 columns
+        crossAxisCount: maxTimsInRow, 
         mainAxisSpacing: 8.0,
         crossAxisSpacing: 8.0,
         children: timIcons,
