@@ -249,10 +249,10 @@ class MapState extends State<MapPage> {
         return;
       }
 
-      // int gpsConnected = await checkRemoteGPSConnection();
-      // if (connected != 0) {
-      //   addToAppLog("COULDN'T CONNECT TO GPS");
-      // }
+      int gpsConnected = await checkRemoteGPSConnection();
+      if (connected != 0) {
+        addToAppLog("COULDN'T CONNECT TO GPS");
+      }
 
       updateConnectedStatus(ConnectedStatus.CONNECTED);
 
