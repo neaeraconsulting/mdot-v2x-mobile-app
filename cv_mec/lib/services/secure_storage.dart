@@ -1,6 +1,4 @@
-import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class SecureStorage {
@@ -28,14 +26,18 @@ class SecureStorage {
   static const _keyS3Region = "s3Region";
   static const _keyS3DestDir = "s3DestDir";
 
+  static const _keyPC5BrokerUrl = "pc5BrokerUrl";
+  static const _keyEnablePC5 = "enablePC5";
+
   static final _startUsername = dotenv.env['USERNAME']!;
   static final _startPassword = dotenv.env['PASSWORD']!;
   static final _startBaseURI = dotenv.env['API_ENDPOINT']!;
   static final _startVendorID = dotenv.env['VENDOR_ID']!;
+  static final _startDeviceID = "";
+
   static final _startGPSUsername = dotenv.env['GPS_USERNAME'] ?? '';
   static final _startGPSPassword = dotenv.env['GPS_PASSWORD'] ?? '';
   static final _startGPSIP = dotenv.env['GPS_IP'] ?? '';
-  static final _startDeviceID = "";
 
   static final _startS3AccessKey = dotenv.env['S3_ACCESS_KEY'] ?? "";
   static final _startS3SecretKey = dotenv.env['S3_SECRET_KEY'] ?? "";
@@ -43,32 +45,37 @@ class SecureStorage {
   static final _startS3Region = dotenv.env['S3_REGION'] ?? "";
   static final _startS3DestDir = dotenv.env['S3_DESTINATION'] ?? "";
 
+  static final _pc5BrokerUrl = dotenv.env['PC5_MQTT_BROKER'] ?? "";
+
   Future<String> getUsername() async => await _storage.read(key: _keyUsername) ?? Future.value(_startUsername);
   Future<String> getPassword() async => await _storage.read(key: _keyPassword) ?? Future.value(_startPassword);
   Future<String> getBaseURI() async => await _storage.read(key: _keyBaseURI) ?? Future.value(_startBaseURI);
   Future<String> getVendorID() async => await _storage.read(key: _keyVendorID) ?? Future.value(_startVendorID);
   Future<String> getDeviceID() async => await _storage.read(key: _keyDeviceID) ?? Future.value(_startDeviceID);
+  Future<String> getPC5BrokerUrl() async => await _storage.read(key: _pc5BrokerUrl) ?? Future.value(_pc5BrokerUrl);
   Future<bool> getVZMode() async => (await _storage.read(key: _keyVzMode)) == "true";
   Future<bool> getNotificationsEnabled() async => (await _storage.read(key: _keyNotificationsEnabled)) == "true";
   Future<bool> getReadMessages() async => (await _storage.read(key: _keyReadMessages)) == "true";
   Future<bool> getDemoMode() async => (await _storage.read(key: _keyDemoMode)) == "true";
   Future<bool> getDeveloperMode() async => (await _storage.read(key: _keyDeveloperMode)) == "true";
   Future<bool> getSoundEffectsEnabled() async => (await _storage.read(key: _keySoundEffectsEnabled)) == "true";
+  Future<bool> getPC5Enabled() async => (await _storage.read(key: _keyEnablePC5)) == "true";
   Future<String> getGPSUsername() async => (await _storage.read(key: _keyGPSUsername)) ?? _startGPSUsername;
   Future<String> getGPSPassword() async => (await _storage.read(key: _keyGPSPassword)) ?? _startGPSPassword;
   Future<String> getGPSIP() async => (await _storage.read(key: _keyGPSIP)) ?? _startGPSIP;
   Future<bool> getGPSMode() async => (await _storage.read(key: _keyGPSMode)) == 'true';
 
-  Future setUsername(String username) async => await _storage.write(key: _keyUsername, value: username);
-  Future setPassword(String password) async => await _storage.write(key: _keyPassword, value: password);
-  Future setBaseURI(String baseURI) async => await _storage.write(key: _keyBaseURI, value: baseURI);
-  Future setVendorID(String vendorID) async => await _storage.write(key: _keyVendorID, value: vendorID);
-  Future setDeviceID(String deviceID) async => await _storage.write(key: _keyDeviceID, value: deviceID);
+  Future<void> setUsername(String username) async => await _storage.write(key: _keyUsername, value: username);
+  Future<void> setPassword(String password) async => await _storage.write(key: _keyPassword, value: password);
+  Future<void> setBaseURI(String baseURI) async => await _storage.write(key: _keyBaseURI, value: baseURI);
+  Future<void> setVendorID(String vendorID) async => await _storage.write(key: _keyVendorID, value: vendorID);
+  Future<void> setDeviceID(String deviceID) async => await _storage.write(key: _keyDeviceID, value: deviceID);
+  Future<void> setPC5BrokerUrl(String pc5BrokerUrl) async =>
+      await _storage.write(key: _pc5BrokerUrl, value: pc5BrokerUrl);
   Future<void> setGPSUsername(String v) => _storage.write(key: _keyGPSUsername, value: v);
   Future<void> setGPSPassword(String v) => _storage.write(key: _keyGPSPassword, value: v);
   Future<void> setGPSIP(String v) => _storage.write(key: _keyGPSIP, value: v);
   Future<void> setGPSMode(bool v) async => await _storage.write(key: _keyGPSMode, value: v.toString());
-
   Future setVZMode(bool vzMode) async {
     if (vzMode) {
       await _storage.write(key: _keyVzMode, value: "true");
@@ -114,6 +121,14 @@ class SecureStorage {
       await _storage.write(key: _keySoundEffectsEnabled, value: "true");
     } else {
       await _storage.write(key: _keySoundEffectsEnabled, value: "false");
+    }
+  }
+
+  Future setPC5Enabled(bool pc5Enabled) async {
+    if (pc5Enabled) {
+      await _storage.write(key: _keyEnablePC5, value: "true");
+    } else {
+      await _storage.write(key: _keyEnablePC5, value: "false");
     }
   }
 

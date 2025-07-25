@@ -33,10 +33,12 @@ class ParamController extends GetxController {
     usingFakePosition = false;
 
     // Set Default Registration Coordinates to TFHRC, load from .env file if available
-    registrationLatitude.value =
-        dotenv.env['REGISTRATION_LATITUDE'] != null ? double.parse(dotenv.env['REGISTRATION_LATITUDE']!) : 38.9555;
-    registrationLongitude.value =
-        dotenv.env['REGISTRATION_LONGITUDE'] != null ? double.parse(dotenv.env['REGISTRATION_LONGITUDE']!) : -77.1494;
+    registrationLatitude.value = dotenv.env['REGISTRATION_LATITUDE'] != null
+        ? double.tryParse(dotenv.env['REGISTRATION_LATITUDE']!) ?? 38.9555
+        : 38.9555;
+    registrationLongitude.value = dotenv.env['REGISTRATION_LONGITUDE'] != null
+        ? double.tryParse(dotenv.env['REGISTRATION_LONGITUDE']!) ?? -77.1494
+        : -77.1494;
 
     messageDelay.value = 1000;
     geoRelevanceOrPrivateToggle.value = true;

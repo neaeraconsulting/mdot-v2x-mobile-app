@@ -17,7 +17,6 @@ import 'package:asn1_plugin/j2735/2024/traveler_information/generic_signage.dart
 import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_data_frame.dart';
 import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_information.dart';
 import 'package:asn1_plugin/j2735/2024/traveler_information/work_zone.dart';
-import 'package:connection_network_type/connection_network_type.dart';
 import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/models/data_queue.dart';
 import 'package:cv_mec/models/leidos_date_extraction.dart';
