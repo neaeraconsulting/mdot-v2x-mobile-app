@@ -57,7 +57,7 @@ dependencies:
   app_settings: ^6.1.1
   conversion: ^1.0.0+1
   bluetooth_classic: ^0.0.4
-  audioplayers: ^6.4.0
+  audioplayers: ^5.2.1
 
 dev_dependencies:
   flutter_test:

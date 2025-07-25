@@ -25,15 +25,12 @@ class TimManager {
   void addOrUpdate(TravelerInformation tim, String asn1) {
     if (tim.packetID != null) {
       String packetID = ASNService.bytesToHex(tim.packetID!.uniqueMSGID);
-
       if (storedTims.containsKey(packetID)) {
         if (isMessageUpdate(tim, packetID)) {
           removeTim(packetID);
-
           Map<TravelerDataFrame, DataFrameGeometry> newGeometryEntries = geometryService.getTimPolyRegion(tim);
 
           geometryMap.addAll(newGeometryEntries);
-
           for (TravelerDataFrame frame in newGeometryEntries.keys) {
             asn1Map[frame] = asn1;
           }
@@ -44,7 +41,6 @@ class TimManager {
         storedTims[packetID] = tim;
         Map<TravelerDataFrame, DataFrameGeometry> newGeometryEntries = geometryService.getTimPolyRegion(tim);
         geometryMap.addAll(newGeometryEntries);
-
         for (TravelerDataFrame frame in newGeometryEntries.keys) {
           asn1Map[frame] = asn1;
         }
@@ -60,11 +56,8 @@ class TimManager {
           }
         }
       }
-
       Map<TravelerDataFrame, DataFrameGeometry> newGeometryEntries = geometryService.getTimPolyRegion(tim);
-
       geometryMap.addAll(newGeometryEntries);
-
       // If there is no way to uniquely identify the TIM message, add a random key
       storedTims[uuid.v4()] = tim;
     }
