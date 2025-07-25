@@ -44,9 +44,6 @@ flutter:
       ios:
         ffiPlugin: true
         pluginClass: Asn1Plugin
-      # linux:
-      #   ffiPlugin: true
-      #   pluginClass: Asn1Plugin
       macos:
         ffiPlugin: true
         pluginClass: Asn1Plugin
