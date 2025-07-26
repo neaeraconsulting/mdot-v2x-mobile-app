@@ -43,6 +43,7 @@ class ItisParser {
   final int severeWeather = 4865;
   final int snow = 4868;
   final int winterStorm = 4871;
+  final int heavyRain = 4884;
   final int rain = 4885;
   final int strongWinds = 5127;
   final int fog = 5378;
@@ -133,6 +134,7 @@ class ItisParser {
       winterStorm: ItisCode.withImage(
           winterStorm, "Winter Storm", [ITIScodes(winterStorm)], AssetImage("$imageDirectory/$winterStorm.png")),
       rain: ItisCode.withImage(rain, "Rain", [ITIScodes(rain)], AssetImage("$imageDirectory/$rain.png")),
+      heavyRain: ItisCode.withImage(heavyRain, "Heavy Rain", [ITIScodes(heavyRain)], AssetImage("$imageDirectory/$rain.png")),
       strongWinds: ItisCode.withImage(
           strongWinds, "Strong Winds", [ITIScodes(strongWinds)], AssetImage("$imageDirectory/$strongWinds.png")),
       fog: ItisCode.withImage(fog, "Fog", [ITIScodes(fog)], AssetImage("$imageDirectory/$fog.png")),
