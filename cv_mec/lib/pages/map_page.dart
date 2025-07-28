@@ -1397,6 +1397,7 @@ class MapState extends State<MapPage> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+    final heightBottomDisplay = screenHeight * 0.18;
 
     const String appTitle = "MAP";
     return Scaffold(
@@ -1487,12 +1488,12 @@ class MapState extends State<MapPage> {
               Align(
                   alignment: Alignment.bottomLeft,
                   child: SizedBox(
-                    height: 170,
+                    height: screenHeight * 0.2,
                     child: Row(children: [
                       Expanded(
-                        child: timsDisplay(),
+                        child: timsDisplay(heightBottomDisplay, screenWidth),
                       ),
-                      configController.isVehicleConfig.value ? speedMarker() : Container(),
+                      configController.isVehicleConfig.value ? speedMarker(heightBottomDisplay) : Container(),
                     ]),
                   )),
               Align(
@@ -1830,12 +1831,12 @@ class MapState extends State<MapPage> {
         ));
   }
 
-  Widget speedMarker() {
+  Widget speedMarker(double heightBottomDisplay) {
     return Padding(
       padding: const EdgeInsets.all(10),
       child: Container(
-        width: 100,
-        height: 150,
+        width: heightBottomDisplay * (2/3),
+        height: heightBottomDisplay,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
           color: lightGrey,
@@ -1851,51 +1852,65 @@ class MapState extends State<MapPage> {
         child: Padding(
           padding: const EdgeInsets.all(8.0),
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Stack(
-              children: [
-                // Outline layers
-                Text(
-                  ((currentPosition?.speed ?? 0) * 2.23694).toStringAsFixed(0),
-                  style: TextStyle(
-                    fontSize: 52.0,
-                    foreground: Paint()
-                      ..style = PaintingStyle.stroke
-                      ..strokeWidth = 3.0
-                      ..color = primaryColor.withOpacity(0.5), // Outline color
-                  ),
+            SizedBox(
+              width: (heightBottomDisplay * (2/3) - 16) * 0.8, // Constrain width
+              height: heightBottomDisplay * 0.5, // Constrain height
+              child: FittedBox(
+                fit: BoxFit.contain,
+                child: Stack(
+                  children: [
+                    // Outline layers
+                    Text(
+                      ((currentPosition?.speed ?? 0) * 2.23694).toStringAsFixed(0),
+                      style: TextStyle(
+                        fontSize: 52.0,
+                        foreground: Paint()
+                          ..style = PaintingStyle.stroke
+                          ..strokeWidth = 3.0
+                          ..color = primaryColor.withOpacity(0.5), // Outline color
+                      ),
+                    ),
+                    // Main text
+                    Text(
+                      ((currentPosition?.speed ?? 0) * 2.23694).toStringAsFixed(0),
+                      style: TextStyle(
+                        fontSize: 52.0,
+                        color: Colors.black, // Fill color
+                      ),
+                    ),
+                  ],
                 ),
-                // Main text
-                Text(
-                  ((currentPosition?.speed ?? 0) * 2.23694).toStringAsFixed(0),
-                  style: TextStyle(
-                    fontSize: 52.0,
-                    color: Colors.black, // Fill color
-                  ),
-                ),
-              ],
+              ),
             ),
-            Stack(
-              children: [
-                // Outline layers
-                Text(
-                  "MPH",
-                  style: TextStyle(
-                    fontSize: 32.0,
-                    foreground: Paint()
-                      ..style = PaintingStyle.stroke
-                      ..strokeWidth = 2.0
-                      ..color = primaryColor.withOpacity(0.5), // Outline color
+            SizedBox(
+              width: (heightBottomDisplay * (2/3) - 16) * 0.8, // Constrain width
+              height: heightBottomDisplay * 0.3, // Constrain height
+              child: FittedBox (  
+                fit: BoxFit.contain,
+                child: Stack(
+                children: [
+                  // Outline layers
+                  Text(
+                    "MPH",
+                    style: TextStyle(
+                      fontSize: 32.0,
+                      foreground: Paint()
+                        ..style = PaintingStyle.stroke
+                        ..strokeWidth = 2.0
+                        ..color = primaryColor.withOpacity(0.5), // Outline color
+                    ),
                   ),
-                ),
-                // Main text
-                const Text(
-                  "MPH",
-                  style: TextStyle(
-                    fontSize: 32.0,
-                    color: Colors.black, // Fill color
+                  // Main text
+                  const Text(
+                    "MPH",
+                    style: TextStyle(
+                      fontSize: 32.0,
+                      color: Colors.black, // Fill color
+                    ),
                   ),
-                ),
-              ],
+                ],
+              )
+              ),
             ),
           ]),
         ),
@@ -1903,8 +1918,9 @@ class MapState extends State<MapPage> {
     );
   }
 
-  Widget timsDisplay() {
+  Widget timsDisplay(double heightBottomDisplay, double screenWidth) {
     List<Widget> timIcons = [];
+    final int maxTimsInRow = (screenWidth / (heightBottomDisplay / 2)).floor();
     for (ItisCode code in showTims) {
       Widget icon = code.image != null
           ? Image(
@@ -1916,12 +1932,15 @@ class MapState extends State<MapPage> {
             );
       timIcons.add(icon);
     }
-    if (timIcons.length <= 4) {
+    if (timIcons.length <= maxTimsInRow) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: timIcons.map((icon) {
           // Dynamically calculate the size based on the number of icons
-          double iconSize = timIcons.length <= 1 ? 140 : (timIcons.length <= 2 ? 100 : 70);
+          double timsDisplayWidth = screenWidth - ((heightBottomDisplay * (2 / 3)) + 20);
+          double iconSize = (timsDisplayWidth / timIcons.length) > heightBottomDisplay
+              ? heightBottomDisplay
+              : timsDisplayWidth / timIcons.length;
           return SizedBox(
             width: iconSize,
             height: iconSize,
@@ -1933,7 +1952,7 @@ class MapState extends State<MapPage> {
       // Create a grid with 2 rows
       return GridView.count(
         shrinkWrap: true,
-        crossAxisCount: 4, // 2 columns
+        crossAxisCount: maxTimsInRow, 
         mainAxisSpacing: 8.0,
         crossAxisSpacing: 8.0,
         children: timIcons,
