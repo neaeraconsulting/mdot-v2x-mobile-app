@@ -12,7 +12,6 @@ class VehicleConfigSelectionDialog extends StatelessWidget {
   const VehicleConfigSelectionDialog({super.key});
   @override
   Widget build(BuildContext context) {
-    //SettingsController settingsController = Get.find<SettingsController>();
     ConfigurationController configController = Get.find<ConfigurationController>();
     Rx<bool> deleteConfigMode = false.obs;
     return Dialog(
@@ -64,7 +63,6 @@ class VehicleConfigSelectionDialog extends StatelessWidget {
                                               onPressed: () {
                                                 configController.vehicleBeingEditedIndex.value =
                                                     configController.vehicleConfigs.indexOf(vehicle);
-                                                //Get.to(() => CreateVehicleConfig());
                                                 Get.dialog(CreateVehicleConfigDialog());
                                               },
                                             )
@@ -89,7 +87,6 @@ class VehicleConfigSelectionDialog extends StatelessWidget {
                               ),
                               title: Text("Add New"),
                               onTap: () {
-                                //Get.to(() => CreateVehicleConfig());
                                 Get.dialog(CreateVehicleConfigDialog());
                               },
                             )
