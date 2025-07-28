@@ -258,6 +258,17 @@ class MapState extends State<MapPage> {
       updateConnectedStatus(ConnectedStatus.CONNECTED);
 
       if (debugMode) {
+        TravelerInformation itswcTim1 = asnService.decodeTim(TestData.itswcTim1);
+      timManager.addOrUpdate(itswcTim1, TestData.itswcTim1);
+
+      TravelerInformation itswcTim2 = asnService.decodeTim(TestData.itswcTim2);
+      timManager.addOrUpdate(itswcTim2, TestData.itswcTim2);
+
+      TravelerInformation itswcTim3 = asnService.decodeTim(TestData.itswcTim3);
+      timManager.addOrUpdate(itswcTim3, TestData.itswcTim3);
+
+      TravelerInformation itswcTim4 = asnService.decodeTim(TestData.itswcTim4);
+      timManager.addOrUpdate(itswcTim4, TestData.itswcTim4);
         // tfhrcStaticPosition
         positionStream = fakePosition(TestData.tfhrcFakePosition).listen(updatePosition);
       } else if (settingsController.demoMode.value) {
@@ -939,9 +950,18 @@ class MapState extends State<MapPage> {
 
     codes.addAll(msgs);
 
+    Map<ImageProvider, ItisCode> uniqueCodes = <ImageProvider, ItisCode>{};
+
+    // Tims with Identical Images are considerd the same. All images are pulled from image map so object comparison is sufficient.
+    for(ItisCode code in codes){
+      if(code.image != null && !uniqueCodes.containsKey(code.image)){
+        uniqueCodes[code.image!] = code;
+      }
+    }
+
     if (mounted) {
       setState(() {
-        showTims = codes;
+        showTims = uniqueCodes.values.toList();
       });
     }
     // showTimMessage(newActiveTims);

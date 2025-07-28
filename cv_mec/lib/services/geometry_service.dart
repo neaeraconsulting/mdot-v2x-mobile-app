@@ -33,7 +33,9 @@ class GeometryService {
       TravelerDataFrame travelerDataFrame = tim.dataFrames.travelerDataFrameList[i];
       List<GeometryDirection> timGeometryList = [];
       for (int j = 0; j < travelerDataFrame.regions.length; j++) {
+
         Geometry? timGeometry = getGeometryFromPath(travelerDataFrame.regions[j]);
+         
         HeadingSlice? direction = travelerDataFrame.regions[j].direction;
         if (travelerDataFrame.regions[j].description is GeometricProjection) {
           direction = (travelerDataFrame.regions[j].description as GeometricProjection).direction;
@@ -53,19 +55,36 @@ class GeometryService {
 
   Geometry? getGeometryFromPath(GeographicalPath path) {
     if (path.description is OffsetSystem) {
-      if (path.anchor != null && path.laneWidth != null) {
-        return getGeometryFromOffsetSystem(
+      if (path.anchor != null){
+        if(path.closedPath!= null && path.closedPath!){
+          return getClosedGeometryFromOffsetSystem(
+            path.description as OffsetSystem, path.anchor!);
+        }
+        else if(path.laneWidth != null) {
+          return getGeometryFromOffsetSystem(
             path.description as OffsetSystem, path.anchor!, path.laneWidth!.getLaneWidthMeters());
-      } else {
+        } else {
         _logger.w("Unable to Parse Path. OffsetSystem requires Anchor and Lane Width");
         return null;
-      }
+        }
+      } 
     } else if (path.description is GeometricProjection) {
       return getGeometryFromGeometricProjection(path.description as GeometricProjection);
     } else {
       _logger.w("Unable to Parse Path. Path is not OffsetSystem or Geometric Projection");
       return null;
     }
+  }
+
+  Geometry? getClosedGeometryFromOffsetSystem(OffsetSystem offsetSystem, Position3D anchor) {
+    if (offsetSystem.offset is NodeListXY) {
+      return getClosedGeometryFromNodeListXY(offsetSystem.offset as NodeListXY, anchor);
+    } else if (offsetSystem.offset is NodeListLL) {
+      return getClosedGeometryFromNodeListLL(offsetSystem.offset as NodeListLL, anchor);
+    } else {
+      _logger.w("Unable to Identify the Type of OffsetSystem for closed path geometry");
+    }
+    return null;
   }
 
   Geometry? getGeometryFromOffsetSystem(OffsetSystem offsetSystem, Position3D anchor, double laneWidth) {
@@ -77,6 +96,42 @@ class GeometryService {
       _logger.w("Unable to Identify the Type of OffsetSystem");
     }
     return null;
+  }
+
+  Geometry? getClosedGeometryFromNodeListXY(NodeListXY nodeListXY, Position3D anchor) {
+    if (nodeListXY.nodeListXY is NodeSetXY) {
+      return getClosedGeometryFromNodeSetXY(nodeListXY.nodeListXY as NodeSetXY, anchor);
+    } else if (nodeListXY.nodeListXY is ComputedLane) {
+      _logger.w("Unable to Parse Computed NodeListXY System. Not Supported");
+      return null;
+    } else {
+      _logger.w("Unable to Identify the Type of NodeListXY");
+    }
+    return null;
+  }
+
+  Geometry? getClosedGeometryFromNodeListLL(NodeListLL nodeListLL, Position3D anchor){
+    List<Coordinate> polygon = getCoordinatesNodeListLL(nodeListLL, anchor);
+
+    if (polygon.length >= 3) {
+      Geometry timGeometry = convertCoordinatesToGeoPoly(polygon, anchor);
+      return timGeometry;
+    } else {
+      _logger.w("Unable to Add Geometry. Anchor Point: $anchor, Coordinate Length: ${polygon.length}");
+      return null;
+    }
+  }
+
+  Geometry? getClosedGeometryFromNodeSetXY(NodeSetXY nodeSetXY, Position3D anchor){
+    List<Coordinate> polygon = getCoordinatesFromNodeSetXY(nodeSetXY, anchor);
+
+    if (polygon.length >= 3) {
+      Geometry timGeometry = convertCoordinatesToGeoPoly(polygon, anchor);
+      return timGeometry;
+    } else {
+      _logger.w("Unable to Add Geometry. Anchor Point: $anchor, Coordinate Length: ${polygon.length}");
+      return null;
+    }
   }
 
   Geometry? getGeometryFromNodeListXY(NodeListXY nodeListXY, Position3D anchor, double laneWidth) {
