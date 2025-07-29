@@ -886,6 +886,11 @@ class MapState extends State<MapPage> {
       _mapController.moveAndRotate(getUserLocation(), _mapController.camera.zoom, _mapController.camera.rotation);
     }
 
+
+    if(!configController.isVehicleConfig.value && configController.selectedPedestrian != PersonalDeviceUserType.APEDALCYCLIST) {
+      return; // Skip all of the TIM logic if we are a not a vehicle or a cyclist. 
+    }
+
     List<TravelerDataFrame> newActiveTims = [];
     List<ReceivedMsg> newReceivedMessages = messageManager.getNewReceivedMessages(
         LatLng(currentPosition!.latitude, currentPosition!.longitude), currentPosition!.heading);
