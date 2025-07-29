@@ -34,7 +34,6 @@ void main() async {
   Get.put(FileService());
   Get.put(SettingsController());
   Get.put(ConfigurationController());
-  Get.put(ParamController());
   Get.put(GeometryService());
   Get.put(MqttService(), tag: MqttService.etxTag);
   Get.put(MqttService(), tag: MqttService.pc5Tag);
