@@ -96,7 +96,7 @@ class TimManager {
             for (GeometryDirection geometry in dataFrameGeometry.geometry) {
               if (geometryService.isPointInPolygon(geometry.geometry, longitude, latitude)) {
                 if (ignoreHeading ||
-                    (geometry.direction != null && isDirectionInHeadingSlice(heading, geometry.direction!))) {
+                    (geometry.direction != null && isDirectionInHeadingSlice(heading, geometry.direction!)) || geometry.isInPathDirection(longitude, latitude, heading)) {
                   anyActiveZone = true;
                 }
               } else {
@@ -143,8 +143,6 @@ class TimManager {
       [bool ignoreHeading = false, bool ignoreTimeWindow = false]) {
     List<TravelerDataFrame> showDataFrames = [];
 
-    print("Getting getTimsToShow $ignoreTimeWindow");
-
     for (String key in storedTims.keys) {
       TravelerInformation tim = storedTims[key]!;
       for (TravelerDataFrame dataFrame in tim.dataFrames.travelerDataFrameList) {
@@ -155,7 +153,7 @@ class TimManager {
             for (GeometryDirection geometry in dataFrameGeometry.geometry) {
               if (geometryService.isPointInPolygon(geometry.geometry, longitude, latitude)) {
                 if (ignoreHeading ||
-                    (geometry.direction != null && isDirectionInHeadingSlice(heading, geometry.direction!))) {
+                    (geometry.direction != null && isDirectionInHeadingSlice(heading, geometry.direction!)) || geometry.isInPathDirection(longitude, latitude, heading)) {
                   showDataFrames.add(dataFrame);
                   break;
                 }
