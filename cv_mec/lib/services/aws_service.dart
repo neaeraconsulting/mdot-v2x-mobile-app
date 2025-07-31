@@ -1,73 +1,65 @@
 import 'dart:io';
 import 'package:archive/archive.dart';
-import 'package:aws3_bucket/aws3_bucket.dart';
-import 'package:aws3_bucket/aws_region.dart';
-import 'package:aws3_bucket/iam_crediental.dart';
-import 'package:aws3_bucket/image_data.dart';
+import 'package:aws_s3_upload_lite/aws_s3_upload_lite.dart';
 import 'package:cv_mec/controllers/settings_controller.dart';
-import 'package:cv_mec/pages/settings_page.dart';
+import 'package:cv_mec/models/data_queue.dart';
 import 'package:get/get.dart';
+import 'package:logger/logger.dart';
 import 'package:path/path.dart' as path;
 
 class S3Service extends GetxService {
-  SettingsController settingsController = Get.find<SettingsController>();
+  final SettingsController settings = Get.find<SettingsController>();
+  final Logger _logger = Logger();
 
-  Future<bool> uploadFile(String filePath, String directory) async {
-    if (settingsController.s3BucketName.value.isNotEmpty) {
-      File currentFile = File(filePath);
-
-      String destinationPath = "${path.dirname(filePath)}/upload/${path.basename(filePath)}.gz";
-
-      String destinationDirPath = Directory(destinationPath).parent.path;
-      Directory destinationDir = Directory(destinationDirPath);
-
-      if (!await destinationDir.exists()) {
-        await destinationDir.create(recursive: true);
-        print('Upload Created destination directory: $destinationDirPath');
-      }
-
-      if (await currentFile.exists()) {
-        // Copy the file to the destination
-        File copiedFile = await compressFile(currentFile, destinationPath);
-
-        String? result;
-        IAMCrediental iamCrediental = IAMCrediental();
-        iamCrediental.secretKey = settingsController.s3AccessKey.value;
-        iamCrediental.secretId = settingsController.s3SecretKey.value;
-        ImageData imageData = ImageData(path.basename(copiedFile.path), copiedFile.path,
-            imageUploadFolder: "${settingsController.s3DestDir.value}/$directory");
-
-        result = await Aws3Bucket.upload(settingsController.s3BucketName.value!, AwsRegion.US_EAST_1,
-            AwsRegion.AP_NORTHEAST_1, imageData, iamCrediental);
-
-        print("File UPload $result");
-
-        return true;
-
-        // _upload(File(path.dirname(filePath) + "/registration.json"));
-      } else {
-        print('Upload Source file does not exist!');
-      }
-    }
-    return false;
+  void addToAppLog(String message) {
+    _logger.i("APPLOG: $message");
   }
 
-  Future<File> compressFile(File file, String outputPath) async {
+  Future<bool> uploadFile(String filePath, String directory) async {
+    final bucket = settings.s3BucketName.value;
+    if (bucket.isEmpty) return false;
+
+    final original = File(filePath);
+    if (!await original.exists()) return false;
+
+    // Compress
+    final uploadDir = path.join(path.dirname(filePath), 'upload');
+    await Directory(uploadDir).create(recursive: true);
+    final gzPath = path.join(uploadDir, '${path.basename(filePath)}.gz');
+    final bytes = await original.readAsBytes();
+    final gzBytes = GZipEncoder().encode(bytes)!;
+    final gzFile = await File(gzPath).writeAsBytes(gzBytes);
+
     try {
-      // Read the original file as bytes
-      final inputBytes = await file.readAsBytes();
+      final String result = await AwsS3.uploadFile(
+        accessKey:   settings.s3AccessKey.value,
+        secretKey:   settings.s3SecretKey.value,
+        bucket:      settings.s3BucketName.value,
+        region:      settings.s3Region.value,
+        file:        gzFile,
+        destDir:     '${settings.s3DestDir.value}/$directory',
+        filename:    path.basename(gzFile.path),
+        contentType: 'application/gzip',
+      );
 
-      // Compress the file using GZIP
-      final compressedBytes = GZipEncoder().encode(inputBytes);
+      // Try parsing as HTTP status
+      final code = int.tryParse(result);
+      if (code != null) {
+        if (code >= 200 && code < 300) {
+          addToAppLog('Upload succeeded — HTTP $code');
+          return true;
+        } else {
+          addToAppLog('Upload failed — HTTP $code');
+          return false;
+        }
+      }
 
-      // Write the compressed bytes to a new file
-      final compressedFile = File(outputPath);
-      await compressedFile.writeAsBytes(compressedBytes!);
-
-      return compressedFile;
+      // Otherwise assume it's the key or URL
+      addToAppLog('Upload succeeded! key/URL = $result');
+      return true;
     } catch (e) {
-      print('Error compressing file: $e');
-      rethrow;
+      addToAppLog('Upload exception: $e');
+      return false;
     }
   }
 }
