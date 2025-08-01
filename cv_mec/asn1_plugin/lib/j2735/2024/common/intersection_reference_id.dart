@@ -20,4 +20,9 @@ class IntersectionReferenceID {
     // Ignore road regulator ID for now, only match on intersectionID
     return (other is IntersectionReferenceID && other.id.intersectionID == id.intersectionID);
   }
+
+  @override
+  int get hashCode{
+    return id.intersectionID;
+  } 
 }
