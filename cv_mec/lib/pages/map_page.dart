@@ -152,6 +152,7 @@ class MapState extends State<MapPage> {
   List<Polygon<HitValue>> drawnPolygons = [];
   List<Polyline<PolyLineHitValue>> drawnPolylines = [];
   List<Marker> lightMarkerList = [];
+  List<Marker> drawnMarkers = [];
 
   bool followUser = true;
 
@@ -193,6 +194,8 @@ class MapState extends State<MapPage> {
   RxBool obdConnecting = false.obs;
 
   OBDController obdController = Get.find<OBDController>();
+
+  DateTime lastRedrawTime = DateTime.now();
 
   @override
   void initState() {
@@ -304,12 +307,23 @@ class MapState extends State<MapPage> {
       }
     });
 
+    updateMapGraphics();
+    setState(() {
+      showLoadingIcon = true;
+    });
+  }
+  
+
+  void updateMapGraphics(){
     if (mounted) {
-      setState(() {
-        drawnPolygons = getPolygons();
-        drawnPolylines = getPolylines();
-        showLoadingIcon = true;
-      });
+      if(DateTime.now().difference(lastRedrawTime).inMilliseconds > 50){ //DateTime.now used since timing service accuracy not required, and may not be initialized yet.
+        setState(() {
+          drawnPolygons = getPolygons();
+          drawnPolylines = getPolylines();
+          drawnMarkers = getMarkerList();
+          lastRedrawTime = DateTime.now();
+        });
+      }
     }
   }
 
@@ -379,7 +393,7 @@ class MapState extends State<MapPage> {
 
   Stream<Position> fakePosition(List<List<double>> fakePosition) {
     return Stream<Position>.periodic(const Duration(milliseconds: 500), (count) {
-      List<List<double>> route = fakePosition; //fakePosition.reversed.toList();
+      List<List<double>> route = fakePosition;//fakePosition.reversed.toList();
       int index = count % route.length;
       int prevIndex = (count - 1) % route.length;
 
@@ -655,12 +669,7 @@ class MapState extends State<MapPage> {
 
     spatManager.addOrUpdate(spat);
 
-    if (mounted) {
-      setState(() {
-        drawnPolygons = getPolygons();
-        drawnPolylines = getPolylines();
-      });
-    }
+    updateMapGraphics();
     DateTime? spatGenTime;
     if (spat.intersections.intersectionStateList.isNotEmpty) {
       spatGenTime = spat.intersections.intersectionStateList.first.getUtcTime();
@@ -676,12 +685,7 @@ class MapState extends State<MapPage> {
 
     mapManager.addOrUpdate(map);
 
-    if (mounted) {
-      setState(() {
-        drawnPolygons = getPolygons();
-        drawnPolylines = getPolylines();
-      });
-    }
+    updateMapGraphics();
 
     addToReceiveLog(topic, "MAP", recTime, sendTime, LeidosDateExtraction.extractDateFromMap(map), trimmedHex, source);
   }
@@ -691,12 +695,7 @@ class MapState extends State<MapPage> {
         hex, asnService.TIM_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
     TravelerInformation tim = asnService.decodeTim(trimmedHex);
     timManager.addOrUpdate(tim, hex);
-    if (mounted) {
-      setState(() {
-        drawnPolygons = getPolygons();
-        drawnPolylines = getPolylines();
-      });
-    }
+    updateMapGraphics();
     DateTime? generationTime = LeidosDateExtraction.extractDateFromTim(tim);
     Future.delayed(const Duration(milliseconds: 0), () async {
       String messageType = "TIM";
@@ -875,12 +874,7 @@ class MapState extends State<MapPage> {
     prevKronos = kronos;
     prevLocal = now;
 
-    if (mounted) {
-      setState(() {
-        drawnPolygons = getPolygons();
-        drawnPolylines = getPolylines();
-      });
-    }
+    updateMapGraphics();
 
     if (followUser) {
       _mapController.moveAndRotate(getUserLocation(), _mapController.camera.zoom, _mapController.camera.rotation);
@@ -1059,6 +1053,8 @@ class MapState extends State<MapPage> {
             text = "Change in:\n > 1\n Minute";
           } else if (expectedMinTime < 0) {
             text = "Changing Now";
+          }else if (expectedMaxTime == expectedMinTime) {
+            text = "Change in:\n $expectedMinTime\n Seconds";
           }
         } else {
           int expectedMinTime = (next.minEndTime.millisecondsSinceEpoch - now.millisecondsSinceEpoch) ~/ 1000;
@@ -1087,10 +1083,20 @@ class MapState extends State<MapPage> {
     }
   }
 
+  int count = 0;
+  DateTime lastMarkerListUpdateTime = DateTime.now();
+
   List<Marker> getMarkerList() {
     List<Marker> markerList = [];
 
+    count +=1;
+    if(DateTime.now().difference(lastMarkerListUpdateTime).inMilliseconds > 1000){
+        lastMarkerListUpdateTime = DateTime.now();
+        count = 0;
+    }
+
     Position? pos = currentPosition;
+    
 
     if (pos != null) {
       Marker userMarker = Marker(
@@ -1180,6 +1186,7 @@ class MapState extends State<MapPage> {
         messageManager.shown.remove(key);
       }
     }
+    
     return markerList;
   }
 
@@ -1268,6 +1275,7 @@ class MapState extends State<MapPage> {
   }
 
   List<Polyline<PolyLineHitValue>> getPolylines() {
+    DateTime start = timingService.getTime();
     List<Polyline<PolyLineHitValue>> polylines = [];
 
     Position? pos = currentPosition;
@@ -1275,11 +1283,9 @@ class MapState extends State<MapPage> {
     if (pos != null) {
       // Get Maps that the user is near or in
       List<GeoMap> geoMaps = mapManager.getActiveMaps(pos.longitude, pos.latitude);
-
       for (GeoMap map in geoMaps) {
         List<IntersectionState> states =
             spatManager.getActiveSpats(map.intersectionGeometry.id.id.intersectionID, timingService.getTime());
-
         for (IntersectionState state in states) {
           // This code indexes light colors by signal group to allow easy lookup down the line
           Map<int, MovementEvent> stateMap = {};
@@ -1339,7 +1345,9 @@ class MapState extends State<MapPage> {
           }
         }
 
+        
         for (GenericLane lane in map.intersectionGeometry.laneSet.laneList) {
+          
           List<LatLng> laneCoordinates = geometryService.getLatLngCoordinatesFromNodeSetXY(
               lane.nodeList.nodeListXY as NodeSetXY, map.intersectionGeometry.refPoint);
 
@@ -1625,7 +1633,7 @@ class MapState extends State<MapPage> {
                       polygons: [...drawnPolygons, ...?_hoverGons],
                     ),
                     MarkerLayer(
-                      markers: getMarkerList(),
+                      markers: drawnMarkers,
                       rotate: true,
                     ),
                   ]),
