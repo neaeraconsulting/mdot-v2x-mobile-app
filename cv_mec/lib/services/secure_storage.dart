@@ -19,6 +19,9 @@ class SecureStorage {
   static const _keyGPSPassword = 'gpsPassword';
   static const _keyGPSIP = 'gpsIP';
   static const _keyGPSMode = 'gpsMode';
+  static const _keyManualRegistrationMode = "manualRegistrationMode";
+  static const _keyRegistrationLatitude = "registrationLatitude";
+  static const _keyRegistrationLongitude = "registrationLongitude";
 
   static const _keyS3Accesskey = "s3AccessKey";
   static const _keyS3SecretKey = "s3SecretKey";
@@ -64,6 +67,12 @@ class SecureStorage {
   Future<String> getGPSPassword() async => (await _storage.read(key: _keyGPSPassword)) ?? _startGPSPassword;
   Future<String> getGPSIP() async => (await _storage.read(key: _keyGPSIP)) ?? _startGPSIP;
   Future<bool> getGPSMode() async => (await _storage.read(key: _keyGPSMode)) == 'true';
+  Future<bool> getManualRegistrationMode() async =>
+      (await _storage.read(key: _keyManualRegistrationMode)) == 'true';
+  Future<double> getRegistrationLatitude() async =>
+      double.tryParse(await _storage.read(key: _keyRegistrationLatitude) ?? "0.0") ?? 0.0;
+  Future<double> getRegistrationLongitude() async =>
+      double.tryParse(await _storage.read(key: _keyRegistrationLongitude) ?? "0.0") ?? 0.0;
 
   Future<void> setUsername(String username) async => await _storage.write(key: _keyUsername, value: username);
   Future<void> setPassword(String password) async => await _storage.write(key: _keyPassword, value: password);
@@ -124,6 +133,29 @@ class SecureStorage {
     }
   }
 
+  Future setManualRegistrationModeEnabled(bool manualRegistrationModeEnabled) async {
+    print("Setting manual registration mode to: $manualRegistrationModeEnabled");
+    if (manualRegistrationModeEnabled) {
+      await _storage.write(key: _keyManualRegistrationMode, value: "true");
+    } else {
+      await _storage.write(key: _keyManualRegistrationMode, value: "false");
+    }
+  }
+
+  Future setRegistrationLatitude(double latitude) async {
+    print("Setting registration latitude: $latitude");
+    await _storage.write(key: _keyRegistrationLatitude, value: latitude.toString());
+    double newLatitude = double.tryParse(await _storage.read(key: _keyRegistrationLatitude) ?? "0.0") ?? 0.0;
+    double newLatitudeTwo = await getRegistrationLatitude();
+    print("New registration latitude: $newLatitude");
+    print("New registration latitude from getRegistrationLatitude: $newLatitudeTwo");
+  }
+
+  Future setRegistrationLongitude(double longitude) async {
+    print("Setting registration longitude: $longitude");
+    await _storage.write(key: _keyRegistrationLongitude, value: longitude.toString());
+  }
+
   Future setPC5Enabled(bool pc5Enabled) async {
     if (pc5Enabled) {
       await _storage.write(key: _keyEnablePC5, value: "true");
@@ -131,6 +163,8 @@ class SecureStorage {
       await _storage.write(key: _keyEnablePC5, value: "false");
     }
   }
+
+
 
   Future<String> getS3AccessKey() async => await _storage.read(key: _keyS3Accesskey) ?? Future.value(_startS3AccessKey);
   Future<String> getS3SecretKey() async => await _storage.read(key: _keyS3SecretKey) ?? Future.value(_startS3SecretKey);

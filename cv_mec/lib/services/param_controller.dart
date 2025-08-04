@@ -1,4 +1,6 @@
+import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/services/location_service.dart';
+import 'package:cv_mec/services/secure_storage.dart';
 import 'package:get/get.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:geolocator/geolocator.dart';
@@ -13,12 +15,20 @@ class ParamController extends GetxController {
   RxBool networkTypeToggle = true.obs;
   RxBool useFakePositionToggle = false.obs;
   bool usingFakePosition = false;
+
+  Rx<bool> manualRegistrationMode = false.obs;
   RxDouble registrationLatitude = 0.0.obs;
   RxDouble registrationLongitude = 0.0.obs;
+
   RxInt messageDelay = 0.obs;
   RxBool geoRelevanceOrPrivateToggle = true.obs; //false is geo, true is private
   bool geoRelevanceOrPrivate = true; //false is geo, true is private
   RxString privateDeviceID = ''.obs;
+
+  late double manualLatitude;
+  late double manualLongitude;
+
+  final SecureStorage secureStorage = SecureStorage();
 
   @override
   onInit() {
@@ -36,35 +46,42 @@ class ParamController extends GetxController {
     usingFakePosition = false;
 
     // Set Default Registration Coordinates to TFHRC, load from .env file if available
-    LocationService locationService = Get.find<LocationService>();
-    Position? currentLocation = await locationService.getCurrentLocation();
-    final fairbanksLatLng = _latLngFromEnv('REGISTRATION_FAIRBANKS_LATITUDE', 'REGISTRATION_FAIRBANKS_LONGITUDE');
-    final coloradoLatLng = _latLngFromEnv('REGISTRATION_COLORADO_LATITUDE', 'REGISTRATION_COLORADO_LONGITUDE');
-    final atlantaLatLng = _latLngFromEnv('REGISTRATION_ATLANTA_LATITUDE', 'REGISTRATION_ATLANTA_LONGITUDE');
-    final newYorkLatLng = _latLngFromEnv('REGISTRATION_NEW_YORK_LATITUDE', 'REGISTRATION_NEW_YORK_LONGITUDE');
-    List<LatLng> registrationLocations = [];
-    if (fairbanksLatLng != null) {
-      registrationLocations.add(fairbanksLatLng);
+    manualRegistrationMode.value = await secureStorage.getManualRegistrationMode();
+    manualLatitude = await secureStorage.getRegistrationLatitude();
+    manualLongitude = await secureStorage.getRegistrationLongitude();
+    if (manualLatitude == 0.0) {
+      manualLatitude = double.parse(dotenv.env['REGISTRATION_LATITUDE']!);
     }
-    if (coloradoLatLng != null) {
-      registrationLocations.add(coloradoLatLng);
+    if (manualLongitude == 0.0) {
+      manualLongitude = double.parse(dotenv.env['REGISTRATION_LONGITUDE']!);
     }
-    if (atlantaLatLng != null) {
-      registrationLocations.add(atlantaLatLng);
+    if (manualRegistrationMode.value) {
+      registrationLatitude.value = manualLatitude;
+      registrationLongitude.value = manualLongitude;
+    } else {
+      LocationService locationService = Get.find<LocationService>();
+      Position? currentLocation = locationService.latestPosition;
+      registrationLatitude.value = currentLocation?.latitude ?? manualLatitude;
+      registrationLongitude.value = currentLocation?.longitude ?? manualLongitude;
     }
-    if (newYorkLatLng != null) {
-      registrationLocations.add(newYorkLatLng);
-    }
-
-    LatLng registrationLocation = _findClosestRegistrationLocation(currentLocation, registrationLocations);
-
-    registrationLatitude.value = registrationLocation.latitude;
-    registrationLongitude.value = registrationLocation.longitude;
 
     messageDelay.value = 1000;
     geoRelevanceOrPrivateToggle.value = true;
     geoRelevanceOrPrivate = true;
     privateDeviceID.value = "self";
+  }
+
+  Future<void> switchManualRegistrationMode() async{
+    manualRegistrationMode.value = !manualRegistrationMode.value;
+    if (manualRegistrationMode.value) {
+      registrationLatitude.value = manualLatitude;
+      registrationLongitude.value = manualLongitude;
+    } else {
+      LocationService locationService = Get.find<LocationService>();
+      Position? currentLocation = locationService.latestPosition;
+      registrationLatitude.value = currentLocation?.latitude ?? manualLatitude;
+      registrationLongitude.value = currentLocation?.longitude ?? manualLongitude;
+    }
   }
 
   void saveParams(
@@ -76,6 +93,7 @@ class ParamController extends GetxController {
       required double fakeLongitude,
       required int messageDelay,
       required String privateDeviceID}) {
+        print("Saving Params: $clientType, $clientSubtype, $messageFormat, $v2xType, $fakeLatitude, $fakeLongitude, $messageDelay, $privateDeviceID");
     this.clientType.value = clientType;
     this.clientSubtype.value = clientSubtype;
     this.messageFormat.value = messageFormat;
@@ -86,29 +104,5 @@ class ParamController extends GetxController {
     this.messageDelay.value = messageDelay;
     geoRelevanceOrPrivate = geoRelevanceOrPrivateToggle.value;
     this.privateDeviceID.value = privateDeviceID;
-  }
-
-  LatLng? _latLngFromEnv(String latKey, String lngKey) {
-    final latStr = dotenv.env[latKey];
-    final lngStr = dotenv.env[lngKey];
-    final lat = double.tryParse(latStr ?? '');
-    final lng = double.tryParse(lngStr ?? '');
-    if (lat != null && lng != null) {
-      return LatLng(lat, lng);
-    }
-    return null;
-  }
-
-  LatLng _findClosestRegistrationLocation(Position? currentLocation, List<LatLng> registrationLocations) {
-    if (currentLocation == null || registrationLocations.isEmpty) {
-      return LatLng(38.9555, -77.1494); // Default fallback
-    }
-    LatLng currentLatLng = LatLng(currentLocation.latitude, currentLocation.longitude);
-    return registrationLocations.reduce((a, b) => _distance(a, currentLatLng) < _distance(b, currentLatLng) ? a : b);
-  }
-
-  double _distance(LatLng a, LatLng b) {
-    final Distance distance = Distance();
-    return distance.as(LengthUnit.Meter, a, b);
   }
 }

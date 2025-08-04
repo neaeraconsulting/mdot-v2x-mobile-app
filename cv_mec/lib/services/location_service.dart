@@ -24,6 +24,7 @@ class LocationService extends GetxService {
   late LocationPermission _permission;
   StreamSubscription<Position>? _positionStream;
   DeclinationData? _declinationData;
+  Position? latestPosition;
 
   // Location Stream
   final StreamController<Position> _locationController = StreamController<Position>.broadcast();
@@ -168,6 +169,7 @@ class LocationService extends GetxService {
 
   void _onPositionUpdate(Position position) {
     _locationController.add(position);
+    latestPosition = position; // Store latest position
   }
 
   Future<DeclinationData?> updateDeclination(Position position) async {

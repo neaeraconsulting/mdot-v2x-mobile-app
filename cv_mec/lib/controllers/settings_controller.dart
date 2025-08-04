@@ -96,7 +96,7 @@ class SettingsController extends GetxController {
 
   @override
   void onInit() async {
-    await initialize();
+    //await initialize();
     super.onInit();
   }
 

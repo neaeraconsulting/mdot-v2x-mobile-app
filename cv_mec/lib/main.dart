@@ -32,7 +32,8 @@ void main() async {
   Get.put(LocationService());
   Get.put(Timing());
   Get.put(FileService());
-  Get.put(SettingsController());
+  SettingsController settingsController =Get.put(SettingsController());
+  await settingsController.initialize();
   Get.put(ConfigurationController());
   Get.put(GeometryService());
   Get.put(MqttService(), tag: MqttService.etxTag);
