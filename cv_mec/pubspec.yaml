@@ -50,8 +50,6 @@ dependencies:
   flutter_spinkit: ^5.2.1
   device_info_plus: ^11.2.0
   wakelock_plus: ^1.2.10
-  aws3_bucket:
-    path: ./packages/aws3_bucket
   archive: ^4.0.2
   flutter_tts: ^4.2.2
   app_settings: ^6.1.1

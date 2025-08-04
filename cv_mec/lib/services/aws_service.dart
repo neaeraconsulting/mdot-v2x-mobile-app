@@ -9,11 +9,6 @@ import 'package:path/path.dart' as path;
 
 class S3Service extends GetxService {
   final SettingsController settings = Get.find<SettingsController>();
-  final Logger _logger = Logger();
-
-  void addToAppLog(String message) {
-    _logger.i("APPLOG: $message");
-  }
 
   Future<bool> uploadFile(String filePath, String directory) async {
     final bucket = settings.s3BucketName.value;
@@ -42,23 +37,9 @@ class S3Service extends GetxService {
         contentType: 'application/gzip',
       );
 
-      // Try parsing as HTTP status
       final code = int.tryParse(result);
-      if (code != null) {
-        if (code >= 200 && code < 300) {
-          addToAppLog('Upload succeeded — HTTP $code');
-          return true;
-        } else {
-          addToAppLog('Upload failed — HTTP $code');
-          return false;
-        }
-      }
-
-      // Otherwise assume it's the key or URL
-      addToAppLog('Upload succeeded! key/URL = $result');
       return true;
     } catch (e) {
-      addToAppLog('Upload exception: $e');
       return false;
     }
   }
