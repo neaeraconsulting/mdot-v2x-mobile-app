@@ -134,7 +134,6 @@ class SecureStorage {
   }
 
   Future setManualRegistrationModeEnabled(bool manualRegistrationModeEnabled) async {
-    print("Setting manual registration mode to: $manualRegistrationModeEnabled");
     if (manualRegistrationModeEnabled) {
       await _storage.write(key: _keyManualRegistrationMode, value: "true");
     } else {
@@ -143,16 +142,10 @@ class SecureStorage {
   }
 
   Future setRegistrationLatitude(double latitude) async {
-    print("Setting registration latitude: $latitude");
     await _storage.write(key: _keyRegistrationLatitude, value: latitude.toString());
-    double newLatitude = double.tryParse(await _storage.read(key: _keyRegistrationLatitude) ?? "0.0") ?? 0.0;
-    double newLatitudeTwo = await getRegistrationLatitude();
-    print("New registration latitude: $newLatitude");
-    print("New registration latitude from getRegistrationLatitude: $newLatitudeTwo");
   }
 
   Future setRegistrationLongitude(double longitude) async {
-    print("Setting registration longitude: $longitude");
     await _storage.write(key: _keyRegistrationLongitude, value: longitude.toString());
   }
 
