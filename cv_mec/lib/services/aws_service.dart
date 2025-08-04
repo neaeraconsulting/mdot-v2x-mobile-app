@@ -2,9 +2,7 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:aws_s3_upload_lite/aws_s3_upload_lite.dart';
 import 'package:cv_mec/controllers/settings_controller.dart';
-import 'package:cv_mec/models/data_queue.dart';
 import 'package:get/get.dart';
-import 'package:logger/logger.dart';
 import 'package:path/path.dart' as path;
 
 class S3Service extends GetxService {
