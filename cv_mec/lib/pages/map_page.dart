@@ -95,6 +95,7 @@ import 'package:cv_mec/models/protobuf_models/geo_routed_msg.pb.dart' as protobu
 import 'package:typed_data/typed_data.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:cv_mec/controllers/configuration_controller.dart';
+import 'package:toastification/toastification.dart';
 
 enum ConnectedStatus { UNKNOWN, DISCONNECTED, CONNECTED, PARTIAl }
 
@@ -311,6 +312,8 @@ class MapState extends State<MapPage> {
     setState(() {
       showLoadingIcon = true;
     });
+
+     obdController.checkRootStatus();
   }
   
 
@@ -1457,7 +1460,7 @@ class MapState extends State<MapPage> {
           ? Container(
               width: screenWidth,
               height: screenHeight,
-              color: lightGrey,
+              color: Theme.of(context).dialogBackgroundColor,
               child: Stack(alignment: AlignmentDirectional.topStart, children: [
                 Positioned(
                   top: 50,
@@ -1996,9 +1999,7 @@ class MapState extends State<MapPage> {
   Widget vehicleStatsPage() {
     return Padding(
         padding: const EdgeInsets.all(12.0),
-        child: (obdController.isConnected.value && obdController.vinCollected.value)
-            ? obdStatsDisplay()
-            : notConnectedToOBDPage());
+        child: (obdController.showOBDStats.value) ? obdStatsDisplay() : notConnectedToOBDPage());
   }
 
   Widget notConnectedToOBDPage() {
@@ -2015,57 +2016,173 @@ class MapState extends State<MapPage> {
                   verticalSpaceLarge,
                   SpinKitSpinningLines(color: Colors.black, size: 90)
                 ])
-              : ElevatedButton(
-                  onPressed: () async {
-                    bool successfulConnection = false;
-                    if (!obdController.bluetoothInitialized.value) {
-                      await obdController.initialize();
-                    }
-                    if (configController.selectedVehicle.value.obdIIBluetoothAddress != null) {
-                      obdConnecting.value = true;
-                      await obdController
-                          .connectToDevice(configController.selectedVehicle.value.obdIIBluetoothAddress!);
-
-                      if (obdController.isConnected.value) {
-                        successfulConnection = true;
-                        await obdController.startGettingData();
-                      }
-                    }
-                    if (!successfulConnection) {
-                      Device? device;
-
-                      device = await Get.dialog(bluetoothDialog());
-                      if (device != null) {
-                        obdConnecting.value = true;
-                        await obdController.connectToDevice(device.address);
-                        if (obdController.isConnected.value) {
-                          await obdController.startGettingData();
-                        }
-                      }
-                    }
-                    obdConnecting.value = false;
-                  },
-                  child: const Text("Connect to OBD-II"),
-                )),
+              : (obdController.isRunningAsRoot && Platform.isLinux) || !Platform.isLinux
+                  ? Column(
+                      children: [
+                        const Text("OBD-II Connection", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                        verticalSpaceSmall,
+                        const Text(
+                          "1. Ensure your OBD-II device is powered on and in range.\n"
+                          "2. Pair the OBD-II device with your computer or mobile device via the native Bluetooth menu.\n"
+                          "3. Click the button below to connect.",
+                        ),
+                        verticalSpaceSmall,
+                        ElevatedButton(
+                          onPressed: () async {
+                            if (Platform.isLinux) {
+                              await tryToConnectLinux();
+                            } else {
+                              await tryToConnect();
+                            }
+                          },
+                          child: const Text("Connect to OBD-II"),
+                        ),
+                      ],
+                    )
+                  : const Column(
+                      children: [
+                        Text(
+                            "OBD-II Connection is only available when running as root. Please re-launch the app with root privileges.",
+                            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                      ],
+                    )),
         ],
       ),
     );
   }
 
+  Future<void> tryToConnect() async {
+    bool successfulConnection = false;
+    if (!obdController.bluetoothInitialized.value) {
+      await obdController.initialize();
+    }
+    if (configController.selectedVehicle.value.obdIIBluetoothAddress != null) {
+      obdConnecting.value = true;
+      await obdController.connectToDevice(configController.selectedVehicle.value.obdIIBluetoothAddress!);
+
+      if (obdController.isConnected.value) {
+        successfulConnection = true;
+        await obdController.startGettingData();
+      }
+    }
+    if (!successfulConnection) {
+      Device? device;
+
+      device = await Get.dialog(bluetoothDialog());
+      if (device != null) {
+        obdConnecting.value = true;
+        await obdController.connectToDevice(device.address);
+        if (obdController.isConnected.value) {
+          await obdController.startGettingData();
+        }
+      }
+    }
+    obdConnecting.value = false;
+  }
+
+  Future<void> tryToConnectLinux() async {
+    bool successfulConnection = false;
+    if (configController.selectedVehicle.value.obdIIBluetoothAddress != null) {
+      obdConnecting.value = true;
+      obdController.setupRfcomm(configController.selectedVehicle.value.obdIIBluetoothAddress!);
+      // Wait for /dev/rfcomm0 to exist, then connect
+      int maxWaitMs = 10000; // 10 seconds max
+      int waited = 0;
+      const int pollInterval = 200;
+      while (!File('/dev/rfcomm0').existsSync() && waited < maxWaitMs) {
+        await Future.delayed(const Duration(milliseconds: pollInterval));
+        waited += pollInterval;
+      }
+      if (File('/dev/rfcomm0').existsSync()) {
+        await obdController.connectToPort();
+        // await Future.delayed(Duration(seconds: 2));
+        // await obdController.startGettingDataLinux();
+        // successfulConnection = true;
+        int maxWaitMs = 2000; //2 seconds max
+        int waited = 0;
+        const int pollInterval = 100;
+        while (!(obdController.port.isOpen) && waited < maxWaitMs) {
+          await Future.delayed(const Duration(milliseconds: pollInterval));
+          waited += pollInterval;
+        }
+        if (obdController.port.isOpen) {
+          await obdController.startGettingDataLinux();
+          successfulConnection = true;
+        } else {
+          addToAppLog("Timeout waiting for serial port to open");
+        }
+      } else {
+        // Handle timeout or error
+        addToAppLog("Timeout waiting for /dev/rfcomm0 to appear");
+      }
+    }
+    if (!successfulConnection) {
+      Device? device;
+
+      device = await Get.dialog(bluetoothDialog());
+      if (device != null) {
+        obdConnecting.value = true;
+        await obdController.setupRfcomm(device.address);
+        int maxWaitMs = 10000; // 10 seconds max
+        int waited = 0;
+        const int pollInterval = 200;
+        while (!File('/dev/rfcomm0').existsSync() && waited < maxWaitMs) {
+          await Future.delayed(Duration(milliseconds: pollInterval));
+          waited += pollInterval;
+        }
+        if (File('/dev/rfcomm0').existsSync()) {
+          await obdController.connectToPort();
+          int maxWaitMs = 2000; //2 seconds max
+          int waited = 0;
+          const int pollInterval = 100;
+          while (!(obdController.port.isOpen) && waited < maxWaitMs) {
+            await Future.delayed(const Duration(milliseconds: pollInterval));
+            waited += pollInterval;
+          }
+          if (obdController.port.isOpen) {
+            await obdController.startGettingDataLinux();
+            successfulConnection = true;
+          } else {
+            addToAppLog("Timeout waiting for serial port to open");
+          }
+        } else {
+          addToAppLog("Timeout waiting for /dev/rfcomm0 to appear");
+        }
+      }
+      obdConnecting.value = false;
+    }
+    if (!successfulConnection) {
+      toastification.show(
+        context: Get.context!,
+        title: const Text('Failed to connect to OBD-II device'),
+        description: const Text(
+          'Please ensure your OBD-II device is powered on, in range, and paired then try again.',
+        ),
+        type: ToastificationType.error,
+        autoCloseDuration: const Duration(seconds: 5),
+      );
+    }
+  }
+
   Widget obdStatsDisplay() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.start,
       children: [
         verticalSpaceMedium,
         Obx(() => SizedBox(
               width: screenWidth(context) * 0.8,
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
                 Text(
                   "${obdController.vehicleInfo.value?['Year'] ?? ''} ${obdController.vehicleInfo.value?['Make'] ?? ''} ${obdController.vehicleInfo.value?['Model'] ?? ''}",
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  "${obdController.vehicleInfo.value?['Type'] ?? ''}",
-                  style: TextStyle(fontSize: 16),
+                  obdController.vehicleInfo.value?['Type'] ?? '',
+                      style: const TextStyle(fontSize: 16),
                 ),
               ]),
             )),
@@ -2086,7 +2203,6 @@ class MapState extends State<MapPage> {
         width: 175,
         height: 175,
         decoration: BoxDecoration(
-          //color: Colors.black,
           gradient: LinearGradient(
             colors: [lightGrey, darkGrey],
             begin: Alignment.topLeft,
@@ -2107,7 +2223,6 @@ class MapState extends State<MapPage> {
               width: 160,
               height: 160,
               decoration: BoxDecoration(
-                //color: Color.fromARGB(255, 231, 231, 231),
                 gradient: RadialGradient(
                   colors: [Colors.black, darkGrey, Colors.white],
                   stops: const [0.9, 0.98, 1],
@@ -2123,7 +2238,7 @@ class MapState extends State<MapPage> {
                     shape: BoxShape.circle,
                   ),
                   child: Stack(children: [
-                    Align(
+                    const Align(
                       alignment: Alignment(0, 0.8),
                       child: Text("MPH", style: TextStyle(color: Colors.white, fontSize: 24)),
                     ),
@@ -2142,7 +2257,7 @@ class MapState extends State<MapPage> {
                     Center(
                       child: Obx(() => Text(
                             "${obdController.speed.value.round()}",
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 58.0,
                               color: Colors.white, // Fill color
                             ),
@@ -2160,7 +2275,6 @@ class MapState extends State<MapPage> {
         width: 175,
         height: 175,
         decoration: BoxDecoration(
-          //color: Colors.black,
           gradient: LinearGradient(
             colors: [lightGrey, darkGrey],
             begin: Alignment.topLeft,
@@ -2181,7 +2295,6 @@ class MapState extends State<MapPage> {
               width: 160,
               height: 160,
               decoration: BoxDecoration(
-                //color: Color.fromARGB(255, 231, 231, 231),
                 gradient: RadialGradient(
                   colors: [Colors.black, darkGrey, Colors.white],
                   stops: const [0.9, 0.98, 1],
@@ -2197,7 +2310,7 @@ class MapState extends State<MapPage> {
                     shape: BoxShape.circle,
                   ),
                   child: Stack(children: [
-                    Align(
+                    const Align(
                       alignment: Alignment(0, 0.8),
                       child: Text("RPM", style: TextStyle(color: Colors.white, fontSize: 24)),
                     ),

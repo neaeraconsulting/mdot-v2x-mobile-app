@@ -1,17 +1,23 @@
 import 'dart:async';
+import 'dart:io';
+import 'package:bluez/bluez.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_libserialport/flutter_libserialport.dart';
 import 'package:get/get.dart';
 import 'package:bluetooth_classic/bluetooth_classic.dart';
 import 'package:bluetooth_classic/models/device.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:conversion/conversion.dart';
+import 'package:logger/logger.dart';
 
 typedef OBDCallback = void Function(String rawResponse);
 
 class OBDController extends GetxController {
+  Timer? _bluezDeviceTimer;
   final _bluetoothClassicPlugin = BluetoothClassic();
   RxList<Device> devices = <Device>[].obs;
+  RxList<BlueZDevice> bluezDevices = <BlueZDevice>[].obs;
 
   RxBool bluetoothInitialized = false.obs;
 
@@ -29,7 +35,7 @@ class OBDController extends GetxController {
   Rx<Map<String, String>?> vehicleInfo = Rx<Map<String, String>?>(null);
 
   RxBool collectingVin = true.obs;
-  RxBool vinCollected = false.obs;
+  RxBool showOBDStats = false.obs;
   List<String> _vinBuffer = [];
 
   Timer? _obdTimer;
@@ -47,6 +53,30 @@ class OBDController extends GetxController {
   final Convert convert = Convert();
 
   final String serviceUUID = "00001101-0000-1000-8000-00805f9b34fb";
+
+  final bluez = BlueZClient();
+
+  late SerialPort port;
+
+  bool isRunningAsRoot = false;
+
+  final Logger _logger = Logger();
+
+  void startBluezDevicePolling() {
+    _bluezDeviceTimer?.cancel();
+    _bluezDeviceTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
+      try {
+        bluezDevices.value = bluez.devices;
+      } catch (e) {
+        _logger.e("Error polling BlueZ devices: $e");
+      }
+    });
+  }
+
+  void stopBluezDevicePolling() {
+    _bluezDeviceTimer?.cancel();
+    _bluezDeviceTimer = null;
+  }
 
   Future<void> initialize() async {
     await _bluetoothClassicPlugin.initPermissions();
@@ -84,6 +114,15 @@ class OBDController extends GetxController {
     await _bluetoothClassicPlugin.startScan();
   }
 
+  void scanDevicesLinux() async {
+    try {
+      await bluez.connect();
+      startBluezDevicePolling();
+    } catch (e) {
+      _logger.e("ERROR scanning bluetooth devices in Linux: $e");
+    }
+  }
+
   Future<void> stopScan() async {
     await _bluetoothClassicPlugin.stopScan();
   }
@@ -91,27 +130,39 @@ class OBDController extends GetxController {
   Future<void> connectToDevice(String deviceAddress) async {
     try {
       isConnected.value = await _bluetoothClassicPlugin.connect(deviceAddress, serviceUUID);
-      debugPrint("OBD Connected to $deviceAddress");
     } catch (e) {
-      debugPrint("OBD Failed to connect: $e");
       isConnected.value = false;
     }
   }
 
   Future<void> disconnect() async {
     try {
-      await _bluetoothClassicPlugin.disconnect();
-      _obdTimer?.cancel();
-      isConnected.value = false;
-      vinCollected.value = false;
-      debugPrint("OBD Disconnected");
+      if (Platform.isLinux) {
+        // Release the rfcomm device
+        try {
+          if (port.isOpen) {
+            port.close();
+          }
+          await Process.run('rfcomm', ['release', '/dev/rfcomm0']);
+        } catch (e) {}
+        _obdTimer?.cancel();
+        isConnected.value = false;
+        showOBDStats.value = false;
+      } else {
+        await _bluetoothClassicPlugin.disconnect();
+        _obdTimer?.cancel();
+        isConnected.value = false;
+        showOBDStats.value = false;
+      }
     } catch (e) {
-      debugPrint("OBD Failed to disconnect: $e");
+      _logger.e("Error disconnecting rfcomm: $e");
     }
   }
 
   Future<void> startGettingData() async {
+    isConnected.value = true;
     try {
+      showOBDStats.value = true;
       vin.value = await getVinOnce() ?? '';
       setupOBDWatchers();
       int obdTick = 0;
@@ -124,7 +175,7 @@ class OBDController extends GetxController {
         }
       });
     } catch (e) {
-      debugPrint("Failed to get data: $e");
+      _logger.e("Error starting OBD data retrieval: $e");
     }
   }
 
@@ -136,7 +187,6 @@ class OBDController extends GetxController {
     // OBD-II commands are usually sent as ASCII with \r
     final cmd = '$command\r';
     if (!isConnected.value) {
-      debugPrint("Not connected to OBD-II device");
       return;
     }
     await _bluetoothClassicPlugin.write(cmd);
@@ -176,7 +226,7 @@ class OBDController extends GetxController {
             rpm.value = (rpmValue[0] * 256 + rpmValue[1]) / 4;
           }
         } else {
-          debugPrint("Invalid RPM response: $hexRpm");
+          _logger.w("RPM response is too short: $hexRpm");
         }
       }
     });
@@ -185,7 +235,6 @@ class OBDController extends GetxController {
   Future<String?> getVinOnce() async {
     _vinBuffer = [];
     collectingVin = true.obs;
-
     _sendOBDCommand(obdVinCommand);
     await Future.delayed(const Duration(seconds: 4));
     collectingVin.value = false;
@@ -208,7 +257,6 @@ class OBDController extends GetxController {
     final bytes = convert.hexToDecimal(hexString: hexList);
     final vin = String.fromCharCodes(bytes).replaceAll(RegExp(r'[^A-Z0-9]'), '').trim().substring(1);
     vehicleInfo.value = await decodeVin(vin);
-    vinCollected.value = true;
     return vin.isNotEmpty ? vin.substring(1) : null;
   }
 
@@ -238,5 +286,123 @@ class OBDController extends GetxController {
       return summary;
     }
     return null;
+  }
+
+  Future<void> setupRfcomm(String mac) async {
+    final process = await Process.start(
+      'rfcomm',
+      ['connect', 'hci0', mac],
+    );
+    process.stderr.transform(SystemEncoding().decoder).listen((data) {
+      if (data.contains('Host is down')) {
+        disconnect();
+      }
+    });
+  }
+
+  Future<bool> connectToPort() async {
+    port = SerialPort('/dev/rfcomm0');
+    if (!port.openReadWrite()) {
+      return false;
+    }
+    final reader = SerialPortReader(port);
+    reader.stream.listen((data) {
+      _inputBuffer += String.fromCharCodes(data);
+      // Split on both \r and \n (handles \r, \n, or \r\n)
+      List<String> lines = _inputBuffer.split(RegExp(r'[\r\n]+'));
+      // The last element may be incomplete, so keep it in the buffer
+      _inputBuffer = lines.removeLast();
+
+      for (var line in lines) {
+        line = line.trim();
+        if (line.isEmpty) continue;
+        _handleOBDResponse(line);
+        if (collectingVin.value) {
+          _vinBuffer.add(line);
+        }
+      }
+    });
+    bluetoothInitialized.value = true;
+    isConnected.value = true;
+    return true;
+  }
+
+  Future<void> startGettingDataLinux() async {
+    try {
+      showOBDStats.value = true;
+      vin.value = await getVinOnceLinux() ?? '';
+      setupOBDWatchers();
+      int obdTick = 0;
+      final List<String> obdCommandList = [obdSpeedCommand, obdRpmCommand];
+      _obdTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
+        _sendOBDCommandLinux(obdCommandList[obdTick]);
+        obdTick++;
+        if (obdTick == obdCommandList.length) {
+          obdTick = 0; // Reset after sending all commands
+        }
+      });
+    } catch (e) {
+      _logger.e("Error starting OBD data retrieval: $e");
+    }
+  }
+
+  void _sendOBDCommandLinux(String command) async {
+    // OBD-II commands are usually sent as ASCII with \r
+    final cmd = '$command\r';
+    if (!isConnected.value) {
+      return;
+    }
+    port.write(Uint8List.fromList(cmd.codeUnits));
+  }
+
+  Future<String?> getVinOnceLinux() async {
+    _vinBuffer = [];
+    collectingVin = true.obs;
+    _sendOBDCommandLinux(obdVinCommand);
+    // Wait for a VIN response or timeout (maxWaitMs)
+    int maxWaitMs = 4000;
+    int waited = 0;
+    const int pollInterval = 100;
+    while (_vinBuffer.isEmpty && waited < maxWaitMs) {
+      await Future.delayed(const Duration(milliseconds: pollInterval));
+      waited += pollInterval;
+    }
+    collectingVin.value = false;
+
+    // Extract only the hex bytes after the colon or after the header
+    final hexParts = <String>[];
+    for (var line in _vinBuffer) {
+      final match = RegExp(r'^\d+:\s*([0-9A-F ]+)$').firstMatch(line);
+      if (match != null) {
+        hexParts.add(match.group(1)!);
+      }
+    }
+
+    if (hexParts.isEmpty) {
+      return null;
+    }
+
+    final hexString = hexParts.join(' ').replaceAll(RegExp(r'[^0-9A-F ]'), '');
+    final hexList = hexString.split(' ').where((s) => s.isNotEmpty).toList();
+    final bytes = convert.hexToDecimal(hexString: hexList);
+    final vin = String.fromCharCodes(bytes).replaceAll(RegExp(r'[^A-Z0-9]'), '').trim().substring(1);
+    vehicleInfo.value = await decodeVin(vin);
+    return vin.isNotEmpty ? vin.substring(1) : null;
+  }
+
+  Future<void> checkRootStatus() async {
+    if (!Platform.isLinux && !Platform.isMacOS) {
+      isRunningAsRoot = false;
+      return;
+    }
+    try {
+      final result = await Process.run('id', ['-u']);
+      if (result.exitCode == 0 && result.stdout.toString().trim() == '0') {
+        isRunningAsRoot = true;
+        return;
+      }
+    } catch (e) {
+      _logger.e("Error checking root status: $e");
+    }
   }
 }

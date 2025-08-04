@@ -58,6 +58,8 @@ dependencies:
   conversion: ^1.0.0+1
   bluetooth_classic: ^0.0.4
   audioplayers: ^5.2.1
+  flutter_libserialport: ^0.6.0
+  bluez: ^0.8.3
 
 dev_dependencies:
   flutter_test:
