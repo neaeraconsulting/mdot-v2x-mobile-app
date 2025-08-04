@@ -1,3 +1,4 @@
+import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -19,6 +20,7 @@ class SecureStorage {
   static const _keyGPSPassword = 'gpsPassword';
   static const _keyGPSIP = 'gpsIP';
   static const _keyGPSMode = 'gpsMode';
+  static const _keyGPSType = 'gpsType';
   static const _keyManualRegistrationMode = "manualRegistrationMode";
   static const _keyRegistrationLatitude = "registrationLatitude";
   static const _keyRegistrationLongitude = "registrationLongitude";
@@ -38,6 +40,7 @@ class SecureStorage {
   static final _startVendorID = dotenv.env['VENDOR_ID']!;
   static final _startDeviceID = "";
 
+  static final _startGPSType = dotenv.env['GPS_TYPE'] ?? '';
   static final _startGPSUsername = dotenv.env['GPS_USERNAME'] ?? '';
   static final _startGPSPassword = dotenv.env['GPS_PASSWORD'] ?? '';
   static final _startGPSIP = dotenv.env['GPS_IP'] ?? '';
@@ -67,6 +70,7 @@ class SecureStorage {
   Future<String> getGPSPassword() async => (await _storage.read(key: _keyGPSPassword)) ?? _startGPSPassword;
   Future<String> getGPSIP() async => (await _storage.read(key: _keyGPSIP)) ?? _startGPSIP;
   Future<bool> getGPSMode() async => (await _storage.read(key: _keyGPSMode)) == 'true';
+  Future<String> getGPSType() async => (await _storage.read(key: _keyGPSType)) ?? _startGPSType;
   Future<bool> getManualRegistrationMode() async =>
       (await _storage.read(key: _keyManualRegistrationMode)) == 'true';
   Future<double> getRegistrationLatitude() async =>
@@ -85,6 +89,8 @@ class SecureStorage {
   Future<void> setGPSPassword(String v) => _storage.write(key: _keyGPSPassword, value: v);
   Future<void> setGPSIP(String v) => _storage.write(key: _keyGPSIP, value: v);
   Future<void> setGPSMode(bool v) async => await _storage.write(key: _keyGPSMode, value: v.toString());
+  Future<void> setGPSType(GPSType gpsType) async =>
+      await _storage.write(key: _keyGPSType, value: gpsType.toString().split('.').last);
   Future setVZMode(bool vzMode) async {
     if (vzMode) {
       await _storage.write(key: _keyVzMode, value: "true");

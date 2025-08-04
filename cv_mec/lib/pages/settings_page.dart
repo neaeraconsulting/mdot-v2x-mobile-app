@@ -149,6 +149,31 @@ class SettingsPage extends StatelessWidget {
       children: [
         headerElement("Configuration", Icons.settings),
         verticalSpaceMedium,
+        Obx(() => Row(
+          children: [
+            const SizedBox(width: 14),
+            const Text("GPS Mode: ", style: TextStyle(fontSize: 16)),
+            Expanded(child: Container()),
+            DropdownButton<GPSType>(  
+              dropdownColor: Theme.of(Get.context!).scaffoldBackgroundColor,
+              borderRadius: BorderRadius.circular(8),
+              value: controller.gpsType.value,
+              items: controller.gpsTypes.map((GPSType type) {
+                return DropdownMenuItem<GPSType>(
+                  value: type,
+                  child: Text(type.toString().split('.').last.toUpperCase()),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) { 
+                  controller.gpsType.value = value;
+                  controller.secureStorage.setGPSType(value);
+                }
+              },
+            ),
+          ],
+        )),
+        verticalSpaceSmall,
         Obx(() => SwitchListTile(
             title: const Text("Enable Remote GPS"),
             value: controller.remoteGPS.value,
@@ -159,7 +184,7 @@ class SettingsPage extends StatelessWidget {
               }
             })),
         verticalSpaceSmall,
-        Obx(() => controller.remoteGPS.value
+        Obx(() => controller.gpsType.value == GPSType.cradle
             ? Column(children: [
                 TextField(
                   decoration: const InputDecoration(labelText: 'GPS IP'),

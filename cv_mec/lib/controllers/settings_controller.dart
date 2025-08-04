@@ -4,8 +4,15 @@ import 'package:get/get.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:cv_mec/services/secure_storage.dart';
 import 'package:cv_mec/services/shared_pref.dart';
+
 import 'package:flutter/scheduler.dart';
 import 'dart:io';
+
+enum GPSType {
+  obu,
+  cradle,
+  mobile,
+}
 
 class SettingsController extends GetxController {
   SettingsController();
@@ -30,6 +37,11 @@ class SettingsController extends GetxController {
   Rx<bool> demoMode = false.obs;
   Rx<bool> readMessages = false.obs;
   Rx<bool> remoteGPS = true.obs;
+
+  //GPS Mode
+  Rx<GPSType> gpsType = GPSType.mobile.obs; // Default to mobile
+  List<GPSType> gpsTypes = GPSType.values;
+
 
   // Automatically enable PC5 if the environment variable is configured
   Rx<bool> enablePC5 = dotenv.env['PC5_MQTT_BROKER'] != null ? true.obs : false.obs;
@@ -65,6 +77,12 @@ class SettingsController extends GetxController {
     s3BucketName.value = await secureStorage.getS3BucketName();
     s3Region.value = await secureStorage.getS3Region();
     s3DestDir.value = await secureStorage.getS3DestDir();
+
+    gpsType.value = toGPSType(await secureStorage.getGPSType());
+
+    if (gpsType.value == GPSType.mobile && Platform.isLinux) {
+      gpsType.value = GPSType.cradle;
+    }
 
     if (!Platform.isAndroid && !Platform.isIOS) {
       remoteGPS.value = true;
@@ -108,6 +126,19 @@ class SettingsController extends GetxController {
     } else {
       Get.changeThemeMode(ThemeMode.light);
       await sharedPrefs.saveDarkModeToPrefs(darkModeState.value);
+    }
+  }
+
+  GPSType toGPSType(String type) {
+    switch (type.toLowerCase()) {
+      case 'obu':
+        return GPSType.obu;
+      case 'cradle':
+        return GPSType.cradle;
+      case 'mobile':
+        return GPSType.mobile;
+      default:
+        return GPSType.mobile; // Default to mobile if unknown
     }
   }
 }
