@@ -63,6 +63,7 @@ import 'package:cv_mec/models/light_change_time.dart';
 import 'package:cv_mec/models/utils.dart';
 import 'package:cv_mec/models/vehicle.dart';
 import 'package:cv_mec/services/api_service.dart';
+import 'package:cv_mec/services/gpsd_service.dart';
 import 'package:cv_mec/services/remote_gps.dart';
 import 'package:cv_mec/services/asn_service.dart';
 import 'package:cv_mec/services/aws_service.dart';
@@ -113,6 +114,7 @@ class MapState extends State<MapPage> {
   ASNService asnService = Get.find<ASNService>();
   ApiService apiService = Get.find<ApiService>();
   RemoteGPSService gpsService = Get.find<RemoteGPSService>();
+  GPSDService gpsdService = Get.find<GPSDService>();
   Timing timingService = Get.find<Timing>();
   FileService fileService = Get.find<FileService>();
   MqttService mqtt = Get.find<MqttService>(tag: MqttService.etxTag);
