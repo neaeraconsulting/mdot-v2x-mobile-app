@@ -114,7 +114,6 @@ class LocationService extends GetxService {
   }
 
   Future<bool> requestPermission() async {
-    print("request permission");
     _serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!_serviceEnabled) {
       // Location services are not enabled don't continue
@@ -123,7 +122,6 @@ class LocationService extends GetxService {
       _logger.w("Location services are disabled");
       return Future.error('Location services are disabled.');
     }
-    print("location services ENABLED");
     _permission = await Geolocator.checkPermission();
     if (_permission == LocationPermission.denied) {
       await Get.dialog(

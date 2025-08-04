@@ -12,7 +12,6 @@ class VehicleConfigSelectionDialog extends StatelessWidget {
   const VehicleConfigSelectionDialog({super.key});
   @override
   Widget build(BuildContext context) {
-    //SettingsController settingsController = Get.find<SettingsController>();
     ConfigurationController configController = Get.find<ConfigurationController>();
     Rx<bool> deleteConfigMode = false.obs;
     return Dialog(
@@ -24,10 +23,9 @@ class VehicleConfigSelectionDialog extends StatelessWidget {
         height: screenHeight(context) * 0.5,
         child: Center(
           child: Obx(() => Padding(
-                padding: const EdgeInsets.all(4.0),
+                padding: const EdgeInsets.only(left:4, right: 4, top: 24, bottom: 24),
                 child: Column(
                   children: [
-                    verticalSpaceMedium,
                     SizedBox(
                       width: screenWidth(context) * 0.8,
                       child: Row(
@@ -46,61 +44,57 @@ class VehicleConfigSelectionDialog extends StatelessWidget {
                       ),
                     ),
                     verticalSpaceSmall,
-                    SizedBox(
-                      width: screenWidth(context) * 0.75,
-                      height: screenHeight(context) * 0.35,
-
-                      /*Expanded(*/
-                      child: ListView(
-                        shrinkWrap: true,
-                        children: [
-                          ...configController.vehicleConfigs
-                              .map((vehicle) => ListTile(
-                                    leading: vehicleAvatar(vehicle),
-                                    title: Text(vehicle.name),
-                                    subtitle: Text(
-                                        vehicle.classification.name.replaceAll("_", " ").capitalizeFirst ?? "",
-                                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
-                                    trailing: !(deleteConfigMode.value)
-                                        ? IconButton(
-                                            icon: Icon(Icons.arrow_forward_ios,
-                                                color: Theme.of(context).colorScheme.onSurface),
-                                            onPressed: () {
-                                              configController.vehicleBeingEditedIndex.value =
-                                                  configController.vehicleConfigs.indexOf(vehicle);
-                                              //Get.to(() => CreateVehicleConfig());
-                                              Get.dialog(CreateVehicleConfigDialog());
-                                            },
-                                          )
-                                        : IconButton(
-                                            icon: Icon(Icons.delete, color: Theme.of(context).colorScheme.onSurface),
-                                            onPressed: () {
-                                              configController.deleteVehicleConfig(vehicle);
-                                              deleteConfigMode.value = false;
-                                            },
-                                          ),
-                                    onTap: () {
-                                      configController.selectedVehicle.value = vehicle;
-                                      configController.isVehicleConfig.value = true;
-                                      Get.off(() => MapPage());
-                                    },
-                                  ))
-                              .toList(),
-                          ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: Theme.of(context).primaryColor,
-                              child: Icon(Icons.add),
-                            ),
-                            title: Text("Add New"),
-                            onTap: () {
-                              //Get.to(() => CreateVehicleConfig());
-                              Get.dialog(CreateVehicleConfigDialog());
-                            },
-                          )
-                        ],
+                    Expanded(
+                      child: SizedBox(
+                        width: screenWidth(context) * 0.75,
+                        child: ListView(
+                          children: [
+                            ...configController.vehicleConfigs
+                                .map((vehicle) => ListTile(
+                                      leading: vehicleAvatar(vehicle),
+                                      title: Text(vehicle.name),
+                                      subtitle: Text(
+                                          vehicle.classification.name.replaceAll("_", " ").capitalizeFirst ?? "",
+                                          style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+                                      trailing: !(deleteConfigMode.value)
+                                          ? IconButton(
+                                              icon: Icon(Icons.arrow_forward_ios,
+                                                  color: Theme.of(context).colorScheme.onSurface),
+                                              onPressed: () {
+                                                configController.vehicleBeingEditedIndex.value =
+                                                    configController.vehicleConfigs.indexOf(vehicle);
+                                                Get.dialog(CreateVehicleConfigDialog());
+                                              },
+                                            )
+                                          : IconButton(
+                                              icon: Icon(Icons.delete, color: Theme.of(context).colorScheme.onSurface),
+                                              onPressed: () {
+                                                configController.deleteVehicleConfig(vehicle);
+                                                deleteConfigMode.value = false;
+                                              },
+                                            ),
+                                      onTap: () {
+                                        configController.selectedVehicle.value = vehicle;
+                                        configController.isVehicleConfig.value = true;
+                                        Get.off(() => MapPage());
+                                      },
+                                    ))
+                                .toList(),
+                            ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: Theme.of(context).primaryColor,
+                                child: Icon(Icons.add),
+                              ),
+                              title: Text("Add New"),
+                              onTap: () {
+                                Get.dialog(CreateVehicleConfigDialog());
+                              },
+                            )
+                          ],
+                        ),
                       ),
                     ),
-                    Expanded(child: Container()),
+                    verticalSpaceSmall,
                     ClickableText(
                       text: "Skip",
                       onTap: () {
@@ -109,7 +103,6 @@ class VehicleConfigSelectionDialog extends StatelessWidget {
                         Get.off(() => const MapPage());
                       },
                     ),
-                    verticalSpaceMedium,
                   ],
                 ),
               )),

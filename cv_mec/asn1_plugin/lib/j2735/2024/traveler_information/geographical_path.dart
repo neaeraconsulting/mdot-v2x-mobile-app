@@ -44,7 +44,7 @@ class GeographicalPath {
     }
 
     if (geographicalPath.closedPath.address != 0) {
-      closedPath = geographicalPath.closedPath.value == 0;
+      closedPath = geographicalPath.closedPath.value == 1;
     }
 
     if (geographicalPath.direction.address != 0) {
@@ -59,15 +59,7 @@ class GeographicalPath {
         description = GeometricProjection.fromC(geographicalPath.description.ref.choice.geometry);
       } else if (choiceDescriptionID == C.GeographicalPath__description_PR.GeographicalPath__description_PR_oldRegion) {
         print("Received description of type oldRegion. This is no longer recommended for use and not supported");
-        // description = ValidRegion.fromC(geographicalPath.description.ref.choice.oldRegion);
       }
     }
-
-    // if(geographicalPath.regional.address != 0){
-    //   regional = [];
-    //   for(int i=0; i< geographicalPath.regional.ref.list.count; i++){
-    //     regional.add(RegionalExtension.fromC(geographicalPath.regional.ref.list.array[i]));
-    //   }
-    // }
   }
 }

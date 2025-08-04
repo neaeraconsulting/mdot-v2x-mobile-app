@@ -20,6 +20,7 @@ import 'package:asn1_plugin/j2735/2024/common/node_set_xy.dart';
 import 'package:asn1_plugin/j2735/2024/common/siren_in_use.dart';
 import 'package:asn1_plugin/j2735/2024/map_data/generic_lane.dart';
 import 'package:asn1_plugin/j2735/2024/map_data/map_data.dart';
+import 'package:asn1_plugin/j2735/2024/personal_safety_message/personal_device_user_type.dart';
 import 'package:asn1_plugin/j2735/2024/personal_safety_message/personal_safety_message.dart';
 import 'package:asn1_plugin/j2735/2024/sensor_data_sharing_message/detected_object_data.dart';
 import 'package:asn1_plugin/j2735/2024/sensor_data_sharing_message/sensor_data_sharing_message.dart';
@@ -32,7 +33,6 @@ import 'package:asn1_plugin/j2735/2024/spat/time_mark.dart';
 import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_data_frame.dart';
 import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_information.dart';
 import 'package:bluetooth_classic/models/device.dart';
-import 'package:connection_network_type/connection_network_type.dart';
 import 'package:cv_mec/controllers/obd_controller.dart';
 import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/models/data_queue.dart';
@@ -95,7 +95,6 @@ import 'package:cv_mec/models/protobuf_models/geo_routed_msg.pb.dart' as protobu
 import 'package:typed_data/typed_data.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:cv_mec/controllers/configuration_controller.dart';
-import 'package:asn1_plugin/j2735/2024/common/siren_in_use.dart';
 
 enum ConnectedStatus { UNKNOWN, DISCONNECTED, CONNECTED, PARTIAl }
 
@@ -116,7 +115,8 @@ class MapState extends State<MapPage> {
   RemoteGPSService gpsService = Get.find<RemoteGPSService>();
   Timing timingService = Get.find<Timing>();
   FileService fileService = Get.find<FileService>();
-  MqttService mqtt = Get.find<MqttService>();
+  MqttService mqtt = Get.find<MqttService>(tag: MqttService.etxTag);
+  MqttService mqttPC5 = Get.find<MqttService>(tag: MqttService.pc5Tag);
   LocationService locationService = Get.find<LocationService>();
   SettingsController settingsController = Get.find<SettingsController>();
   S3Service awsService = Get.find<S3Service>();
@@ -239,19 +239,36 @@ class MapState extends State<MapPage> {
         return;
       }
 
-      int connected = await connectToMqttBroker();
+      if (settingsController.enablePC5.value) {
+        connectToPC5Broker();
+      }
+
+      int connected = await connectToETXBroker();
       if (connected != 0) {
         return;
       }
 
-      int gpsConnected = await checkRemoteGPSConnection();
-      if (connected != 0) {
-        addToAppLog("COULDN'T CONNECT TO GPS");
+      if(settingsController.remoteGPS.value) {
+        int gpsConnected = await checkRemoteGPSConnection();
+        if (gpsConnected != 0) {
+          addToAppLog("COULDN'T CONNECT TO GPS");
+        }
       }
 
       updateConnectedStatus(ConnectedStatus.CONNECTED);
 
       if (debugMode) {
+        TravelerInformation itswcTim1 = asnService.decodeTim(TestData.itswcTim1);
+      timManager.addOrUpdate(itswcTim1, TestData.itswcTim1);
+
+      TravelerInformation itswcTim2 = asnService.decodeTim(TestData.itswcTim2);
+      timManager.addOrUpdate(itswcTim2, TestData.itswcTim2);
+
+      TravelerInformation itswcTim3 = asnService.decodeTim(TestData.itswcTim3);
+      timManager.addOrUpdate(itswcTim3, TestData.itswcTim3);
+
+      TravelerInformation itswcTim4 = asnService.decodeTim(TestData.itswcTim4);
+      timManager.addOrUpdate(itswcTim4, TestData.itswcTim4);
         // tfhrcStaticPosition
         positionStream = fakePosition(TestData.tfhrcFakePosition).listen(updatePosition);
       } else if (settingsController.demoMode.value) {
@@ -355,7 +372,7 @@ class MapState extends State<MapPage> {
     SensorDataSharingMessage sdsm = asnService.decodeSdsm(TestData.tfhrcSDSM);
     Timer.periodic(const Duration(milliseconds: 100), (timer) async {
       DateTime now = timingService.getTime();
-      processNewSdsm(publicGeoRelevanceSubscribeTopic, TestData.tfhrcSDSM, now, now);
+      processNewSdsm(publicGeoRelevanceSubscribeTopic, TestData.tfhrcSDSM, now, now, "SIM");
       // await Future.delayed(const Duration(milliseconds: 100)); // Simulate an async task
     });
   }
@@ -419,7 +436,12 @@ class MapState extends State<MapPage> {
   }
 
   Future<int> checkRemoteGPSConnection() async {
-    Map<String, String>? gpsToken = await gpsService.getToken();
+    Map<String, String>? gpsToken;
+    try {
+      gpsToken = await gpsService.getToken().timeout(Duration(seconds: 30));
+    } catch (e) {
+      addToAppLog('GPS token request timed out or failed: $e');
+    }
 
     if (gpsToken == null) {
       showError("Unable to get GPS token");
@@ -429,7 +451,7 @@ class MapState extends State<MapPage> {
     return 0;
   }
 
-  Future<int> connectToMqttBroker() async {
+  Future<int> connectToETXBroker() async {
     String? token = await apiService.getToken();
 
     if (mounted) {
@@ -490,8 +512,6 @@ class MapState extends State<MapPage> {
     mqtt.subscribe(publicGeoRelevanceRawSubscribeTopic, onRawAsnMessage); // SPaT
     mqtt.subscribe(publicGeoRelevanceSubscribeTopic, onGeoRelevanceMessage);
 
-    //cdotFakePosition
-
     startSendingBSM();
     if (Platform.isAndroid || Platform.isIOS) {
       WakelockPlus.enable();
@@ -504,6 +524,26 @@ class MapState extends State<MapPage> {
     }
 
     return 0;
+  }
+
+  Future<int> connectToPC5Broker() async {
+    addToAppLog("Connecting to PC5 Broker");
+
+    int result = await mqttPC5.connect(settingsController.pc5BrokerUrl.value, null);
+    if (result != 0) {
+      showError("Unable to Connect to MQTT Broker");
+      return 1;
+    }
+
+    mqttPC5.subscribe("Ettifos/V2X/ind/J2735/#", onPC5Message); //MAP / TIM
+    return 0;
+  }
+
+  void onPC5Message(MqttReceivedMessage<MqttMessage?> message, DateTime recTime) async {
+    addToAppLog("Received ASN1 Message from PC5 Broker");
+    final recMess = message.payload as MqttPublishMessage;
+    String hex = ASNService.bytesToHex(recMess.payload.message);
+    processIncomingMessage(message.topic, hex, recTime, null, "PC5");
   }
 
   void onGeoRelevanceMessage(MqttReceivedMessage<MqttMessage?> message, DateTime recTime) async {
@@ -519,50 +559,50 @@ class MapState extends State<MapPage> {
 
     String hex = ASNService.bytesToHex(decodedMessage.msgBytes);
 
-    processIncomingMessage(message.topic, hex, recTime, msgTime);
+    processIncomingMessage(message.topic, hex, recTime, msgTime, "ETX");
   }
 
   void onRawAsnMessage(MqttReceivedMessage<MqttMessage?> message, DateTime recTime) {
     addToAppLog("Received ASN1 Message");
     final recMess = message.payload as MqttPublishMessage;
     String hex = ASNService.bytesToHex(recMess.payload.message);
-    processIncomingMessage(message.topic, hex, recTime, null);
+    processIncomingMessage(message.topic, hex, recTime, null, "ETX");
   }
 
-  void processIncomingMessage(String topic, String hex, DateTime recTime, DateTime? sendTime) {
+  void processIncomingMessage(String topic, String hex, DateTime recTime, DateTime? sendTime, String source) {
     MsgType msgType = asnService.determineHexMessageType(hex);
 
     switch (msgType) {
       case MsgType.BSM:
         addToAppLog("Identified Message as BSM");
-        processNewBsm(topic, hex, recTime, sendTime);
+        processNewBsm(topic, hex, recTime, sendTime, source);
         break;
       case MsgType.PSM:
         addToAppLog("Identified Message as PSM");
-        processNewPsm(topic, hex, recTime, sendTime);
+        processNewPsm(topic, hex, recTime, sendTime, source);
         break;
       case MsgType.SPAT:
         addToAppLog("Identified Message as SPaT");
-        processNewSpat(topic, hex, recTime, sendTime);
+        processNewSpat(topic, hex, recTime, sendTime, source);
         break;
       case MsgType.MAP:
         addToAppLog("Identified Message as MAP");
-        processNewMap(topic, hex, recTime, sendTime);
+        processNewMap(topic, hex, recTime, sendTime, source);
         break;
       case MsgType.TIM:
         addToAppLog("Identified Message as TIM");
-        processNewTim(topic, hex, recTime, sendTime);
+        processNewTim(topic, hex, recTime, sendTime, source);
         break;
       case MsgType.SDSM:
         addToAppLog("Identified Message as SDSM");
-        processNewSdsm(topic, hex, recTime, sendTime);
+        processNewSdsm(topic, hex, recTime, sendTime, source);
         break;
       default:
         addToAppLog("Unable to Identify Message Type: $msgType");
     }
   }
 
-  void processNewBsm(String topic, String hex, DateTime recTime, DateTime? sendTime) {
+  void processNewBsm(String topic, String hex, DateTime recTime, DateTime? sendTime, String source) {
     VehicleClass vehicleClass = VehicleClass.unknownVehicleClass;
 
     String trimmedHex = asnService.trimMessageHeaders(hex, asnService.BSM_START_FLAG)!;
@@ -591,10 +631,10 @@ class MapState extends State<MapPage> {
 
     ReceivedMsg msg = ReceivedBsm(vehicleID, bsmTime, position, vehicleClass, lights, sirens);
     messageManager.addOrUpdate(msg);
-    addToReceiveLog(topic, "BSM", recTime, sendTime, bsmTime, trimmedHex);
+    addToReceiveLog(topic, "BSM", recTime, sendTime, bsmTime, trimmedHex, source);
   }
 
-  void processNewPsm(String topic, String hex, DateTime recTime, DateTime? sendTime) {
+  void processNewPsm(String topic, String hex, DateTime recTime, DateTime? sendTime, String source) {
     String trimmedHex = asnService.trimMessageHeaders(hex, asnService.PSM_START_FLAG)!;
     PersonalSafetyMessage psm = asnService.decodePsm(trimmedHex);
 
@@ -605,10 +645,10 @@ class MapState extends State<MapPage> {
 
     ReceivedMsg msg = ReceivedPsm(pedestrianID, psmTime, position, psm.basicType, psm.eventResponderType);
     messageManager.addOrUpdate(msg);
-    addToReceiveLog(topic, "PSM", recTime, sendTime, psmTime, trimmedHex);
+    addToReceiveLog(topic, "PSM", recTime, sendTime, psmTime, trimmedHex, source);
   }
 
-  void processNewSpat(String topic, String hex, DateTime recTime, DateTime? sendTime) {
+  void processNewSpat(String topic, String hex, DateTime recTime, DateTime? sendTime, String source) {
     String trimmedHex = asnService.trimMessageHeaders(
         hex, asnService.SPAT_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
     Spat spat = asnService.decodeSpat(trimmedHex);
@@ -626,10 +666,10 @@ class MapState extends State<MapPage> {
       spatGenTime = spat.intersections.intersectionStateList.first.getUtcTime();
     }
 
-    addToReceiveLog(topic, "SPAT", recTime, sendTime, spatGenTime, trimmedHex);
+    addToReceiveLog(topic, "SPAT", recTime, sendTime, spatGenTime, trimmedHex, source);
   }
 
-  void processNewMap(String topic, String hex, DateTime recTime, DateTime? sendTime) {
+  void processNewMap(String topic, String hex, DateTime recTime, DateTime? sendTime, String source) {
     String trimmedHex = asnService.trimMessageHeaders(
         hex, asnService.MAP_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
     MapData map = asnService.decodeMap(trimmedHex);
@@ -643,14 +683,13 @@ class MapState extends State<MapPage> {
       });
     }
 
-    addToReceiveLog(topic, "MAP", recTime, sendTime, LeidosDateExtraction.extractDateFromMap(map), trimmedHex);
+    addToReceiveLog(topic, "MAP", recTime, sendTime, LeidosDateExtraction.extractDateFromMap(map), trimmedHex, source);
   }
 
-  void processNewTim(String topic, String hex, DateTime recTime, DateTime? sendTime) {
+  void processNewTim(String topic, String hex, DateTime recTime, DateTime? sendTime, String source) {
     String trimmedHex = asnService.trimMessageHeaders(
         hex, asnService.TIM_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
     TravelerInformation tim = asnService.decodeTim(trimmedHex);
-
     timManager.addOrUpdate(tim, hex);
     if (mounted) {
       setState(() {
@@ -659,19 +698,17 @@ class MapState extends State<MapPage> {
       });
     }
     DateTime? generationTime = LeidosDateExtraction.extractDateFromTim(tim);
-
     Future.delayed(const Duration(milliseconds: 0), () async {
       String messageType = "TIM";
       if (tim.dataFrames.travelerDataFrameList.isNotEmpty) {
         ItisCode code = await timManager.getItisRepresentationForDataFrame(tim.dataFrames.travelerDataFrameList.first);
         messageType = "TIM ${code.description}";
       }
-
-      addToReceiveLog(topic, messageType, recTime, sendTime, generationTime, trimmedHex);
+      addToReceiveLog(topic, messageType, recTime, sendTime, generationTime, trimmedHex, source);
     });
   }
 
-  void processNewSdsm(String topic, String hex, DateTime recTime, DateTime? sendTime) {
+  void processNewSdsm(String topic, String hex, DateTime recTime, DateTime? sendTime, String source) {
     String trimmedHex = asnService.trimMessageHeaders(
         hex, asnService.SDSM_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
     SensorDataSharingMessage sdsm = asnService.decodeSdsm(trimmedHex);
@@ -696,11 +733,11 @@ class MapState extends State<MapPage> {
       messageManager.addOrUpdate(ReceivedSdsm(id, objectTime, refPos, object.detObjCommon.objType));
     }
 
-    addToReceiveLog(topic, "SDSM", recTime, sendTime, sdsm.sDSMTimeStamp.getAsDateTime(), trimmedHex);
+    addToReceiveLog(topic, "SDSM", recTime, sendTime, sdsm.sDSMTimeStamp.getAsDateTime(), trimmedHex, source);
   }
 
-  void addToReceiveLog(
-      String topic, String msgType, DateTime recTime, DateTime? sendTime, DateTime? generationTime, String hex) async {
+  void addToReceiveLog(String topic, String msgType, DateTime recTime, DateTime? sendTime, DateTime? generationTime,
+      String hex, String source) async {
     int delta = 0;
     int logSendTime = 0;
     if (sendTime != null) {
@@ -723,7 +760,7 @@ class MapState extends State<MapPage> {
     }
 
     String record =
-        "$topic, ${msgType.toString().split('.').last}, ${recTime.millisecondsSinceEpoch},$logSendTime,$messageGenerationTime,$delta,$generationDelta,$longitude,$latitude,$mqttConnectionURL,$hex\n";
+        "$topic, ${msgType.toString().split('.').last}, ${recTime.millisecondsSinceEpoch},$logSendTime,$messageGenerationTime,$delta,$generationDelta,$longitude,$latitude,$mqttConnectionURL,$hex,$source\n";
     recDataQueue.addItem(record);
   }
 
@@ -797,6 +834,9 @@ class MapState extends State<MapPage> {
       psmBuilder.incrementMsgCnt();
       psmBuilder.setTime(sendTime);
       psmBuilder.setPersonalDeviceUserType(configController.selectedPedestrian);
+      if (configController.selectedPedestrian == PersonalDeviceUserType.APUBLICSAFETYWORKER) {
+        psmBuilder.setPublicSafetyWorkerType(configController.selectedPublicSafetyWorker);
+      }
       hex = psmBuilder.build();
     }
 
@@ -910,9 +950,18 @@ class MapState extends State<MapPage> {
 
     codes.addAll(msgs);
 
+    Map<ImageProvider, ItisCode> uniqueCodes = <ImageProvider, ItisCode>{};
+
+    // Tims with Identical Images are considerd the same. All images are pulled from image map so object comparison is sufficient.
+    for(ItisCode code in codes){
+      if(code.image != null && !uniqueCodes.containsKey(code.image)){
+        uniqueCodes[code.image!] = code;
+      }
+    }
+
     if (mounted) {
       setState(() {
-        showTims = codes;
+        showTims = uniqueCodes.values.toList();
       });
     }
     // showTimMessage(newActiveTims);
@@ -1368,6 +1417,7 @@ class MapState extends State<MapPage> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+    final heightBottomDisplay = screenHeight * 0.18;
 
     const String appTitle = "MAP";
     return Scaffold(
@@ -1379,6 +1429,7 @@ class MapState extends State<MapPage> {
               positionStream?.cancel();
               uploadTimer?.cancel();
               mqtt.disconnect();
+              mqttPC5.disconnect();
 
               Future.delayed(const Duration(milliseconds: 100), () async {
                 Get.back();
@@ -1457,12 +1508,12 @@ class MapState extends State<MapPage> {
               Align(
                   alignment: Alignment.bottomLeft,
                   child: SizedBox(
-                    height: 170,
+                    height: screenHeight * 0.2,
                     child: Row(children: [
                       Expanded(
-                        child: timsDisplay(),
+                        child: timsDisplay(heightBottomDisplay, screenWidth),
                       ),
-                      configController.isVehicleConfig.value ? speedMarker() : Container(),
+                      configController.isVehicleConfig.value ? speedMarker(heightBottomDisplay) : Container(),
                     ]),
                   )),
               Align(
@@ -1633,7 +1684,10 @@ class MapState extends State<MapPage> {
             onPressed: () {
               updateConnectedStatus(ConnectedStatus.DISCONNECTED);
               stopSendingBSM();
-              connectToMqttBroker();
+              connectToETXBroker();
+              if (settingsController.enablePC5.value) {
+                connectToPC5Broker();
+              }
             },
             style: ElevatedButton.styleFrom(
               shape: const CircleBorder(),
@@ -1797,12 +1851,12 @@ class MapState extends State<MapPage> {
         ));
   }
 
-  Widget speedMarker() {
+  Widget speedMarker(double heightBottomDisplay) {
     return Padding(
       padding: const EdgeInsets.all(10),
       child: Container(
-        width: 100,
-        height: 150,
+        width: heightBottomDisplay * (2/3),
+        height: heightBottomDisplay,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
           color: lightGrey,
@@ -1818,51 +1872,65 @@ class MapState extends State<MapPage> {
         child: Padding(
           padding: const EdgeInsets.all(8.0),
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Stack(
-              children: [
-                // Outline layers
-                Text(
-                  ((currentPosition?.speed ?? 0) * 2.23694).toStringAsFixed(0),
-                  style: TextStyle(
-                    fontSize: 52.0,
-                    foreground: Paint()
-                      ..style = PaintingStyle.stroke
-                      ..strokeWidth = 3.0
-                      ..color = primaryColor.withOpacity(0.5), // Outline color
-                  ),
+            SizedBox(
+              width: (heightBottomDisplay * (2/3) - 16) * 0.8, // Constrain width
+              height: heightBottomDisplay * 0.5, // Constrain height
+              child: FittedBox(
+                fit: BoxFit.contain,
+                child: Stack(
+                  children: [
+                    // Outline layers
+                    Text(
+                      ((currentPosition?.speed ?? 0) * 2.23694).toStringAsFixed(0),
+                      style: TextStyle(
+                        fontSize: 52.0,
+                        foreground: Paint()
+                          ..style = PaintingStyle.stroke
+                          ..strokeWidth = 3.0
+                          ..color = primaryColor.withOpacity(0.5), // Outline color
+                      ),
+                    ),
+                    // Main text
+                    Text(
+                      ((currentPosition?.speed ?? 0) * 2.23694).toStringAsFixed(0),
+                      style: TextStyle(
+                        fontSize: 52.0,
+                        color: Colors.black, // Fill color
+                      ),
+                    ),
+                  ],
                 ),
-                // Main text
-                Text(
-                  ((currentPosition?.speed ?? 0) * 2.23694).toStringAsFixed(0),
-                  style: TextStyle(
-                    fontSize: 52.0,
-                    color: Colors.black, // Fill color
-                  ),
-                ),
-              ],
+              ),
             ),
-            Stack(
-              children: [
-                // Outline layers
-                Text(
-                  "MPH",
-                  style: TextStyle(
-                    fontSize: 32.0,
-                    foreground: Paint()
-                      ..style = PaintingStyle.stroke
-                      ..strokeWidth = 2.0
-                      ..color = primaryColor.withOpacity(0.5), // Outline color
+            SizedBox(
+              width: (heightBottomDisplay * (2/3) - 16) * 0.8, // Constrain width
+              height: heightBottomDisplay * 0.3, // Constrain height
+              child: FittedBox (  
+                fit: BoxFit.contain,
+                child: Stack(
+                children: [
+                  // Outline layers
+                  Text(
+                    "MPH",
+                    style: TextStyle(
+                      fontSize: 32.0,
+                      foreground: Paint()
+                        ..style = PaintingStyle.stroke
+                        ..strokeWidth = 2.0
+                        ..color = primaryColor.withOpacity(0.5), // Outline color
+                    ),
                   ),
-                ),
-                // Main text
-                const Text(
-                  "MPH",
-                  style: TextStyle(
-                    fontSize: 32.0,
-                    color: Colors.black, // Fill color
+                  // Main text
+                  const Text(
+                    "MPH",
+                    style: TextStyle(
+                      fontSize: 32.0,
+                      color: Colors.black, // Fill color
+                    ),
                   ),
-                ),
-              ],
+                ],
+              )
+              ),
             ),
           ]),
         ),
@@ -1870,8 +1938,9 @@ class MapState extends State<MapPage> {
     );
   }
 
-  Widget timsDisplay() {
+  Widget timsDisplay(double heightBottomDisplay, double screenWidth) {
     List<Widget> timIcons = [];
+    final int maxTimsInRow = (screenWidth / (heightBottomDisplay / 2)).floor();
     for (ItisCode code in showTims) {
       Widget icon = code.image != null
           ? Image(
@@ -1883,12 +1952,15 @@ class MapState extends State<MapPage> {
             );
       timIcons.add(icon);
     }
-    if (timIcons.length <= 4) {
+    if (timIcons.length <= maxTimsInRow) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: timIcons.map((icon) {
           // Dynamically calculate the size based on the number of icons
-          double iconSize = timIcons.length <= 1 ? 140 : (timIcons.length <= 2 ? 100 : 70);
+          double timsDisplayWidth = screenWidth - ((heightBottomDisplay * (2 / 3)) + 20);
+          double iconSize = (timsDisplayWidth / timIcons.length) > heightBottomDisplay
+              ? heightBottomDisplay
+              : timsDisplayWidth / timIcons.length;
           return SizedBox(
             width: iconSize,
             height: iconSize,
@@ -1900,7 +1972,7 @@ class MapState extends State<MapPage> {
       // Create a grid with 2 rows
       return GridView.count(
         shrinkWrap: true,
-        crossAxisCount: 4, // 2 columns
+        crossAxisCount: maxTimsInRow, 
         mainAxisSpacing: 8.0,
         crossAxisSpacing: 8.0,
         children: timIcons,

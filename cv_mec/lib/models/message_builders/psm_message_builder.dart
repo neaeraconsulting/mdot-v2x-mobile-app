@@ -4,10 +4,12 @@ import 'dart:typed_data';
 
 import 'package:asn1_plugin/generated_bindings.dart' as C;
 import 'package:asn1_plugin/j2735/2024/personal_safety_message/personal_device_user_type.dart';
+import 'package:asn1_plugin/j2735/2024/personal_safety_message/public_safety_event_responder_worker_type.dart';
 import 'package:cv_mec/models/message_builders/message_builder.dart';
 import 'package:cv_mec/services/asn_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:ffi/ffi.dart';
 
 class PsmMessageBuilder extends MessageBuilder {
   late C.PersonalSafetyMessage psm;
@@ -113,5 +115,14 @@ class PsmMessageBuilder extends MessageBuilder {
       deviceType = PersonalDeviceUserType.ANANIMAL;
     }
     setPersonalDeviceUserType(deviceType);
+  }
+
+  void setPublicSafetyWorkerType(PublicSafetyEventResponderWorkerType? type) {
+    if (type != null) {
+      Pointer<C.PublicSafetyEventResponderWorkerType_t> publicSafetyWorkerType =
+          calloc<C.PublicSafetyEventResponderWorkerType_t>();
+      publicSafetyWorkerType.value = type.index;
+      psm.eventResponderType = publicSafetyWorkerType;
+    }
   }
 }

@@ -102,7 +102,7 @@ class RemoteGPSService extends GetxController {
               latitude: (info['location.gnss.latitude'] as num).toDouble(),
               longitude: (info['location.gnss.longitude'] as num).toDouble(),
               altitude: (info['location.gnss.altitude'] as num).toDouble(),
-              speed: (info['location.gnss.speed'] as num).toDouble(),
+              speed: ((info['location.gnss.speed'] as num).toDouble()) / 3.6, //converting kmh to m/s
               heading: (info['location.gnss.heading'] as num).toDouble(),
               timestamp: DateTime.now(),
               accuracy: 0,

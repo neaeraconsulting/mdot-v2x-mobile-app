@@ -13,6 +13,8 @@ class ReceivedPsm extends ReceivedMsg {
     this.dateTime = objectTime;
     this.position = refPos;
     this.type = MsgType.PSM;
+    this.deviceType = deviceType;
+    this.workerType = workerType;
   }
 
   @override
