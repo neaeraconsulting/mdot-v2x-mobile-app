@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cv_mec/pages/load.dart';
+import 'package:cv_mec/services/gpsd_service.dart';
 import 'package:cv_mec/services/vehicle_notification_manager.dart';
 import 'package:cv_mec/styles/theme_setting.dart';
 import 'package:flutter/material.dart';
@@ -41,6 +42,7 @@ void main() async {
   Get.put(ASNService());
   Get.put(ApiService());
   Get.put(RemoteGPSService());
+  Get.put(GPSDService());
   Get.put(OBDController());
   Get.put(S3Service());
 
