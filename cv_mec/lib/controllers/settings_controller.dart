@@ -28,9 +28,10 @@ class SettingsController extends GetxController {
   RxString baseUri = dotenv.env['API_ENDPOINT']!.obs;
   RxString vendorID = dotenv.env['VENDOR_ID']!.obs;
   RxString pc5BrokerUrl = (dotenv.env['PC5_MQTT_BROKER'] ?? "").obs;
-  RxString gpsUsername = (dotenv.env['GPS_USERNAME'] ?? "").obs;
-  RxString gpsPassword = (dotenv.env['GPS_PASSWORD'] ?? "").obs;
-  RxString gpsIP = (dotenv.env['GPS_IP'] ?? "").obs;
+  RxString cradleGPSUsername = (dotenv.env['GPS_USERNAME'] ?? "").obs;
+  RxString cradleGPSPassword = (dotenv.env['GPS_PASSWORD'] ?? "").obs;
+  RxString cradleGPSIP = (dotenv.env['GPS_IP'] ?? "").obs;
+  RxString obuIP = (dotenv.env['OBU_IP'] ?? "").obs;
   RxString appVersion = ''.obs;
   Rx<bool> vzMode = false.obs;
   Rx<bool> notificationsEnabled = false.obs;
@@ -57,9 +58,11 @@ class SettingsController extends GetxController {
     username.value = await secureStorage.getUsername();
     password.value = await secureStorage.getPassword();
     baseUri.value = await secureStorage.getBaseURI();
-    gpsUsername.value = await secureStorage.getGPSUsername();
-    gpsPassword.value = await secureStorage.getGPSPassword();
-    gpsIP.value = await secureStorage.getGPSIP();
+    cradleGPSUsername.value = await secureStorage.getGPSUsername();
+    cradleGPSPassword.value = await secureStorage.getGPSPassword();
+    cradleGPSIP.value = await secureStorage.getGPSIP();
+    obuIP.value = await secureStorage.getOBUIP();
+    print("OBU IP: ${obuIP.value}");
     vendorID.value = await secureStorage.getVendorID();
     pc5BrokerUrl.value = await secureStorage.getPC5BrokerUrl();
     vzMode.value = await secureStorage.getVZMode();

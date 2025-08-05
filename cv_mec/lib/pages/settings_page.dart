@@ -19,6 +19,7 @@ class SettingsPage extends StatelessWidget {
   TextEditingController gpsIPController = TextEditingController();
   TextEditingController gpsUsernameController = TextEditingController();
   TextEditingController gpsPasswordController = TextEditingController();
+  TextEditingController obuIPController = TextEditingController();
   TextEditingController pc5BrokerUrlController = TextEditingController();
   TextEditingController registrationLatitudeController = TextEditingController();
   TextEditingController registrationLongitudeController = TextEditingController();
@@ -34,9 +35,10 @@ class SettingsPage extends StatelessWidget {
     baseUriController.text = controller.baseUri.value;
     vendorIDController.text = controller.vendorID.value;
     deviceIDController.text = controller.deviceID.value;
-    gpsIPController.text = controller.gpsIP.value;
-    gpsUsernameController.text = controller.gpsUsername.value;
-    gpsPasswordController.text = controller.gpsPassword.value;
+    gpsIPController.text = controller.cradleGPSIP.value;
+    gpsUsernameController.text = controller.cradleGPSUsername.value;
+    gpsPasswordController.text = controller.cradleGPSPassword.value;
+    obuIPController.text = controller.obuIP.value;
     pc5BrokerUrlController.text = controller.pc5BrokerUrl.value;
     registrationLatitudeController.text = paramController.manualLatitude.toString();
     registrationLongitudeController.text = paramController.manualLongitude.toString();
@@ -174,16 +176,6 @@ class SettingsPage extends StatelessWidget {
           ],
         )),
         verticalSpaceSmall,
-        Obx(() => SwitchListTile(
-            title: const Text("Enable Remote GPS"),
-            value: controller.remoteGPS.value,
-            onChanged: (value) async {
-              if (value != controller.remoteGPS.value) {
-                controller.remoteGPS.value = value;
-                await controller.secureStorage.setGPSMode(value);
-              }
-            })),
-        verticalSpaceSmall,
         Obx(() => controller.gpsType.value == GPSType.cradle
             ? Column(children: [
                 TextField(
@@ -191,8 +183,8 @@ class SettingsPage extends StatelessWidget {
                   controller: gpsIPController,
                   obscureText: false,
                   onChanged: (value) async {
-                    if (value != controller.gpsIP.value) {
-                      controller.gpsIP.value = value;
+                    if (value != controller.cradleGPSIP.value) {
+                      controller.cradleGPSIP.value = value;
                       await controller.secureStorage.setGPSIP(value);
                     }
                   },
@@ -203,8 +195,8 @@ class SettingsPage extends StatelessWidget {
                   controller: gpsUsernameController,
                   obscureText: true,
                   onChanged: (value) async {
-                    if (value != controller.gpsUsername.value) {
-                      controller.gpsUsername.value = value;
+                    if (value != controller.cradleGPSUsername.value) {
+                      controller.cradleGPSUsername.value = value;
                       await controller.secureStorage.setGPSUsername(value);
                     }
                   },
@@ -215,9 +207,24 @@ class SettingsPage extends StatelessWidget {
                   controller: gpsPasswordController,
                   obscureText: true,
                   onChanged: (value) async {
-                    if (value != controller.gpsUsername.value) {
-                      controller.gpsPassword.value = value;
+                    if (value != controller.cradleGPSPassword.value) {
+                      controller.cradleGPSPassword.value = value;
                       await controller.secureStorage.setGPSPassword(value);
+                    }
+                  },
+                ),
+              ])
+            : const SizedBox.shrink()),
+        Obx(() => controller.gpsType.value == GPSType.obu
+            ? Column(children: [
+                TextField(
+                  decoration: const InputDecoration(labelText: 'OBU IP'),
+                  controller: obuIPController,
+                  obscureText: false,
+                  onChanged: (value) async {
+                    if (value != controller.obuIP.value) {
+                      controller.obuIP.value = value;
+                      await controller.secureStorage.setOBUIP(value);
                     }
                   },
                 ),
