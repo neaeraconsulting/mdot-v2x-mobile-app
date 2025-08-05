@@ -29,7 +29,9 @@ def keystoreProperties = new Properties()
    }
 android {
     namespace = "com.neaera.cv_mec"
-    compileSdk = flutter.compileSdkVersion
+    // The CV-MEC application is not quite ready for the latest version of the Android SDK. Holding version at 34 until a full update and review process can be completed.
+    // Once updates are complete, this should be reset to flutter.compileSdkVersion 
+    compileSdk = 34
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
