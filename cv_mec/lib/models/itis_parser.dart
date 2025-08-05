@@ -25,6 +25,7 @@ class ItisParser {
   final int reducedToOneLane = 777;
   final int avalancheControlActivities = 1042;
   final int roadConstruction = 1025;
+  final int endWorkZone = 1149;
   final int herdOfAnimalsOnRoadway = 1292;
   final int rockFall = 1309;
   final int landSlide = 1310;
@@ -118,6 +119,8 @@ class ItisParser {
       ),
       landSlide: ItisCode.withImage(
           landSlide, "Landslide", [ITIScodes(landSlide)], AssetImage("$imageDirectory/$landSlide.png")),
+      endWorkZone: ItisCode.withImage(
+          endWorkZone, "End Work Zone", [ITIScodes(endWorkZone)], AssetImage("$imageDirectory/$endWorkZone.png")),
       wideLoad:
           ItisCode.withImage(wideLoad, "Wide Load", [ITIScodes(wideLoad)], AssetImage("$imageDirectory/$wideLoad.png")),
       noTrailers: ItisCode.withImage(
@@ -188,6 +191,8 @@ class ItisParser {
           AssetImage("$imageDirectory/$rightLaneClosedAhead.png")),
       roadConstruction: ItisCode.withImage(roadConstruction, "Road Construction", [ITIScodes(roadConstruction)],
           AssetImage("$imageDirectory/$roadConstruction.png")),
+      endWorkZone: ItisCode.withImage(
+          endWorkZone, "End Work Zone", [ITIScodes(endWorkZone)], AssetImage("$imageDirectory/$endWorkZone.png")),
       gravelRoadSurface: ItisCode(
         gravelRoadSurface,
         "Gravel Road Surface",
