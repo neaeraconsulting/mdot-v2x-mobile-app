@@ -250,7 +250,7 @@ class MapState extends State<MapPage> {
         return;
       }
 
-      if(settingsController.remoteGPS.value) {
+      if(settingsController.gpsType.value == GPSType.cradle) {
         int gpsConnected = await checkRemoteGPSConnection();
         if (gpsConnected != 0) {
           addToAppLog("COULDN'T CONNECT TO GPS");

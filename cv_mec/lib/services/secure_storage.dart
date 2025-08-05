@@ -19,7 +19,6 @@ class SecureStorage {
   static const _keyGPSUsername = 'gpsUsername';
   static const _keyGPSPassword = 'gpsPassword';
   static const _keyGPSIP = 'gpsIP';
-  static const _keyGPSMode = 'gpsMode';
   static const _keyGPSType = 'gpsType';
   static const _keyOBUIP = 'obuIP';
   static const _keyManualRegistrationMode = "manualRegistrationMode";
@@ -72,7 +71,6 @@ class SecureStorage {
   Future<String> getGPSPassword() async => (await _storage.read(key: _keyGPSPassword)) ?? _startGPSPassword;
   Future<String> getGPSIP() async => (await _storage.read(key: _keyGPSIP)) ?? _startGPSIP;
   Future<String> getOBUIP() async => (await _storage.read(key: _keyOBUIP)) ?? _startOBUIP;
-  Future<bool> getGPSMode() async => (await _storage.read(key: _keyGPSMode)) == 'true';
   Future<String> getGPSType() async => (await _storage.read(key: _keyGPSType)) ?? _startGPSType;
   Future<bool> getManualRegistrationMode() async =>
       (await _storage.read(key: _keyManualRegistrationMode)) == 'true';
@@ -92,7 +90,6 @@ class SecureStorage {
   Future<void> setGPSPassword(String v) => _storage.write(key: _keyGPSPassword, value: v);
   Future<void> setGPSIP(String v) => _storage.write(key: _keyGPSIP, value: v);
   Future<void> setOBUIP(String v) => _storage.write(key: _keyOBUIP, value: v);
-  Future<void> setGPSMode(bool v) async => await _storage.write(key: _keyGPSMode, value: v.toString());
   Future<void> setGPSType(GPSType gpsType) async =>
       await _storage.write(key: _keyGPSType, value: gpsType.toString().split('.').last);
   Future setVZMode(bool vzMode) async {

@@ -37,7 +37,6 @@ class SettingsController extends GetxController {
   Rx<bool> notificationsEnabled = false.obs;
   Rx<bool> demoMode = false.obs;
   Rx<bool> readMessages = false.obs;
-  Rx<bool> remoteGPS = true.obs;
 
   //GPS Mode
   Rx<GPSType> gpsType = GPSType.mobile.obs; // Default to mobile
@@ -70,7 +69,6 @@ class SettingsController extends GetxController {
     demoMode.value = await secureStorage.getDemoMode();
     readMessages.value = await secureStorage.getReadMessages();
     developerMode.value = await secureStorage.getDeveloperMode();
-    remoteGPS.value = await secureStorage.getGPSMode();
     soundEffectsEnabled.value = await secureStorage.getSoundEffectsEnabled();
     enablePC5.value = await secureStorage.getPC5Enabled();
 
@@ -84,12 +82,6 @@ class SettingsController extends GetxController {
 
     if (gpsType.value == GPSType.mobile && Platform.isLinux) {
       gpsType.value = GPSType.cradle;
-    }
-
-    if (!Platform.isAndroid && !Platform.isIOS) {
-      remoteGPS.value = true;
-    } else {
-      remoteGPS.value = false;
     }
 
     bool? darkMode = await sharedPrefs.getDarkModeFromPrefs();
