@@ -62,7 +62,6 @@ class SettingsController extends GetxController {
     cradleGPSPassword.value = await secureStorage.getGPSPassword();
     cradleGPSIP.value = await secureStorage.getGPSIP();
     obuIP.value = await secureStorage.getOBUIP();
-    print("OBU IP: ${obuIP.value}");
     vendorID.value = await secureStorage.getVendorID();
     pc5BrokerUrl.value = await secureStorage.getPC5BrokerUrl();
     vzMode.value = await secureStorage.getVZMode();
