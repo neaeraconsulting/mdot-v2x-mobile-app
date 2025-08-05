@@ -96,6 +96,7 @@ import 'package:cv_mec/models/protobuf_models/geo_routed_msg.pb.dart' as protobu
 import 'package:typed_data/typed_data.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:cv_mec/controllers/configuration_controller.dart';
+import 'package:toastification/toastification.dart';
 
 enum ConnectedStatus { UNKNOWN, DISCONNECTED, CONNECTED, PARTIAl }
 
@@ -154,6 +155,7 @@ class MapState extends State<MapPage> {
   List<Polygon<HitValue>> drawnPolygons = [];
   List<Polyline<PolyLineHitValue>> drawnPolylines = [];
   List<Marker> lightMarkerList = [];
+  List<Marker> drawnMarkers = [];
 
   bool followUser = true;
 
@@ -195,6 +197,8 @@ class MapState extends State<MapPage> {
   RxBool obdConnecting = false.obs;
 
   OBDController obdController = Get.find<OBDController>();
+
+  DateTime lastRedrawTime = DateTime.now();
 
   @override
   void initState() {
@@ -308,12 +312,25 @@ class MapState extends State<MapPage> {
       }
     });
 
+    updateMapGraphics();
+    setState(() {
+      showLoadingIcon = true;
+    });
+
+     obdController.checkRootStatus();
+  }
+  
+
+  void updateMapGraphics(){
     if (mounted) {
-      setState(() {
-        drawnPolygons = getPolygons();
-        drawnPolylines = getPolylines();
-        showLoadingIcon = true;
-      });
+      if(DateTime.now().difference(lastRedrawTime).inMilliseconds > 50){ //DateTime.now used since timing service accuracy not required, and may not be initialized yet.
+        setState(() {
+          drawnPolygons = getPolygons();
+          drawnPolylines = getPolylines();
+          drawnMarkers = getMarkerList();
+          lastRedrawTime = DateTime.now();
+        });
+      }
     }
   }
 
@@ -383,7 +400,7 @@ class MapState extends State<MapPage> {
 
   Stream<Position> fakePosition(List<List<double>> fakePosition) {
     return Stream<Position>.periodic(const Duration(milliseconds: 500), (count) {
-      List<List<double>> route = fakePosition; //fakePosition.reversed.toList();
+      List<List<double>> route = fakePosition;
       int index = count % route.length;
       int prevIndex = (count - 1) % route.length;
 
@@ -659,12 +676,7 @@ class MapState extends State<MapPage> {
 
     spatManager.addOrUpdate(spat);
 
-    if (mounted) {
-      setState(() {
-        drawnPolygons = getPolygons();
-        drawnPolylines = getPolylines();
-      });
-    }
+    updateMapGraphics();
     DateTime? spatGenTime;
     if (spat.intersections.intersectionStateList.isNotEmpty) {
       spatGenTime = spat.intersections.intersectionStateList.first.getUtcTime();
@@ -680,12 +692,7 @@ class MapState extends State<MapPage> {
 
     mapManager.addOrUpdate(map);
 
-    if (mounted) {
-      setState(() {
-        drawnPolygons = getPolygons();
-        drawnPolylines = getPolylines();
-      });
-    }
+    updateMapGraphics();
 
     addToReceiveLog(topic, "MAP", recTime, sendTime, LeidosDateExtraction.extractDateFromMap(map), trimmedHex, source);
   }
@@ -695,12 +702,7 @@ class MapState extends State<MapPage> {
         hex, asnService.TIM_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
     TravelerInformation tim = asnService.decodeTim(trimmedHex);
     timManager.addOrUpdate(tim, hex);
-    if (mounted) {
-      setState(() {
-        drawnPolygons = getPolygons();
-        drawnPolylines = getPolylines();
-      });
-    }
+    updateMapGraphics();
     DateTime? generationTime = LeidosDateExtraction.extractDateFromTim(tim);
     Future.delayed(const Duration(milliseconds: 0), () async {
       String messageType = "TIM";
@@ -879,15 +881,15 @@ class MapState extends State<MapPage> {
     prevKronos = kronos;
     prevLocal = now;
 
-    if (mounted) {
-      setState(() {
-        drawnPolygons = getPolygons();
-        drawnPolylines = getPolylines();
-      });
-    }
+    updateMapGraphics();
 
     if (followUser) {
       _mapController.moveAndRotate(getUserLocation(), _mapController.camera.zoom, _mapController.camera.rotation);
+    }
+
+
+    if(!configController.isVehicleConfig.value && configController.selectedPedestrian != PersonalDeviceUserType.APEDALCYCLIST) {
+      return; // Skip all of the TIM logic if we are a not a vehicle or a cyclist. 
     }
 
     List<TravelerDataFrame> newActiveTims = [];
@@ -1058,6 +1060,8 @@ class MapState extends State<MapPage> {
             text = "Change in:\n > 1\n Minute";
           } else if (expectedMinTime < 0) {
             text = "Changing Now";
+          }else if (expectedMaxTime == expectedMinTime) {
+            text = "Change in:\n $expectedMinTime\n Seconds";
           }
         } else {
           int expectedMinTime = (next.minEndTime.millisecondsSinceEpoch - now.millisecondsSinceEpoch) ~/ 1000;
@@ -1086,10 +1090,20 @@ class MapState extends State<MapPage> {
     }
   }
 
+  int count = 0;
+  DateTime lastMarkerListUpdateTime = DateTime.now();
+
   List<Marker> getMarkerList() {
     List<Marker> markerList = [];
 
+    count +=1;
+    if(DateTime.now().difference(lastMarkerListUpdateTime).inMilliseconds > 1000){
+        lastMarkerListUpdateTime = DateTime.now();
+        count = 0;
+    }
+
     Position? pos = currentPosition;
+    
 
     if (pos != null) {
       Marker userMarker = Marker(
@@ -1179,6 +1193,7 @@ class MapState extends State<MapPage> {
         messageManager.shown.remove(key);
       }
     }
+    
     return markerList;
   }
 
@@ -1267,6 +1282,7 @@ class MapState extends State<MapPage> {
   }
 
   List<Polyline<PolyLineHitValue>> getPolylines() {
+    DateTime start = timingService.getTime();
     List<Polyline<PolyLineHitValue>> polylines = [];
 
     Position? pos = currentPosition;
@@ -1274,11 +1290,9 @@ class MapState extends State<MapPage> {
     if (pos != null) {
       // Get Maps that the user is near or in
       List<GeoMap> geoMaps = mapManager.getActiveMaps(pos.longitude, pos.latitude);
-
       for (GeoMap map in geoMaps) {
         List<IntersectionState> states =
             spatManager.getActiveSpats(map.intersectionGeometry.id.id.intersectionID, timingService.getTime());
-
         for (IntersectionState state in states) {
           // This code indexes light colors by signal group to allow easy lookup down the line
           Map<int, MovementEvent> stateMap = {};
@@ -1338,7 +1352,9 @@ class MapState extends State<MapPage> {
           }
         }
 
+        
         for (GenericLane lane in map.intersectionGeometry.laneSet.laneList) {
+          
           List<LatLng> laneCoordinates = geometryService.getLatLngCoordinatesFromNodeSetXY(
               lane.nodeList.nodeListXY as NodeSetXY, map.intersectionGeometry.refPoint);
 
@@ -1448,7 +1464,7 @@ class MapState extends State<MapPage> {
           ? Container(
               width: screenWidth,
               height: screenHeight,
-              color: lightGrey,
+              color: Theme.of(context).dialogBackgroundColor,
               child: Stack(alignment: AlignmentDirectional.topStart, children: [
                 Positioned(
                   top: 50,
@@ -1624,7 +1640,7 @@ class MapState extends State<MapPage> {
                       polygons: [...drawnPolygons, ...?_hoverGons],
                     ),
                     MarkerLayer(
-                      markers: getMarkerList(),
+                      markers: drawnMarkers,
                       rotate: true,
                     ),
                   ]),
@@ -1987,9 +2003,7 @@ class MapState extends State<MapPage> {
   Widget vehicleStatsPage() {
     return Padding(
         padding: const EdgeInsets.all(12.0),
-        child: (obdController.isConnected.value && obdController.vinCollected.value)
-            ? obdStatsDisplay()
-            : notConnectedToOBDPage());
+        child: (obdController.showOBDStats.value) ? obdStatsDisplay() : notConnectedToOBDPage());
   }
 
   Widget notConnectedToOBDPage() {
@@ -2006,57 +2020,173 @@ class MapState extends State<MapPage> {
                   verticalSpaceLarge,
                   SpinKitSpinningLines(color: Colors.black, size: 90)
                 ])
-              : ElevatedButton(
-                  onPressed: () async {
-                    bool successfulConnection = false;
-                    if (!obdController.bluetoothInitialized.value) {
-                      await obdController.initialize();
-                    }
-                    if (configController.selectedVehicle.value.obdIIBluetoothAddress != null) {
-                      obdConnecting.value = true;
-                      await obdController
-                          .connectToDevice(configController.selectedVehicle.value.obdIIBluetoothAddress!);
-
-                      if (obdController.isConnected.value) {
-                        successfulConnection = true;
-                        await obdController.startGettingData();
-                      }
-                    }
-                    if (!successfulConnection) {
-                      Device? device;
-
-                      device = await Get.dialog(bluetoothDialog());
-                      if (device != null) {
-                        obdConnecting.value = true;
-                        await obdController.connectToDevice(device.address);
-                        if (obdController.isConnected.value) {
-                          await obdController.startGettingData();
-                        }
-                      }
-                    }
-                    obdConnecting.value = false;
-                  },
-                  child: const Text("Connect to OBD-II"),
-                )),
+              : (obdController.isRunningAsRoot && Platform.isLinux) || !Platform.isLinux
+                  ? Column(
+                      children: [
+                        const Text("OBD-II Connection", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                        verticalSpaceSmall,
+                        const Text(
+                          "1. Ensure your OBD-II device is powered on and in range.\n"
+                          "2. Pair the OBD-II device with your computer or mobile device via the native Bluetooth menu.\n"
+                          "3. Click the button below to connect.",
+                        ),
+                        verticalSpaceSmall,
+                        ElevatedButton(
+                          onPressed: () async {
+                            if (Platform.isLinux) {
+                              await tryToConnectLinux();
+                            } else {
+                              await tryToConnect();
+                            }
+                          },
+                          child: const Text("Connect to OBD-II"),
+                        ),
+                      ],
+                    )
+                  : const Column(
+                      children: [
+                        Text(
+                            "OBD-II Connection is only available when running as root. Please re-launch the app with root privileges.",
+                            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                      ],
+                    )),
         ],
       ),
     );
   }
 
+  Future<void> tryToConnect() async {
+    bool successfulConnection = false;
+    if (!obdController.bluetoothInitialized.value) {
+      await obdController.initialize();
+    }
+    if (configController.selectedVehicle.value.obdIIBluetoothAddress != null) {
+      obdConnecting.value = true;
+      await obdController.connectToDevice(configController.selectedVehicle.value.obdIIBluetoothAddress!);
+
+      if (obdController.isConnected.value) {
+        successfulConnection = true;
+        await obdController.startGettingData();
+      }
+    }
+    if (!successfulConnection) {
+      Device? device;
+
+      device = await Get.dialog(bluetoothDialog());
+      if (device != null) {
+        obdConnecting.value = true;
+        await obdController.connectToDevice(device.address);
+        if (obdController.isConnected.value) {
+          await obdController.startGettingData();
+        }
+      }
+    }
+    obdConnecting.value = false;
+  }
+
+  Future<void> tryToConnectLinux() async {
+    bool successfulConnection = false;
+    if (configController.selectedVehicle.value.obdIIBluetoothAddress != null) {
+      obdConnecting.value = true;
+      obdController.setupRfcomm(configController.selectedVehicle.value.obdIIBluetoothAddress!);
+      // Wait for /dev/rfcomm0 to exist, then connect
+      int maxWaitMs = 10000; // 10 seconds max
+      int waited = 0;
+      const int pollInterval = 200;
+      while (!File('/dev/rfcomm0').existsSync() && waited < maxWaitMs) {
+        await Future.delayed(const Duration(milliseconds: pollInterval));
+        waited += pollInterval;
+      }
+      if (File('/dev/rfcomm0').existsSync()) {
+        await obdController.connectToPort();
+        // await Future.delayed(Duration(seconds: 2));
+        // await obdController.startGettingDataLinux();
+        // successfulConnection = true;
+        int maxWaitMs = 2000; //2 seconds max
+        int waited = 0;
+        const int pollInterval = 100;
+        while (!(obdController.port.isOpen) && waited < maxWaitMs) {
+          await Future.delayed(const Duration(milliseconds: pollInterval));
+          waited += pollInterval;
+        }
+        if (obdController.port.isOpen) {
+          await obdController.startGettingDataLinux();
+          successfulConnection = true;
+        } else {
+          addToAppLog("Timeout waiting for serial port to open");
+        }
+      } else {
+        // Handle timeout or error
+        addToAppLog("Timeout waiting for /dev/rfcomm0 to appear");
+      }
+    }
+    if (!successfulConnection) {
+      Device? device;
+
+      device = await Get.dialog(bluetoothDialog());
+      if (device != null) {
+        obdConnecting.value = true;
+        await obdController.setupRfcomm(device.address);
+        int maxWaitMs = 10000; // 10 seconds max
+        int waited = 0;
+        const int pollInterval = 200;
+        while (!File('/dev/rfcomm0').existsSync() && waited < maxWaitMs) {
+          await Future.delayed(Duration(milliseconds: pollInterval));
+          waited += pollInterval;
+        }
+        if (File('/dev/rfcomm0').existsSync()) {
+          await obdController.connectToPort();
+          int maxWaitMs = 2000; //2 seconds max
+          int waited = 0;
+          const int pollInterval = 100;
+          while (!(obdController.port.isOpen) && waited < maxWaitMs) {
+            await Future.delayed(const Duration(milliseconds: pollInterval));
+            waited += pollInterval;
+          }
+          if (obdController.port.isOpen) {
+            await obdController.startGettingDataLinux();
+            successfulConnection = true;
+          } else {
+            addToAppLog("Timeout waiting for serial port to open");
+          }
+        } else {
+          addToAppLog("Timeout waiting for /dev/rfcomm0 to appear");
+        }
+      }
+      obdConnecting.value = false;
+    }
+    if (!successfulConnection) {
+      toastification.show(
+        context: Get.context!,
+        title: const Text('Failed to connect to OBD-II device'),
+        description: const Text(
+          'Please ensure your OBD-II device is powered on, in range, and paired then try again.',
+        ),
+        type: ToastificationType.error,
+        autoCloseDuration: const Duration(seconds: 5),
+      );
+    }
+  }
+
   Widget obdStatsDisplay() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.start,
       children: [
         verticalSpaceMedium,
         Obx(() => SizedBox(
               width: screenWidth(context) * 0.8,
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
                 Text(
                   "${obdController.vehicleInfo.value?['Year'] ?? ''} ${obdController.vehicleInfo.value?['Make'] ?? ''} ${obdController.vehicleInfo.value?['Model'] ?? ''}",
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  "${obdController.vehicleInfo.value?['Type'] ?? ''}",
-                  style: TextStyle(fontSize: 16),
+                  obdController.vehicleInfo.value?['Type'] ?? '',
+                      style: const TextStyle(fontSize: 16),
                 ),
               ]),
             )),
@@ -2077,7 +2207,6 @@ class MapState extends State<MapPage> {
         width: 175,
         height: 175,
         decoration: BoxDecoration(
-          //color: Colors.black,
           gradient: LinearGradient(
             colors: [lightGrey, darkGrey],
             begin: Alignment.topLeft,
@@ -2098,7 +2227,6 @@ class MapState extends State<MapPage> {
               width: 160,
               height: 160,
               decoration: BoxDecoration(
-                //color: Color.fromARGB(255, 231, 231, 231),
                 gradient: RadialGradient(
                   colors: [Colors.black, darkGrey, Colors.white],
                   stops: const [0.9, 0.98, 1],
@@ -2114,7 +2242,7 @@ class MapState extends State<MapPage> {
                     shape: BoxShape.circle,
                   ),
                   child: Stack(children: [
-                    Align(
+                    const Align(
                       alignment: Alignment(0, 0.8),
                       child: Text("MPH", style: TextStyle(color: Colors.white, fontSize: 24)),
                     ),
@@ -2133,7 +2261,7 @@ class MapState extends State<MapPage> {
                     Center(
                       child: Obx(() => Text(
                             "${obdController.speed.value.round()}",
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 58.0,
                               color: Colors.white, // Fill color
                             ),
@@ -2151,7 +2279,6 @@ class MapState extends State<MapPage> {
         width: 175,
         height: 175,
         decoration: BoxDecoration(
-          //color: Colors.black,
           gradient: LinearGradient(
             colors: [lightGrey, darkGrey],
             begin: Alignment.topLeft,
@@ -2172,7 +2299,6 @@ class MapState extends State<MapPage> {
               width: 160,
               height: 160,
               decoration: BoxDecoration(
-                //color: Color.fromARGB(255, 231, 231, 231),
                 gradient: RadialGradient(
                   colors: [Colors.black, darkGrey, Colors.white],
                   stops: const [0.9, 0.98, 1],
@@ -2188,7 +2314,7 @@ class MapState extends State<MapPage> {
                     shape: BoxShape.circle,
                   ),
                   child: Stack(children: [
-                    Align(
+                    const Align(
                       alignment: Alignment(0, 0.8),
                       child: Text("RPM", style: TextStyle(color: Colors.white, fontSize: 24)),
                     ),

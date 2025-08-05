@@ -5,10 +5,13 @@ import 'package:asn1_plugin/j2735/2024/spat/movement_event.dart';
 import 'package:asn1_plugin/j2735/2024/spat/movement_state.dart';
 import 'package:asn1_plugin/j2735/2024/spat/spat.dart';
 import 'package:cv_mec/models/light_change_time.dart';
+import 'package:cv_mec/services/timing.dart';
+import 'package:get/get.dart';
 
 class SpatManager {
   Map<int, Spat> storedSpats = <int, Spat>{};
   Map<int, IntersectionState> storedIntersections = <int, IntersectionState>{};
+  Timing timingService = Get.find<Timing>();
 
   void addOrUpdate(Spat spat) {
 
@@ -16,9 +19,9 @@ class SpatManager {
       int stateId = state.id.id.intersectionID;
 
       
-
+      
       if(state.moy == null){
-        DateTime now = DateTime.now().toUtc();
+        DateTime now = timingService.getTime(); 
         if(state.timeStamp != null){
           DateTime yearStart = DateTime.utc(now.year, 1, 1);
           int minutes = now.difference(yearStart).inMinutes;

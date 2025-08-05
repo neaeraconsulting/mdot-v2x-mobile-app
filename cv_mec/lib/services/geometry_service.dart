@@ -7,6 +7,7 @@ import 'package:asn1_plugin/j2735/2024/common/node_llmd_64b.dart';
 import 'package:asn1_plugin/j2735/2024/common/node_set_xy.dart';
 import 'package:asn1_plugin/j2735/2024/common/node_xy.dart';
 import 'package:asn1_plugin/j2735/2024/common/position_3d.dart';
+import 'package:asn1_plugin/j2735/2024/traveler_information/direction_of_use.dart';
 import 'package:asn1_plugin/j2735/2024/traveler_information/distance_units.dart';
 import 'package:asn1_plugin/j2735/2024/traveler_information/geographical_path.dart';
 import 'package:asn1_plugin/j2735/2024/traveler_information/geometric_projection.dart';
@@ -35,14 +36,18 @@ class GeometryService {
       for (int j = 0; j < travelerDataFrame.regions.length; j++) {
 
         Geometry? timGeometry = getGeometryFromPath(travelerDataFrame.regions[j]);
+        List<LatLng>? latLngs = getLatLngCenterlineFromPath(travelerDataFrame.regions[j]);
          
         HeadingSlice? direction = travelerDataFrame.regions[j].direction;
+        DirectionOfUse? directionOfUse = travelerDataFrame.regions[j].directionality;
         if (travelerDataFrame.regions[j].description is GeometricProjection) {
           direction = (travelerDataFrame.regions[j].description as GeometricProjection).direction;
         }
 
+
+
         if (timGeometry != null) {
-          GeometryDirection geoDir = GeometryDirection(timGeometry, direction);
+          GeometryDirection geoDir = GeometryDirection(timGeometry, direction, latLngs, directionOfUse);
 
           timGeometryList.add(geoDir);
         }
@@ -51,6 +56,31 @@ class GeometryService {
     }
 
     return dataFrameRegions;
+  }
+
+
+  List<LatLng> getLatLngCenterlineFromPath(GeographicalPath path){
+    if (path.description is OffsetSystem && path.anchor != null && (path.closedPath == null || path.closedPath! == false)) {
+      OffsetSystem offsetSystem = path.description as OffsetSystem;
+      
+      if (offsetSystem.offset is NodeListXY) {
+        NodeListXY nodeListXY = offsetSystem.offset as NodeListXY;
+        if(nodeListXY.nodeListXY is NodeSetXY) {
+          return getLatLngCoordinatesFromNodeSetXY(nodeListXY.nodeListXY as NodeSetXY, path.anchor!);
+        } else if (nodeListXY.nodeListXY is ComputedLane) {
+          _logger.w("Unable to Parse Computed NodeListXY System. Not Supported");
+        } else {
+          _logger.w("Unable to Identify the Type of NodeListXY");
+        }
+      } else if (offsetSystem.offset is NodeListLL) {
+        return getLatLngCoordinatesFromNodeListLL(offsetSystem.offset as NodeListLL, path.anchor!);
+      } else {
+        _logger.w("Unable to Identify the Type of OffsetSystem");
+      }
+    }
+
+    // Centerlines are not well defined for circular TIM regions, or polygon TIM regions. They only work well for offset system paths.
+    return []; 
   }
 
   Geometry? getGeometryFromPath(GeographicalPath path) {
@@ -172,7 +202,7 @@ class GeometryService {
     }
   }
 
-  getGeometryFromGeometricProjection(GeometricProjection projection) {
+  Geometry getGeometryFromGeometricProjection(GeometricProjection projection) {
     // LatLng centerLatLng = position3DtoLatLng(projection.circle.center);
     // Coordinate centerCoordinate = Coordinate.fromYX(0, 0);
 
@@ -359,6 +389,13 @@ class GeometryService {
     List<Coordinate> coords = getCoordinatesFromNodeSetXY(nodeSetXY, anchor);
 
     return switchCoordinateListToLatLngList(convertCoordinatesToLatLng(coords, anchor));
+  }
+
+  List<LatLng> getLatLngCoordinatesFromNodeListLL(NodeListLL nodeListLL, Position3D anchor) {
+    List<Coordinate> coords = getCoordinatesNodeListLL(nodeListLL, anchor);
+
+    return switchCoordinateListToLatLngList(convertCoordinatesToLatLng(coords, anchor));
+
   }
 
   List<Coordinate> getCoordinatesFromNodeSetXY(NodeSetXY nodeSetXY, Position3D anchor) {

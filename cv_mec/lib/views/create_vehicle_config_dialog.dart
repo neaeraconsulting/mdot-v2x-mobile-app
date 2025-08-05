@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:bluetooth_classic/models/device.dart';
 import 'package:cv_mec/controllers/configuration_controller.dart';
 import 'package:cv_mec/models/vehicle.dart';
@@ -134,7 +135,7 @@ class CreateVehicleConfigDialog extends StatelessWidget {
                                     ),
                                     onPressed: () async {
                                       OBDController obdController = Get.find<OBDController>();
-                                      if (!obdController.bluetoothInitialized.value) {
+                                      if (!obdController.bluetoothInitialized.value && !Platform.isLinux) {
                                         await obdController.initialize();
                                       }
                                       Device? device = await Get.dialog(bluetoothDialog());
