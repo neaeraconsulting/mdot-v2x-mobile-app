@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/services/file_service.dart';
 import 'package:cv_mec/services/param_controller.dart';
@@ -160,7 +162,10 @@ class SettingsPage extends StatelessWidget {
               dropdownColor: Theme.of(Get.context!).scaffoldBackgroundColor,
               borderRadius: BorderRadius.circular(8),
               value: controller.gpsType.value,
-              items: controller.gpsTypes.map((GPSType type) {
+              items: (Platform.isLinux
+                ? controller.gpsTypes.sublist(0, controller.gpsTypes.length - 1)
+                : controller.gpsTypes
+              ).map((GPSType type) {
                 return DropdownMenuItem<GPSType>(
                   value: type,
                   child: Text(type.toString().split('.').last.toUpperCase()),
