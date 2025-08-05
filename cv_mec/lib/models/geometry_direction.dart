@@ -61,6 +61,6 @@ class GeometryDirection {
     // Direction should be set to the dot product of the heading vector and the path segment vector.
     // Values greater than 0 indicate the same direction, values less than 0 indicate the opposite direction.
     // values equal to 0 indicate that the point is perpendicular to the path segment.
-    return direction > 0;
+    return direction > cos(degToRadian(45)); // Allows angle to within 45 degrees of the path segment
   }
 }
