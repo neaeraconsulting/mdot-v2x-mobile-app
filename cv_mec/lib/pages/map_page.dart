@@ -734,9 +734,9 @@ class MapState extends State<MapPage> {
       DateTime objectTime =
           recTime.add(Duration(milliseconds: object.detObjCommon.measurementTime.mesurementTimeOffset));
 
-      geometryService.shiftLatLng(refPos, object.detObjCommon.pos.offsetX.getDistanceInMeters(),
+      LatLng shiftedPosition = geometryService.shiftLatLng(refPos, object.detObjCommon.pos.offsetX.getDistanceInMeters(),
           object.detObjCommon.pos.offsetY.getDistanceInMeters());
-      messageManager.addOrUpdate(ReceivedSdsm(id, objectTime, refPos, object.detObjCommon.objType));
+      messageManager.addOrUpdate(ReceivedSdsm(id, objectTime, shiftedPosition, object.detObjCommon.objType));
     }
 
     addToReceiveLog(topic, "SDSM", recTime, sendTime, sdsm.sDSMTimeStamp.getAsDateTime(), trimmedHex, source);
