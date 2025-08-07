@@ -1,3 +1,4 @@
+import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -18,7 +19,11 @@ class SecureStorage {
   static const _keyGPSUsername = 'gpsUsername';
   static const _keyGPSPassword = 'gpsPassword';
   static const _keyGPSIP = 'gpsIP';
-  static const _keyGPSMode = 'gpsMode';
+  static const _keyGPSType = 'gpsType';
+  static const _keyOBUIP = 'obuIP';
+  static const _keyManualRegistrationMode = "manualRegistrationMode";
+  static const _keyRegistrationLatitude = "registrationLatitude";
+  static const _keyRegistrationLongitude = "registrationLongitude";
 
   static const _keyS3Accesskey = "s3AccessKey";
   static const _keyS3SecretKey = "s3SecretKey";
@@ -35,9 +40,11 @@ class SecureStorage {
   static final _startVendorID = dotenv.env['VENDOR_ID']!;
   static final _startDeviceID = "";
 
+  static final _startGPSType = dotenv.env['GPS_TYPE'] ?? '';
   static final _startGPSUsername = dotenv.env['GPS_USERNAME'] ?? '';
   static final _startGPSPassword = dotenv.env['GPS_PASSWORD'] ?? '';
   static final _startGPSIP = dotenv.env['GPS_IP'] ?? '';
+  static final _startOBUIP = dotenv.env['OBU_IP'] ?? '';
 
   static final _startS3AccessKey = dotenv.env['S3_ACCESS_KEY'] ?? "";
   static final _startS3SecretKey = dotenv.env['S3_SECRET_KEY'] ?? "";
@@ -63,7 +70,14 @@ class SecureStorage {
   Future<String> getGPSUsername() async => (await _storage.read(key: _keyGPSUsername)) ?? _startGPSUsername;
   Future<String> getGPSPassword() async => (await _storage.read(key: _keyGPSPassword)) ?? _startGPSPassword;
   Future<String> getGPSIP() async => (await _storage.read(key: _keyGPSIP)) ?? _startGPSIP;
-  Future<bool> getGPSMode() async => (await _storage.read(key: _keyGPSMode)) == 'true';
+  Future<String> getOBUIP() async => (await _storage.read(key: _keyOBUIP)) ?? _startOBUIP;
+  Future<String> getGPSType() async => (await _storage.read(key: _keyGPSType)) ?? _startGPSType;
+  Future<bool> getManualRegistrationMode() async =>
+      (await _storage.read(key: _keyManualRegistrationMode)) == 'true';
+  Future<double> getRegistrationLatitude() async =>
+      double.tryParse(await _storage.read(key: _keyRegistrationLatitude) ?? "0.0") ?? 0.0;
+  Future<double> getRegistrationLongitude() async =>
+      double.tryParse(await _storage.read(key: _keyRegistrationLongitude) ?? "0.0") ?? 0.0;
 
   Future<void> setUsername(String username) async => await _storage.write(key: _keyUsername, value: username);
   Future<void> setPassword(String password) async => await _storage.write(key: _keyPassword, value: password);
@@ -75,7 +89,9 @@ class SecureStorage {
   Future<void> setGPSUsername(String v) => _storage.write(key: _keyGPSUsername, value: v);
   Future<void> setGPSPassword(String v) => _storage.write(key: _keyGPSPassword, value: v);
   Future<void> setGPSIP(String v) => _storage.write(key: _keyGPSIP, value: v);
-  Future<void> setGPSMode(bool v) async => await _storage.write(key: _keyGPSMode, value: v.toString());
+  Future<void> setOBUIP(String v) => _storage.write(key: _keyOBUIP, value: v);
+  Future<void> setGPSType(GPSType gpsType) async =>
+      await _storage.write(key: _keyGPSType, value: gpsType.toString().split('.').last);
   Future setVZMode(bool vzMode) async {
     if (vzMode) {
       await _storage.write(key: _keyVzMode, value: "true");
@@ -124,6 +140,22 @@ class SecureStorage {
     }
   }
 
+  Future setManualRegistrationModeEnabled(bool manualRegistrationModeEnabled) async {
+    if (manualRegistrationModeEnabled) {
+      await _storage.write(key: _keyManualRegistrationMode, value: "true");
+    } else {
+      await _storage.write(key: _keyManualRegistrationMode, value: "false");
+    }
+  }
+
+  Future setRegistrationLatitude(double latitude) async {
+    await _storage.write(key: _keyRegistrationLatitude, value: latitude.toString());
+  }
+
+  Future setRegistrationLongitude(double longitude) async {
+    await _storage.write(key: _keyRegistrationLongitude, value: longitude.toString());
+  }
+
   Future setPC5Enabled(bool pc5Enabled) async {
     if (pc5Enabled) {
       await _storage.write(key: _keyEnablePC5, value: "true");
@@ -131,6 +163,8 @@ class SecureStorage {
       await _storage.write(key: _keyEnablePC5, value: "false");
     }
   }
+
+
 
   Future<String> getS3AccessKey() async => await _storage.read(key: _keyS3Accesskey) ?? Future.value(_startS3AccessKey);
   Future<String> getS3SecretKey() async => await _storage.read(key: _keyS3SecretKey) ?? Future.value(_startS3SecretKey);

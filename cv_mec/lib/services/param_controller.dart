@@ -1,5 +1,10 @@
+import 'package:cv_mec/controllers/settings_controller.dart';
+import 'package:cv_mec/services/location_service.dart';
+import 'package:cv_mec/services/secure_storage.dart';
 import 'package:get/get.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 
 class ParamController extends GetxController {
   RxString clientType = ''.obs;
@@ -10,12 +15,20 @@ class ParamController extends GetxController {
   RxBool networkTypeToggle = true.obs;
   RxBool useFakePositionToggle = false.obs;
   bool usingFakePosition = false;
+
+  Rx<bool> manualRegistrationMode = false.obs;
   RxDouble registrationLatitude = 0.0.obs;
   RxDouble registrationLongitude = 0.0.obs;
+
   RxInt messageDelay = 0.obs;
   RxBool geoRelevanceOrPrivateToggle = true.obs; //false is geo, true is private
   bool geoRelevanceOrPrivate = true; //false is geo, true is private
   RxString privateDeviceID = ''.obs;
+
+  late double manualLatitude;
+  late double manualLongitude;
+
+  final SecureStorage secureStorage = SecureStorage();
 
   @override
   onInit() {
@@ -23,7 +36,7 @@ class ParamController extends GetxController {
     super.onInit();
   }
 
-  void loadDefaults() {
+  void loadDefaults() async {
     clientType.value = "Vehicle";
     clientSubtype.value = "PassengerCar";
     messageFormat.value = "j2735_gr";
@@ -33,17 +46,42 @@ class ParamController extends GetxController {
     usingFakePosition = false;
 
     // Set Default Registration Coordinates to TFHRC, load from .env file if available
-    registrationLatitude.value = dotenv.env['REGISTRATION_LATITUDE'] != null
-        ? double.tryParse(dotenv.env['REGISTRATION_LATITUDE']!) ?? 38.9555
-        : 38.9555;
-    registrationLongitude.value = dotenv.env['REGISTRATION_LONGITUDE'] != null
-        ? double.tryParse(dotenv.env['REGISTRATION_LONGITUDE']!) ?? -77.1494
-        : -77.1494;
+    manualRegistrationMode.value = await secureStorage.getManualRegistrationMode();
+    manualLatitude = await secureStorage.getRegistrationLatitude();
+    manualLongitude = await secureStorage.getRegistrationLongitude();
+    if (manualLatitude == 0.0) {
+      manualLatitude = double.parse(dotenv.env['REGISTRATION_LATITUDE']!);
+    }
+    if (manualLongitude == 0.0) {
+      manualLongitude = double.parse(dotenv.env['REGISTRATION_LONGITUDE']!);
+    }
+    if (manualRegistrationMode.value) {
+      registrationLatitude.value = manualLatitude;
+      registrationLongitude.value = manualLongitude;
+    } else {
+      LocationService locationService = Get.find<LocationService>();
+      Position? currentLocation = locationService.latestPosition;
+      registrationLatitude.value = currentLocation?.latitude ?? manualLatitude;
+      registrationLongitude.value = currentLocation?.longitude ?? manualLongitude;
+    }
 
     messageDelay.value = 1000;
     geoRelevanceOrPrivateToggle.value = true;
     geoRelevanceOrPrivate = true;
     privateDeviceID.value = "self";
+  }
+
+  Future<void> switchManualRegistrationMode() async{
+    manualRegistrationMode.value = !manualRegistrationMode.value;
+    if (manualRegistrationMode.value) {
+      registrationLatitude.value = manualLatitude;
+      registrationLongitude.value = manualLongitude;
+    } else {
+      LocationService locationService = Get.find<LocationService>();
+      Position? currentLocation = locationService.latestPosition;
+      registrationLatitude.value = currentLocation?.latitude ?? manualLatitude;
+      registrationLongitude.value = currentLocation?.longitude ?? manualLongitude;
+    }
   }
 
   void saveParams(
@@ -55,6 +93,7 @@ class ParamController extends GetxController {
       required double fakeLongitude,
       required int messageDelay,
       required String privateDeviceID}) {
+        print("Saving Params: $clientType, $clientSubtype, $messageFormat, $v2xType, $fakeLatitude, $fakeLongitude, $messageDelay, $privateDeviceID");
     this.clientType.value = clientType;
     this.clientSubtype.value = clientSubtype;
     this.messageFormat.value = messageFormat;

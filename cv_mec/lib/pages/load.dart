@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:cv_mec/pages/home_page.dart';
 import 'package:cv_mec/pages/missing_permissions.dart';
 import 'package:cv_mec/services/location_service.dart';
+import 'package:cv_mec/services/param_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -14,6 +15,7 @@ class Load extends StatelessWidget {
     if ((Platform.isAndroid || Platform.isIOS) && !(await locationService.isPermissionGranted())) {
       Get.off(() => const MissingPermissions());
     } else {
+      Get.put(ParamController(), permanent: true);
       Get.off(() => const HomePage());
     }
   }

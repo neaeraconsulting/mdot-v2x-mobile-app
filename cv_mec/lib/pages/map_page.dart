@@ -63,6 +63,7 @@ import 'package:cv_mec/models/light_change_time.dart';
 import 'package:cv_mec/models/utils.dart';
 import 'package:cv_mec/models/vehicle.dart';
 import 'package:cv_mec/services/api_service.dart';
+import 'package:cv_mec/services/gpsd_service.dart';
 import 'package:cv_mec/services/remote_gps.dart';
 import 'package:cv_mec/services/asn_service.dart';
 import 'package:cv_mec/services/aws_service.dart';
@@ -114,6 +115,7 @@ class MapState extends State<MapPage> {
   ASNService asnService = Get.find<ASNService>();
   ApiService apiService = Get.find<ApiService>();
   RemoteGPSService gpsService = Get.find<RemoteGPSService>();
+  GPSDService gpsdService = Get.find<GPSDService>();
   Timing timingService = Get.find<Timing>();
   FileService fileService = Get.find<FileService>();
   MqttService mqtt = Get.find<MqttService>(tag: MqttService.etxTag);
@@ -252,7 +254,7 @@ class MapState extends State<MapPage> {
         return;
       }
 
-      if(settingsController.remoteGPS.value) {
+      if(settingsController.gpsType.value == GPSType.cradle) {
         int gpsConnected = await checkRemoteGPSConnection();
         if (gpsConnected != 0) {
           addToAppLog("COULDN'T CONNECT TO GPS");
@@ -263,36 +265,38 @@ class MapState extends State<MapPage> {
 
       if (debugMode) {
         TravelerInformation itswcTim1 = asnService.decodeTim(TestData.itswcTim1);
-      timManager.addOrUpdate(itswcTim1, TestData.itswcTim1);
+        timManager.addOrUpdate(itswcTim1, TestData.itswcTim1);
 
-      TravelerInformation itswcTim2 = asnService.decodeTim(TestData.itswcTim2);
-      timManager.addOrUpdate(itswcTim2, TestData.itswcTim2);
+        TravelerInformation itswcTim2 = asnService.decodeTim(TestData.itswcTim2);
+        timManager.addOrUpdate(itswcTim2, TestData.itswcTim2);
 
-      TravelerInformation itswcTim3 = asnService.decodeTim(TestData.itswcTim3);
-      timManager.addOrUpdate(itswcTim3, TestData.itswcTim3);
+        TravelerInformation itswcTim3 = asnService.decodeTim(TestData.itswcTim3);
+        timManager.addOrUpdate(itswcTim3, TestData.itswcTim3);
 
-      TravelerInformation itswcTim4 = asnService.decodeTim(TestData.itswcTim4);
-      timManager.addOrUpdate(itswcTim4, TestData.itswcTim4);
+        TravelerInformation itswcTim4 = asnService.decodeTim(TestData.itswcTim4);
+        timManager.addOrUpdate(itswcTim4, TestData.itswcTim4);
         // tfhrcStaticPosition
         positionStream = fakePosition(TestData.tfhrcFakePosition).listen(updatePosition);
       } else if (settingsController.demoMode.value) {
         positionStream = fakePosition(TestData.tfhrcFakePosition).listen(updatePosition);
-      } else if (!(Platform.isAndroid || Platform.isIOS)) {
-        // Force Linux Builds to use Remote GPS
-        positionStream = gpsService.positionStream(interval: const Duration(milliseconds: 500)).listen(
-              updatePosition,
-              onError: (err) => showError("GPS stream error: $err"),
-            );
-      } else {
-        if (settingsController.remoteGPS.value) {
+      } else if (settingsController.gpsType.value == GPSType.cradle) {
+          print("Using Cradle GPS");
           positionStream = gpsService.positionStream(interval: const Duration(milliseconds: 500)).listen(
                 updatePosition,
                 onError: (err) => showError("GPS stream error: $err"),
               );
-        } else {
-          positionStream = locationService.locationStream.listen(updatePosition);
-        }
+      } else if (settingsController.gpsType.value == GPSType.obu) {
+        print("Using OBU GPS");
+        gpsdService.connectToGPSD(settingsController.obuIP.value, 2947);
+        positionStream = gpsdService.locationStream.stream.listen(
+          updatePosition,
+          onError: (err) => showError("GPSD stream error: $err"),
+        );
+      } else {
+        print("Using Mobile GPS");
+        positionStream = locationService.locationStream.listen(updatePosition);
       }
+        
 
       if (Platform.isIOS) {
         await flutterTts.setSharedInstance(true);

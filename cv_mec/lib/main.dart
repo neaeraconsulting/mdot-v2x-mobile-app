@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cv_mec/pages/load.dart';
+import 'package:cv_mec/services/gpsd_service.dart';
 import 'package:cv_mec/services/vehicle_notification_manager.dart';
 import 'package:cv_mec/styles/theme_setting.dart';
 import 'package:flutter/material.dart';
@@ -32,15 +33,16 @@ void main() async {
   Get.put(LocationService());
   Get.put(Timing());
   Get.put(FileService());
-  Get.put(SettingsController());
+  SettingsController settingsController =Get.put(SettingsController());
+  await settingsController.initialize();
   Get.put(ConfigurationController());
-  Get.put(ParamController());
   Get.put(GeometryService());
   Get.put(MqttService(), tag: MqttService.etxTag);
   Get.put(MqttService(), tag: MqttService.pc5Tag);
   Get.put(ASNService());
   Get.put(ApiService());
   Get.put(RemoteGPSService());
+  Get.put(GPSDService());
   Get.put(OBDController());
   Get.put(S3Service());
 

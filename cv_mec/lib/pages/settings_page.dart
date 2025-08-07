@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/services/file_service.dart';
+import 'package:cv_mec/services/param_controller.dart';
 import 'package:cv_mec/services/vehicle_notification_manager.dart';
 import 'package:cv_mec/styles/app_colors.dart';
 import 'package:cv_mec/styles/spacing.dart';
@@ -9,6 +12,7 @@ import 'package:get/get.dart';
 
 class SettingsPage extends StatelessWidget {
   SettingsController controller = Get.find<SettingsController>();
+  ParamController paramController = Get.find<ParamController>();
   TextEditingController usernameController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   TextEditingController baseUriController = TextEditingController();
@@ -17,7 +21,11 @@ class SettingsPage extends StatelessWidget {
   TextEditingController gpsIPController = TextEditingController();
   TextEditingController gpsUsernameController = TextEditingController();
   TextEditingController gpsPasswordController = TextEditingController();
+  TextEditingController obuIPController = TextEditingController();
   TextEditingController pc5BrokerUrlController = TextEditingController();
+  TextEditingController registrationLatitudeController = TextEditingController();
+  TextEditingController registrationLongitudeController = TextEditingController();
+
 
   FileService fileService = Get.find<FileService>();
 
@@ -29,10 +37,14 @@ class SettingsPage extends StatelessWidget {
     baseUriController.text = controller.baseUri.value;
     vendorIDController.text = controller.vendorID.value;
     deviceIDController.text = controller.deviceID.value;
-    gpsIPController.text = controller.gpsIP.value;
-    gpsUsernameController.text = controller.gpsUsername.value;
-    gpsPasswordController.text = controller.gpsPassword.value;
+    gpsIPController.text = controller.cradleGPSIP.value;
+    gpsUsernameController.text = controller.cradleGPSUsername.value;
+    gpsPasswordController.text = controller.cradleGPSPassword.value;
+    obuIPController.text = controller.obuIP.value;
     pc5BrokerUrlController.text = controller.pc5BrokerUrl.value;
+    registrationLatitudeController.text = paramController.manualLatitude.toString();
+    registrationLongitudeController.text = paramController.manualLongitude.toString();
+
     return Scaffold(
         appBar: AppBar(
           title: const Text("Settings Page"),
@@ -141,56 +153,89 @@ class SettingsPage extends StatelessWidget {
       children: [
         headerElement("Configuration", Icons.settings),
         verticalSpaceMedium,
-        Obx(() => SwitchListTile(
-            title: const Text("Enable Remote GPS"),
-            value: controller.remoteGPS.value,
-            onChanged: (value) async {
-              if (value != controller.remoteGPS.value) {
-                controller.remoteGPS.value = value;
-                await controller.secureStorage.setGPSMode(value);
-              }
-            })),
-        verticalSpaceMedium,
-        Obx(() => controller.remoteGPS.value
+        Obx(() => Row(
+          children: [
+            const SizedBox(width: 14),
+            const Text("GPS Mode: ", style: TextStyle(fontSize: 16)),
+            Expanded(child: Container()),
+            DropdownButton<GPSType>(  
+              dropdownColor: Theme.of(Get.context!).scaffoldBackgroundColor,
+              borderRadius: BorderRadius.circular(8),
+              value: controller.gpsType.value,
+              items: (Platform.isLinux
+                ? controller.gpsTypes.sublist(0, controller.gpsTypes.length - 1)
+                : controller.gpsTypes
+              ).map((GPSType type) {
+                return DropdownMenuItem<GPSType>(
+                  value: type,
+                  child: Text(type.toString().split('.').last.toUpperCase()),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) { 
+                  controller.gpsType.value = value;
+                  controller.secureStorage.setGPSType(value);
+                }
+              },
+            ),
+          ],
+        )),
+        verticalSpaceSmall,
+        Obx(() => controller.gpsType.value == GPSType.cradle
             ? Column(children: [
                 TextField(
                   decoration: const InputDecoration(labelText: 'GPS IP'),
                   controller: gpsIPController,
                   obscureText: false,
                   onChanged: (value) async {
-                    if (value != controller.gpsIP.value) {
-                      controller.gpsIP.value = value;
+                    if (value != controller.cradleGPSIP.value) {
+                      controller.cradleGPSIP.value = value;
                       await controller.secureStorage.setGPSIP(value);
                     }
                   },
                 ),
-                verticalSpaceMedium,
+                verticalSpaceSmall,
                 TextField(
                   decoration: const InputDecoration(labelText: 'GPS Username'),
                   controller: gpsUsernameController,
                   obscureText: true,
                   onChanged: (value) async {
-                    if (value != controller.gpsUsername.value) {
-                      controller.gpsUsername.value = value;
+                    if (value != controller.cradleGPSUsername.value) {
+                      controller.cradleGPSUsername.value = value;
                       await controller.secureStorage.setGPSUsername(value);
                     }
                   },
                 ),
-                verticalSpaceMedium,
+                verticalSpaceSmall,
                 TextField(
                   decoration: const InputDecoration(labelText: 'GPS Password'),
                   controller: gpsPasswordController,
                   obscureText: true,
                   onChanged: (value) async {
-                    if (value != controller.gpsUsername.value) {
-                      controller.gpsPassword.value = value;
+                    if (value != controller.cradleGPSPassword.value) {
+                      controller.cradleGPSPassword.value = value;
                       await controller.secureStorage.setGPSPassword(value);
                     }
                   },
                 ),
               ])
             : const SizedBox.shrink()),
-        verticalSpaceMedium,
+        Obx(() => controller.gpsType.value == GPSType.obu
+            ? Column(children: [
+                TextField(
+                  decoration: const InputDecoration(labelText: 'OBU IP'),
+                  controller: obuIPController,
+                  obscureText: false,
+                  onChanged: (value) async {
+                    if (value != controller.obuIP.value) {
+                      controller.obuIP.value = value;
+                      await controller.secureStorage.setOBUIP(value);
+                    }
+                  },
+                ),
+              ])
+            : const SizedBox.shrink()),
+        verticalSpaceSmall,
         SwitchListTile(
             title: const Text("Use PC5 MQTT Broker"),
             value: controller.enablePC5.value,
@@ -213,7 +258,47 @@ class SettingsPage extends StatelessWidget {
                 },
               )
             : const SizedBox.shrink()),
-        verticalSpaceMedium,
+        verticalSpaceSmall,
+        Obx(() => SwitchListTile(
+            title: const Text("Enable Manual Registration"),
+            value: paramController.manualRegistrationMode.value,
+            onChanged: (value) async {
+              if (value != paramController.manualRegistrationMode.value) {
+                //paramController.manualRegistrationMode.value = value;
+                await paramController.switchManualRegistrationMode();
+                await controller.secureStorage.setManualRegistrationModeEnabled(value);
+              }
+            })),
+        Obx(() => paramController.manualRegistrationMode.value
+            ? Column(
+              children: [
+                TextField(
+                    decoration: const InputDecoration(labelText: 'Registration Latitude'),
+                    controller: registrationLatitudeController,
+                    onChanged: (value) async {
+                      if (value != paramController.registrationLatitude.value.toString()) {
+                        paramController.manualLatitude = double.tryParse(value) ?? 0.0;
+                        paramController.registrationLatitude.value = double.tryParse(value) ?? 0.0;
+                        await controller.secureStorage.setRegistrationLatitude(paramController.registrationLatitude.value);
+                      }
+                    },
+                  ),
+                verticalSpaceSmall,
+                TextField(
+                  decoration: const InputDecoration(labelText: 'Registration Longitude'),
+                  controller: registrationLongitudeController,
+                  onChanged: (value) async {
+                    if (value != paramController.registrationLongitude.value.toString()) {
+                      paramController.manualLongitude = double.tryParse(value) ?? 0.0;
+                      paramController.registrationLongitude.value = double.tryParse(value) ?? 0.0;
+                      await controller.secureStorage.setRegistrationLongitude(paramController.registrationLongitude.value);
+                    }
+                  },
+                )
+              ],
+            )
+            : Container()),
+        verticalSpaceSmall,
         Obx(() => SwitchListTile(
             title: const Text("VZ Mode"),
             value: controller.vzMode.value,
@@ -223,7 +308,7 @@ class SettingsPage extends StatelessWidget {
                 await controller.secureStorage.setVZMode(value);
               }
             })),
-        verticalSpaceMedium,
+        verticalSpaceSmall,
         Obx(() => SwitchListTile(
             title: const Text("Enable Notifications"),
             value: controller.notificationsEnabled.value,
@@ -238,7 +323,7 @@ class SettingsPage extends StatelessWidget {
                 }
               }
             })),
-        verticalSpaceMedium,
+        verticalSpaceSmall,
         Obx(() => SwitchListTile(
             title: const Text("Read Messages"),
             value: controller.readMessages.value,
@@ -248,7 +333,7 @@ class SettingsPage extends StatelessWidget {
                 await controller.secureStorage.setReadMessages(value);
               }
             })),
-        verticalSpaceMedium,
+        verticalSpaceSmall,
         Obx(() => SwitchListTile(
             title: const Text("Enable Demo Mode"),
             value: controller.demoMode.value,

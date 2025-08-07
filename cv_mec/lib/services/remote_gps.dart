@@ -29,7 +29,7 @@ class RemoteGPSService extends GetxController {
   }
 
   Future getToken() async {
-    final uri = Uri.https(settingsController.gpsIP.value, '/api/v1/auth/tokens');
+    final uri = Uri.https(settingsController.cradleGPSIP.value, '/api/v1/auth/tokens');
     final client = _createInsecureClient();
 
     final response = await client.post(
@@ -39,7 +39,7 @@ class RemoteGPSService extends GetxController {
         'Content-Type': 'application/vnd.api+json',
       },
       body:
-          jsonEncode({'login': settingsController.gpsUsername.value, 'password': settingsController.gpsPassword.value}),
+          jsonEncode({'login': settingsController.cradleGPSUsername.value, 'password': settingsController.cradleGPSPassword.value}),
     );
 
     if (response.statusCode != 200) {
@@ -57,7 +57,7 @@ class RemoteGPSService extends GetxController {
   }
 
   Future<Map<String, dynamic>> getInfo(Map<String, String> headers) async {
-    final uri = Uri.https(settingsController.gpsIP.value, '/api/v1/db/get');
+    final uri = Uri.https(settingsController.cradleGPSIP.value, '/api/v1/db/get');
     final client = _createInsecureClient();
 
     final payload = [
