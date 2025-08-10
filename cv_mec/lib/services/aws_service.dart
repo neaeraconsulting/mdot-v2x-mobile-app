@@ -2,11 +2,15 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:aws_s3_upload_lite/aws_s3_upload_lite.dart';
 import 'package:cv_mec/controllers/settings_controller.dart';
+import 'package:cv_mec/services/timing.dart';
 import 'package:get/get.dart';
+import 'package:logger/logger.dart';
 import 'package:path/path.dart' as path;
 
 class S3Service extends GetxService {
   final SettingsController settings = Get.find<SettingsController>();
+  final timingService = Get.find<Timing>();
+  Logger _logger = Logger();
 
   Future<bool> uploadFile(String filePath, String directory) async {
     final bucket = settings.s3BucketName.value;
@@ -15,10 +19,16 @@ class S3Service extends GetxService {
     final original = File(filePath);
     if (!await original.exists()) return false;
 
+    DateTime now = timingService.getTime();
+
+    final gzName = "${removeExtension(path.basename(filePath))}_${now.millisecondsSinceEpoch}.${getExtension(filePath)}.gz";
+
+
+
     // Compress
     final uploadDir = path.join(path.dirname(filePath), 'upload');
     await Directory(uploadDir).create(recursive: true);
-    final gzPath = path.join(uploadDir, '${path.basename(filePath)}.gz');
+    final gzPath = path.join(uploadDir, gzName);
     final bytes = await original.readAsBytes();
     final gzBytes = GZipEncoder().encode(bytes)!;
     final gzFile = await File(gzPath).writeAsBytes(gzBytes);
@@ -35,10 +45,28 @@ class S3Service extends GetxService {
         contentType: 'application/gzip',
       );
 
+      _logger.i("File Uploaded with Result: $result");
+
       final code = int.tryParse(result);
       return true;
     } catch (e) {
       return false;
     }
+  }
+
+  String removeExtension(String filename) {
+    final dotIndex = filename.lastIndexOf('.');
+    if (dotIndex != -1) {
+      return filename.substring(0, dotIndex);
+    }
+    return filename; // No extension found
+  }
+
+  String getExtension(String filename) {
+    final dotIndex = filename.lastIndexOf('.');
+    if (dotIndex != -1) {
+      return filename.substring(dotIndex+1);
+    }
+    return filename; // No extension found
   }
 }
