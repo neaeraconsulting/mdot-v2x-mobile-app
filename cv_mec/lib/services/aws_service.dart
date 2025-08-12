@@ -4,11 +4,13 @@ import 'package:aws_s3_upload_lite/aws_s3_upload_lite.dart';
 import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/services/timing.dart';
 import 'package:get/get.dart';
+import 'package:logger/logger.dart';
 import 'package:path/path.dart' as path;
 
 class S3Service extends GetxService {
   final SettingsController settings = Get.find<SettingsController>();
   final timingService = Get.find<Timing>();
+  Logger _logger = Logger();
 
   Future<bool> uploadFile(String filePath, String directory) async {
     final bucket = settings.s3BucketName.value;
@@ -42,6 +44,8 @@ class S3Service extends GetxService {
         filename:    path.basename(gzFile.path),
         contentType: 'application/gzip',
       );
+
+      _logger.i("File Uploaded with Result: $result");
 
       final code = int.tryParse(result);
       return true;
