@@ -256,10 +256,26 @@ class GeometryService {
     return shiftLatLng(anchor, coordinate.y, coordinate.x);
   }
 
+  // This function is wrong. The angle calculated in this function appears to be in reference to East,
+  // with positive rotation being counter-clockwise, instead of referencing North with positive rotation being clockwise.
+  // This is used in multiple locations, so additional review is required before making any changes.
+  // A new function called shiftLatLngByMeters has been created which implements the geospatial calculations correctly.
+  // marking this function as deprecated to prevent additional usage. 
+  @deprecated
   LatLng shiftLatLng(LatLng point, double metersNorth, double metersEast) {
+    
     double degrees = atan2(metersNorth, metersEast) * 180.0 / pi;
     double distance = sqrt(pow(metersNorth, 2) + pow(metersEast, 2));
     LatLng destinationPoints = geodesy.destinationPointByDistanceAndBearing(point, distance, degrees);
+    return destinationPoints;
+  }
+
+  LatLng shiftLatLngByMeters(LatLng point, double metersNorth, double metersEast) {
+    
+    double degreesFromNorth = 90 - atan2(metersNorth, metersEast) * 180.0 / pi;
+    print("Shifting $degreesFromNorth");
+    double distance = sqrt(pow(metersNorth, 2) + pow(metersEast, 2));
+    LatLng destinationPoints = geodesy.destinationPointByDistanceAndBearing(point, distance, degreesFromNorth);
     return destinationPoints;
   }
 

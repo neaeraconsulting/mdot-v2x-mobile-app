@@ -441,7 +441,7 @@ class MapState extends State<MapPage> {
     appLogQueue = DataQueue("APP_LOG_${logTime.millisecondsSinceEpoch}.log");
     timDataQueue = DataQueue("TIM_LOG_${logTime.millisecondsSinceEpoch}.csv");
     String subHeader =
-        "topic,message_type,receive_time_ms,send_time_ms,generation_time_ms,send_rec_delta_time_ms,gen_rec_delta_time_ms,longitude,latitude,broker,msg_bytes\n";
+        "topic,message_type,receive_time_ms,send_time_ms,generation_time_ms,send_rec_delta_time_ms,gen_rec_delta_time_ms,longitude,latitude,broker,msg_bytes,msg_source\n";
     String pubHeader = "topic,send_time_ms,longitude,latitude,broker,msg_bytes\n";
     String timHeader = "action,time,longitude,latitude,heading,asn1\n";
 
@@ -727,14 +727,14 @@ class MapState extends State<MapPage> {
     sdsm.sDSMTimeStamp.second ??= DSecond(recTime.second);
 
     LatLng refPos = LatLng(sdsm.refPos.lat.getDecimalLatitude(), sdsm.refPos.long.getDecimalLongitude());
-    int msgCount = sdsm.msgCnt.msgCount;
+
 
     for (DetectedObjectData object in sdsm.objects.objects) {
       String id = "${sdsm.sourceID}_${object.detObjCommon.objectID.objectID}";
       DateTime objectTime =
           recTime.add(Duration(milliseconds: object.detObjCommon.measurementTime.mesurementTimeOffset));
 
-      LatLng shiftedPosition = geometryService.shiftLatLng(refPos, object.detObjCommon.pos.offsetX.getDistanceInMeters(),
+      LatLng shiftedPosition = geometryService.shiftLatLngByMeters(refPos, object.detObjCommon.pos.offsetX.getDistanceInMeters(),
           object.detObjCommon.pos.offsetY.getDistanceInMeters());
       messageManager.addOrUpdate(ReceivedSdsm(id, objectTime, shiftedPosition, object.detObjCommon.objType));
     }
