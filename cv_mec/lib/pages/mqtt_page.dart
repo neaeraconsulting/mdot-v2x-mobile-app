@@ -594,7 +594,7 @@ class _MQTTTestingState extends State<MQTTTesting> {
       pubDataQueue = DataQueue("MQTT_PUB_LOG_${logTime.millisecondsSinceEpoch}.csv");
       addToAppLog("Saving Records to ${recDataQueue!.fileName}");
       String subHeader =
-          "topic,message_type,receive_time_ms,send_time_ms,generation_time_ms,send_rec_delta_time_ms,gen_rec_delta_time_ms,longitude,latitude,broker,msg_bytes\n";
+          "topic,message_type,receive_time_ms,send_time_ms,generation_time_ms,send_rec_delta_time_ms,gen_rec_delta_time_ms,longitude,latitude,broker,msg_bytes,msg_source\n";
 
       recDataQueue!.addItem(subHeader);
 

@@ -731,14 +731,14 @@ class MapState extends State<MapPage> {
     sdsm.sDSMTimeStamp.second ??= DSecond(recTime.second);
 
     LatLng refPos = LatLng(sdsm.refPos.lat.getDecimalLatitude(), sdsm.refPos.long.getDecimalLongitude());
-    int msgCount = sdsm.msgCnt.msgCount;
+
 
     for (DetectedObjectData object in sdsm.objects.objects) {
       String id = "${sdsm.sourceID}_${object.detObjCommon.objectID.objectID}";
       DateTime objectTime =
           recTime.add(Duration(milliseconds: object.detObjCommon.measurementTime.mesurementTimeOffset));
 
-      LatLng shiftedPosition = geometryService.shiftLatLng(refPos, object.detObjCommon.pos.offsetX.getDistanceInMeters(),
+      LatLng shiftedPosition = geometryService.shiftLatLngByMeters(refPos, object.detObjCommon.pos.offsetX.getDistanceInMeters(),
           object.detObjCommon.pos.offsetY.getDistanceInMeters());
       messageManager.addOrUpdate(ReceivedSdsm(id, objectTime, shiftedPosition, object.detObjCommon.objType));
     }
