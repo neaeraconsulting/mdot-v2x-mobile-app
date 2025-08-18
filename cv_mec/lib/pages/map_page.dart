@@ -161,7 +161,7 @@ class MapState extends State<MapPage> {
 
   late DataQueue recDataQueue;
   late DataQueue pubDataQueue;
-  late DataQueue appLogQueue;
+  late DataQueue appDataQueue;
   late DataQueue timDataQueue;
 
   final LayerHitNotifier<HitValue> _hitNotifier = ValueNotifier(null);
@@ -433,12 +433,12 @@ class MapState extends State<MapPage> {
     });
   }
 
-  Future<int> enableLogging() async {
+  void createDataQueues(){
     DateTime logTime = timingService.getTime();
 
     recDataQueue = DataQueue("MQTT_SUB_LOG_${logTime.millisecondsSinceEpoch}.csv");
     pubDataQueue = DataQueue("MQTT_PUB_LOG_${logTime.millisecondsSinceEpoch}.csv");
-    appLogQueue = DataQueue("APP_LOG_${logTime.millisecondsSinceEpoch}.log");
+    appDataQueue = DataQueue("APP_LOG_${logTime.millisecondsSinceEpoch}.log");
     timDataQueue = DataQueue("TIM_LOG_${logTime.millisecondsSinceEpoch}.csv");
     String subHeader =
         "topic,message_type,receive_time_ms,send_time_ms,generation_time_ms,send_rec_delta_time_ms,gen_rec_delta_time_ms,longitude,latitude,broker,msg_bytes,msg_source\n";
@@ -448,9 +448,13 @@ class MapState extends State<MapPage> {
     recDataQueue.addItem(subHeader);
     pubDataQueue.addItem(pubHeader);
     timDataQueue.addItem(timHeader);
+  }
 
+  Future<int> enableLogging() async {
+    
+    createDataQueues();
     uploadTimer = Timer.periodic(Duration(minutes: 5), (timer) {
-      uploadAllLogs();
+      rotateAndUploadLogs();
     });
 
     return 0;
@@ -777,7 +781,7 @@ class MapState extends State<MapPage> {
 
   void addToAppLog(String message) {
     _logger.i("APPLOG: $message");
-    appLogQueue.addItem("$message\n");
+    appDataQueue.addItem("$message\n");
   }
 
   void startSendingBSM() {
@@ -1415,17 +1419,28 @@ class MapState extends State<MapPage> {
     }
   }
 
-  void uploadAllLogs() {
+  void rotateAndUploadLogs() {
+
+
+    String recDataPath = recDataQueue.filePath;
+    String pubDataPath = pubDataQueue.filePath;
+    String timDataPath = timDataQueue.filePath;
+    String appDataPath = appDataQueue.filePath;
+
+    // Assigns new Data Queue objects for each log. Rotate before upload to ensure no data is lost
+    createDataQueues();
+
+
     if (settingsController.deviceID.value.isNotEmpty) {
-      awsService.uploadFile(recDataQueue.filePath, "subscribe/${settingsController.deviceID.value}");
-      awsService.uploadFile(pubDataQueue.filePath, "publish/${settingsController.deviceID.value}");
-      awsService.uploadFile(pubDataQueue.filePath, "tim/${settingsController.deviceID.value}");
-      awsService.uploadFile(pubDataQueue.filePath, "app/${settingsController.deviceID.value}");
+      awsService.uploadFile(recDataPath, "subscribe/${settingsController.deviceID.value}");
+      awsService.uploadFile(pubDataPath, "publish/${settingsController.deviceID.value}");
+      awsService.uploadFile(timDataPath, "tim/${settingsController.deviceID.value}");
+      awsService.uploadFile(appDataPath, "app/${settingsController.deviceID.value}");
     } else if (registration != null) {
-      awsService.uploadFile(recDataQueue.filePath, "subscribe/${registration!.deviceID}");
-      awsService.uploadFile(pubDataQueue.filePath, "publish/${registration!.deviceID}");
-      awsService.uploadFile(pubDataQueue.filePath, "tim/${registration!.deviceID}");
-      awsService.uploadFile(pubDataQueue.filePath, "app/${registration!.deviceID}");
+      awsService.uploadFile(recDataPath, "subscribe/${registration!.deviceID}");
+      awsService.uploadFile(pubDataPath, "publish/${registration!.deviceID}");
+      awsService.uploadFile(timDataPath, "tim/${registration!.deviceID}");
+      awsService.uploadFile(appDataPath, "app/${registration!.deviceID}");
     } else {
       addToAppLog("Cannot Upload Logs - Device ID is Unavailable");
     }
@@ -1740,7 +1755,7 @@ class MapState extends State<MapPage> {
           ElevatedButton(
             onPressed: () {
               addToAppLog("Upload Log Files");
-              uploadAllLogs();
+              rotateAndUploadLogs();
             },
             style: ElevatedButton.styleFrom(
               shape: const CircleBorder(),
