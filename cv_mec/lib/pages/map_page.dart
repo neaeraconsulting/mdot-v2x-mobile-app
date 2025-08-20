@@ -177,9 +177,9 @@ class MapState extends State<MapPage> {
     MovementPhaseState.STOP_THEN_PROCEED: Image.asset("assets/images/Lights/traffic-light-icon-red-flashing.png"),
     MovementPhaseState.STOP_AND_REMAIN: Image.asset("assets/images/Lights/traffic-light-icon-red.png"),
     MovementPhaseState.PRE_MOVEMENT: Image.asset("assets/images/Lights/traffic-light-yellow-red.png"),
-    MovementPhaseState.PERMISSIVE_MOVEMENT_ALLOWED: Image.asset("assets/images/Lights/traffic-light-icon-yellow.png"),
+    MovementPhaseState.PERMISSIVE_MOVEMENT_ALLOWED: Image.asset("assets/images/Lights/traffic-light-icon-green.png"),
     MovementPhaseState.PROTECTED_MOVEMENT_ALLOWED: Image.asset("assets/images/Lights/traffic-light-icon-green.png"),
-    MovementPhaseState.PROTECTED_CLEARANCE: Image.asset("assets/images/Lights/traffic-light-icon-green.png"),
+    MovementPhaseState.PROTECTED_CLEARANCE: Image.asset("assets/images/Lights/traffic-light-icon-yellow.png"),
     MovementPhaseState.PERMISSIVE_CLEARANCE: Image.asset("assets/images/Lights/traffic-light-icon-yellow.png"),
     MovementPhaseState.CAUTION_CONFLICTING_TRAFFIC: Image.asset("assets/images/Lights/traffic-light-icon-yellow.png")
   };
