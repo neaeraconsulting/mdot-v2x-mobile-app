@@ -189,7 +189,7 @@ class MapState extends State<MapPage> {
   late Image currentLightState;
   late String nextLightText = "";
 
-  bool debugMode = false;
+  bool debugMode = true;
   bool showLoadingIcon = true;
   bool showLightText = true;
 
@@ -276,24 +276,21 @@ class MapState extends State<MapPage> {
         TravelerInformation itswcTim4 = asnService.decodeTim(TestData.itswcTim4);
         timManager.addOrUpdate(itswcTim4, TestData.itswcTim4);
         // tfhrcStaticPosition
-        positionStream = fakePosition(TestData.tfhrcFakePosition).listen(updatePosition);
+        positionStream = fakePosition(TestData.cdotFakePos8803).listen(updatePosition);
       } else if (settingsController.demoMode.value) {
         positionStream = fakePosition(TestData.tfhrcFakePosition).listen(updatePosition);
       } else if (settingsController.gpsType.value == GPSType.cradle) {
-          print("Using Cradle GPS");
           positionStream = gpsService.positionStream(interval: const Duration(milliseconds: 500)).listen(
                 updatePosition,
                 onError: (err) => showError("GPS stream error: $err"),
               );
       } else if (settingsController.gpsType.value == GPSType.obu) {
-        print("Using OBU GPS");
         gpsdService.connectToGPSD(settingsController.obuIP.value, 2947);
         positionStream = gpsdService.locationStream.stream.listen(
           updatePosition,
           onError: (err) => showError("GPSD stream error: $err"),
         );
       } else {
-        print("Using Mobile GPS");
         positionStream = locationService.locationStream.listen(updatePosition);
       }
         
@@ -312,7 +309,7 @@ class MapState extends State<MapPage> {
       }
     });
 
-    updateMapGraphics();
+    updateGraphics();
     setState(() {
       showLoadingIcon = true;
     });
@@ -321,7 +318,7 @@ class MapState extends State<MapPage> {
   }
   
 
-  void updateMapGraphics(){
+  void updateGraphics(){
     if (mounted) {
       if(DateTime.now().difference(lastRedrawTime).inMilliseconds > 50){ //DateTime.now used since timing service accuracy not required, and may not be initialized yet.
         setState(() {
@@ -400,7 +397,7 @@ class MapState extends State<MapPage> {
 
   Stream<Position> fakePosition(List<List<double>> fakePosition) {
     return Stream<Position>.periodic(const Duration(milliseconds: 500), (count) {
-      List<List<double>> route = fakePosition;
+      List<List<double>> route = fakePosition.reversed.toList();
       int index = count % route.length;
       int prevIndex = (count - 1) % route.length;
 
@@ -680,7 +677,7 @@ class MapState extends State<MapPage> {
 
     spatManager.addOrUpdate(spat);
 
-    updateMapGraphics();
+    updateGraphics();
     DateTime? spatGenTime;
     if (spat.intersections.intersectionStateList.isNotEmpty) {
       spatGenTime = spat.intersections.intersectionStateList.first.getUtcTime();
@@ -696,7 +693,7 @@ class MapState extends State<MapPage> {
 
     mapManager.addOrUpdate(map);
 
-    updateMapGraphics();
+    updateGraphics();
 
     addToReceiveLog(topic, "MAP", recTime, sendTime, LeidosDateExtraction.extractDateFromMap(map), trimmedHex, source);
   }
@@ -706,7 +703,7 @@ class MapState extends State<MapPage> {
         hex, asnService.TIM_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
     TravelerInformation tim = asnService.decodeTim(trimmedHex);
     timManager.addOrUpdate(tim, hex);
-    updateMapGraphics();
+    updateGraphics();
     DateTime? generationTime = LeidosDateExtraction.extractDateFromTim(tim);
     Future.delayed(const Duration(milliseconds: 0), () async {
       String messageType = "TIM";
@@ -885,7 +882,8 @@ class MapState extends State<MapPage> {
     prevKronos = kronos;
     prevLocal = now;
 
-    updateMapGraphics();
+    updateGraphics();
+    updateTimeToChange();
 
     if (followUser) {
       _mapController.moveAndRotate(getUserLocation(), _mapController.camera.zoom, _mapController.camera.rotation);
@@ -946,8 +944,6 @@ class MapState extends State<MapPage> {
       frames = timManager.getTimsToShow(
           position.longitude, position.latitude, position.heading, false, settingsController.demoMode.value);
     }
-
-    updateTimeToChange();
 
     List<ItisCode> codes = await timManager.getItisRepresentationForDataFrames(frames);
     List<ItisCode> msgs = messageManager.convertToItisCodes(
@@ -1094,17 +1090,8 @@ class MapState extends State<MapPage> {
     }
   }
 
-  int count = 0;
-  DateTime lastMarkerListUpdateTime = DateTime.now();
-
   List<Marker> getMarkerList() {
     List<Marker> markerList = [];
-
-    count +=1;
-    if(DateTime.now().difference(lastMarkerListUpdateTime).inMilliseconds > 1000){
-        lastMarkerListUpdateTime = DateTime.now();
-        count = 0;
-    }
 
     Position? pos = currentPosition;
     
