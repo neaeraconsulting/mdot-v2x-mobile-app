@@ -189,7 +189,7 @@ class MapState extends State<MapPage> {
   late Image currentLightState;
   late String nextLightText = "";
 
-  bool debugMode = true;
+  bool debugMode = false;
   bool showLoadingIcon = true;
   bool showLightText = true;
 
@@ -1164,8 +1164,8 @@ class MapState extends State<MapPage> {
       }
     }
     DateTime compTime = timingService.getTime();
-    DateTime endTime = compTime.add(const Duration(seconds: 1));
-    DateTime startTime = compTime.subtract(const Duration(seconds: 1));
+    DateTime endTime = compTime.add(const Duration(seconds: 3));
+    DateTime startTime = compTime.subtract(const Duration(seconds: 3));
 
     List<String> removeKeys = [];
     for (String key in messageManager.receivedMsgs.keys) {

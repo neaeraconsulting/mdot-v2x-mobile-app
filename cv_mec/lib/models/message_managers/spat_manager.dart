@@ -73,8 +73,8 @@ class SpatManager {
       Spat spat = storedSpats[spatKey]!;
 
       for (IntersectionState state in spat.intersections.intersectionStateList) {
-        if (state.getUtcTime().isAfter(now.subtract(const Duration(seconds: 1))) &&
-            state.getUtcTime().isBefore(now.add(const Duration(seconds: 1)))) {
+        if (state.getUtcTime().isAfter(now.subtract(const Duration(seconds: 3))) &&
+            state.getUtcTime().isBefore(now.add(const Duration(seconds: 3)))) {
           states.add(state);
         }
       }
