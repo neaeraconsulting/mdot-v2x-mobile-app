@@ -461,7 +461,7 @@ class MapState extends State<MapPage> {
   Future<int> enableLogging() async {
     
     createDataQueues();
-    uploadTimer = Timer.periodic(Duration(minutes: 5), (timer) {
+    uploadTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
       rotateAndUploadLogs();
     });
 
@@ -1425,6 +1425,7 @@ class MapState extends State<MapPage> {
 
   void rotateAndUploadLogs() {
 
+    addToAppLog("Rotating Log File. Current Time ${timingService.getTime()}");
 
     String recDataPath = recDataQueue.filePath;
     String pubDataPath = pubDataQueue.filePath;
@@ -1433,6 +1434,8 @@ class MapState extends State<MapPage> {
 
     // Assigns new Data Queue objects for each log. Rotate before upload to ensure no data is lost
     createDataQueues();
+
+    addToAppLog("Log Rotation Complete. Current Time ${timingService.getTime()}");
 
 
     if (settingsController.deviceID.value.isNotEmpty) {
