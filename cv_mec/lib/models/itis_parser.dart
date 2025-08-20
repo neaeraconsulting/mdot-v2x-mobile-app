@@ -199,6 +199,10 @@ class ItisParser {
           AssetImage("$imageDirectory/$onlyTravelIfAbsolutelyNecessary.png")),
       fallingRocks: ItisCode.withImage(
           fallingRocks, "Falling Rocks", [ITIScodes(fallingRocks)], AssetImage("$imageDirectory/$fallingRocks.png")),
+      rightLaneClosedAhead: ItisCode.withImage(rightLaneClosedAhead, "Right Lane Closed Ahead", [ITIScodes(rightLaneClosedAhead)],
+          AssetImage("$imageDirectory/$rightLaneClosedAhead.png")),
+      leftLaneClosedAhead: ItisCode.withImage(leftLaneClosedAhead, "Left Lane Closed Ahead", [ITIScodes(leftLaneClosedAhead)],
+          AssetImage("$imageDirectory/$leftLaneClosedAhead.png")),
     };
 
     basicWorkZoneCodeMap = {
