@@ -245,6 +245,8 @@ class MapState extends State<MapPage> {
         return;
       }
 
+      await createGPSStream();
+
       if (settingsController.enablePC5.value) {
         connectToPC5Broker();
       }
@@ -261,39 +263,7 @@ class MapState extends State<MapPage> {
         }
       }
 
-      updateConnectedStatus(ConnectedStatus.CONNECTED);
-
-      if (debugMode) {
-        TravelerInformation itswcTim1 = asnService.decodeTim(TestData.itswcTim1);
-        timManager.addOrUpdate(itswcTim1, TestData.itswcTim1);
-
-        TravelerInformation itswcTim2 = asnService.decodeTim(TestData.itswcTim2);
-        timManager.addOrUpdate(itswcTim2, TestData.itswcTim2);
-
-        TravelerInformation itswcTim3 = asnService.decodeTim(TestData.itswcTim3);
-        timManager.addOrUpdate(itswcTim3, TestData.itswcTim3);
-
-        TravelerInformation itswcTim4 = asnService.decodeTim(TestData.itswcTim4);
-        timManager.addOrUpdate(itswcTim4, TestData.itswcTim4);
-        // tfhrcStaticPosition
-        positionStream = fakePosition(TestData.cdotFakePos8803).listen(updatePosition);
-      } else if (settingsController.demoMode.value) {
-        positionStream = fakePosition(TestData.tfhrcFakePosition).listen(updatePosition);
-      } else if (settingsController.gpsType.value == GPSType.cradle) {
-          positionStream = gpsService.positionStream(interval: const Duration(milliseconds: 500)).listen(
-                updatePosition,
-                onError: (err) => showError("GPS stream error: $err"),
-              );
-      } else if (settingsController.gpsType.value == GPSType.obu) {
-        gpsdService.connectToGPSD(settingsController.obuIP.value, 2947);
-        positionStream = gpsdService.locationStream.stream.listen(
-          updatePosition,
-          onError: (err) => showError("GPSD stream error: $err"),
-        );
-      } else {
-        positionStream = locationService.locationStream.listen(updatePosition);
-      }
-        
+      updateConnectedStatus(ConnectedStatus.CONNECTED);  
 
       if (Platform.isIOS) {
         await flutterTts.setSharedInstance(true);
@@ -315,6 +285,45 @@ class MapState extends State<MapPage> {
     });
 
      obdController.checkRootStatus();
+  }
+
+  Future<void> createGPSStream() async{
+    Stream<Position> stream;
+    if (debugMode) {
+        TravelerInformation itswcTim1 = asnService.decodeTim(TestData.itswcTim1);
+        timManager.addOrUpdate(itswcTim1, TestData.itswcTim1);
+
+        TravelerInformation itswcTim2 = asnService.decodeTim(TestData.itswcTim2);
+        timManager.addOrUpdate(itswcTim2, TestData.itswcTim2);
+
+        TravelerInformation itswcTim3 = asnService.decodeTim(TestData.itswcTim3);
+        timManager.addOrUpdate(itswcTim3, TestData.itswcTim3);
+
+        TravelerInformation itswcTim4 = asnService.decodeTim(TestData.itswcTim4);
+        timManager.addOrUpdate(itswcTim4, TestData.itswcTim4);
+        // tfhrcStaticPosition
+        stream = fakePosition(TestData.cdotFakePos8803);
+      } else if (settingsController.demoMode.value) {
+        stream = fakePosition(TestData.tfhrcFakePosition);
+      } else if (settingsController.gpsType.value == GPSType.cradle) {
+        stream = gpsService.positionStream(interval: const Duration(milliseconds: 500));
+      } else if (settingsController.gpsType.value == GPSType.obu) {
+        gpsdService.connectToGPSD(settingsController.obuIP.value, 2947);
+        stream = gpsdService.locationStream.stream;
+      } else {
+        stream = locationService.locationStream;
+      }
+
+      stream.listen(updatePosition);
+      if(currentPosition == null){
+        try{
+          await stream.first;
+        }catch(e){
+          // Catch exception in case stream has already been listened to.
+        }
+        
+      }     
+      
   }
   
 
