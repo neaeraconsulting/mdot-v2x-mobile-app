@@ -43,7 +43,7 @@ class IconManager {
       ReceivedPsm psm = (msg as ReceivedPsm);
       return getIconForPSM(psm.deviceType, psm.workerType);
     }
-    return error;
+    return unknown;
   }
 
   static IconData getIconForBSM(VehicleType type) {
@@ -68,7 +68,7 @@ class IconManager {
     } else if (type == VehicleType.OTHER) {
       return tractor;
     } else {
-      return error;
+      return car;
     }
   }
 
@@ -76,13 +76,13 @@ class IconManager {
     if (type == ObjectType.unknown) {
       return unknown;
     } else if (type == ObjectType.vehicle) {
-      return Icons.directions_car;
+      return car;
     } else if (type == ObjectType.vru) {
-      return Icons.directions_walk;
+      return pedestrian;
     } else if (type == ObjectType.animal) {
-      return Icons.pets;
+      return animal;
     } else {
-      return Icons.bug_report;
+      return unknown;
     }
   }
 
@@ -111,6 +111,6 @@ class IconManager {
     } else if (userType == PersonalDeviceUserType.ANANIMAL) {
       return animal;
     }
-    return error;
+    return person;
   }
 }
