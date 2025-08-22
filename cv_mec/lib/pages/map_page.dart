@@ -292,40 +292,28 @@ class MapState extends State<MapPage> {
   Future<void> createGPSStream() async{
     Stream<Position> stream;
     if (debugMode) {
-        // TravelerInformation itswcTim1 = asnService.decodeTim(TestData.itswcTim1);
-        // timManager.addOrUpdate(itswcTim1, TestData.itswcTim1);
+      stream = fakePosition(TestData.itswcFakePosition);
+    } else if (settingsController.demoMode.value) {
+      stream = fakePosition(TestData.tfhrcFakePosition);
+    } else if (settingsController.gpsType.value == GPSType.cradle) {
+      stream = gpsService.positionStream(interval: const Duration(milliseconds: 500));
+    } else if (settingsController.gpsType.value == GPSType.obu) {
+      gpsdService.connectToGPSD(settingsController.obuIP.value, 2947);
+      stream = gpsdService.locationStream.stream;
+    } else {
+      stream = locationService.locationStream;
+    }
 
-        // TravelerInformation itswcTim2 = asnService.decodeTim(TestData.itswcTim2);
-        // timManager.addOrUpdate(itswcTim2, TestData.itswcTim2);
-
-        // TravelerInformation itswcTim3 = asnService.decodeTim(TestData.itswcTim3);
-        // timManager.addOrUpdate(itswcTim3, TestData.itswcTim3);
-
-        // TravelerInformation itswcTim4 = asnService.decodeTim(TestData.itswcTim4);
-        // timManager.addOrUpdate(itswcTim4, TestData.itswcTim4);
-        // tfhrcStaticPosition
-        stream = fakePosition(TestData.itswcFakePosition);
-      } else if (settingsController.demoMode.value) {
-        stream = fakePosition(TestData.tfhrcFakePosition);
-      } else if (settingsController.gpsType.value == GPSType.cradle) {
-        stream = gpsService.positionStream(interval: const Duration(milliseconds: 500));
-      } else if (settingsController.gpsType.value == GPSType.obu) {
-        gpsdService.connectToGPSD(settingsController.obuIP.value, 2947);
-        stream = gpsdService.locationStream.stream;
-      } else {
-        stream = locationService.locationStream;
+    stream.listen(updatePosition);
+    if(currentPosition == null){
+      try{
+        await stream.first;
+      }on StateError catch(e){
+        // Catch exception in case stream has already been listened to.
+        _logger.w("caught error with stream.first called on existing stream");
       }
-
-      stream.listen(updatePosition);
-      if(currentPosition == null){
-        try{
-          await stream.first;
-        }catch(e){
-          // Catch exception in case stream has already been listened to.
-        }
-        
-      }     
       
+    }     
   }
   
 
