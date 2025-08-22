@@ -273,7 +273,6 @@ class GeometryService {
   LatLng shiftLatLngByMeters(LatLng point, double metersNorth, double metersEast) {
     
     double degreesFromNorth = 90 - atan2(metersNorth, metersEast) * 180.0 / pi;
-    print("Shifting $degreesFromNorth");
     double distance = sqrt(pow(metersNorth, 2) + pow(metersEast, 2));
     LatLng destinationPoints = geodesy.destinationPointByDistanceAndBearing(point, distance, degreesFromNorth);
     return destinationPoints;

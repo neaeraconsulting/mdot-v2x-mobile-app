@@ -177,7 +177,7 @@ class MapState extends State<MapPage> {
     MovementPhaseState.STOP_THEN_PROCEED: Image.asset("assets/images/Lights/traffic-light-icon-red-flashing.png"),
     MovementPhaseState.STOP_AND_REMAIN: Image.asset("assets/images/Lights/traffic-light-icon-red.png"),
     MovementPhaseState.PRE_MOVEMENT: Image.asset("assets/images/Lights/traffic-light-yellow-red.png"),
-    MovementPhaseState.PERMISSIVE_MOVEMENT_ALLOWED: Image.asset("assets/images/Lights/traffic-light-icon-yellow.png"),
+    MovementPhaseState.PERMISSIVE_MOVEMENT_ALLOWED: Image.asset("assets/images/Lights/traffic-light-icon-green.png"),
     MovementPhaseState.PROTECTED_MOVEMENT_ALLOWED: Image.asset("assets/images/Lights/traffic-light-icon-green.png"),
     MovementPhaseState.PROTECTED_CLEARANCE: Image.asset("assets/images/Lights/traffic-light-icon-yellow.png"),
     MovementPhaseState.PERMISSIVE_CLEARANCE: Image.asset("assets/images/Lights/traffic-light-icon-yellow.png"),
@@ -245,6 +245,8 @@ class MapState extends State<MapPage> {
         return;
       }
 
+      await createGPSStream();
+
       if (settingsController.enablePC5.value) {
         connectToPC5Broker();
       }
@@ -261,42 +263,9 @@ class MapState extends State<MapPage> {
         }
       }
 
-      updateConnectedStatus(ConnectedStatus.CONNECTED);
+      
 
-      if (debugMode) {
-        TravelerInformation itswcTim1 = asnService.decodeTim(TestData.itswcTim1);
-        timManager.addOrUpdate(itswcTim1, TestData.itswcTim1);
-
-        TravelerInformation itswcTim2 = asnService.decodeTim(TestData.itswcTim2);
-        timManager.addOrUpdate(itswcTim2, TestData.itswcTim2);
-
-        TravelerInformation itswcTim3 = asnService.decodeTim(TestData.itswcTim3);
-        timManager.addOrUpdate(itswcTim3, TestData.itswcTim3);
-
-        TravelerInformation itswcTim4 = asnService.decodeTim(TestData.itswcTim4);
-        timManager.addOrUpdate(itswcTim4, TestData.itswcTim4);
-        // tfhrcStaticPosition
-        positionStream = fakePosition(TestData.tfhrcFakePosition).listen(updatePosition);
-      } else if (settingsController.demoMode.value) {
-        positionStream = fakePosition(TestData.tfhrcFakePosition).listen(updatePosition);
-      } else if (settingsController.gpsType.value == GPSType.cradle) {
-          print("Using Cradle GPS");
-          positionStream = gpsService.positionStream(interval: const Duration(milliseconds: 500)).listen(
-                updatePosition,
-                onError: (err) => showError("GPS stream error: $err"),
-              );
-      } else if (settingsController.gpsType.value == GPSType.obu) {
-        print("Using OBU GPS");
-        gpsdService.connectToGPSD(settingsController.obuIP.value, 2947);
-        positionStream = gpsdService.locationStream.stream.listen(
-          updatePosition,
-          onError: (err) => showError("GPSD stream error: $err"),
-        );
-      } else {
-        print("Using Mobile GPS");
-        positionStream = locationService.locationStream.listen(updatePosition);
-      }
-        
+      updateConnectedStatus(ConnectedStatus.CONNECTED);  
 
       if (Platform.isIOS) {
         await flutterTts.setSharedInstance(true);
@@ -312,16 +281,43 @@ class MapState extends State<MapPage> {
       }
     });
 
-    updateMapGraphics();
+    updateGraphics();
     setState(() {
       showLoadingIcon = true;
     });
 
      obdController.checkRootStatus();
   }
+
+  Future<void> createGPSStream() async{
+    Stream<Position> stream;
+    if (debugMode) {
+      stream = fakePosition(TestData.itswcFakePosition);
+    } else if (settingsController.demoMode.value) {
+      stream = fakePosition(TestData.tfhrcFakePosition);
+    } else if (settingsController.gpsType.value == GPSType.cradle) {
+      stream = gpsService.positionStream(interval: const Duration(milliseconds: 500));
+    } else if (settingsController.gpsType.value == GPSType.obu) {
+      gpsdService.connectToGPSD(settingsController.obuIP.value, 2947);
+      stream = gpsdService.locationStream.stream;
+    } else {
+      stream = locationService.locationStream;
+    }
+
+    stream.listen(updatePosition);
+    if(currentPosition == null){
+      try{
+        await stream.first;
+      }on StateError catch(e){
+        // Catch exception in case stream has already been listened to.
+        _logger.w("caught error with stream.first called on existing stream");
+      }
+      
+    }     
+  }
   
 
-  void updateMapGraphics(){
+  void updateGraphics(){
     if (mounted) {
       if(DateTime.now().difference(lastRedrawTime).inMilliseconds > 50){ //DateTime.now used since timing service accuracy not required, and may not be initialized yet.
         setState(() {
@@ -400,7 +396,7 @@ class MapState extends State<MapPage> {
 
   Stream<Position> fakePosition(List<List<double>> fakePosition) {
     return Stream<Position>.periodic(const Duration(milliseconds: 500), (count) {
-      List<List<double>> route = fakePosition;
+      List<List<double>> route = fakePosition.reversed.toList();
       int index = count % route.length;
       int prevIndex = (count - 1) % route.length;
 
@@ -453,7 +449,7 @@ class MapState extends State<MapPage> {
   Future<int> enableLogging() async {
     
     createDataQueues();
-    uploadTimer = Timer.periodic(Duration(minutes: 5), (timer) {
+    uploadTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
       rotateAndUploadLogs();
     });
 
@@ -523,8 +519,14 @@ class MapState extends State<MapPage> {
       vzString = "non-VZ";
     }
 
-    mqttConnectionURL = await apiService.getConnection(token, registration!.deviceID,
+    if(paramController.manualRegistrationMode.value || currentPosition == null){
+      mqttConnectionURL = await apiService.getConnection(token, registration!.deviceID,
         paramController.registrationLatitude.value, paramController.registrationLongitude.value, vzString);
+    }else{
+      mqttConnectionURL = await apiService.getConnection(token, registration!.deviceID,
+        currentPosition!.latitude, currentPosition!.longitude, vzString);
+    }
+    
 
     int result = await mqtt.connect(mqttConnectionURL!, registration!);
     if (result != 0) {
@@ -680,7 +682,7 @@ class MapState extends State<MapPage> {
 
     spatManager.addOrUpdate(spat);
 
-    updateMapGraphics();
+    updateGraphics();
     DateTime? spatGenTime;
     if (spat.intersections.intersectionStateList.isNotEmpty) {
       spatGenTime = spat.intersections.intersectionStateList.first.getUtcTime();
@@ -696,7 +698,7 @@ class MapState extends State<MapPage> {
 
     mapManager.addOrUpdate(map);
 
-    updateMapGraphics();
+    updateGraphics();
 
     addToReceiveLog(topic, "MAP", recTime, sendTime, LeidosDateExtraction.extractDateFromMap(map), trimmedHex, source);
   }
@@ -706,7 +708,7 @@ class MapState extends State<MapPage> {
         hex, asnService.TIM_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
     TravelerInformation tim = asnService.decodeTim(trimmedHex);
     timManager.addOrUpdate(tim, hex);
-    updateMapGraphics();
+    updateGraphics();
     DateTime? generationTime = LeidosDateExtraction.extractDateFromTim(tim);
     Future.delayed(const Duration(milliseconds: 0), () async {
       String messageType = "TIM";
@@ -885,7 +887,8 @@ class MapState extends State<MapPage> {
     prevKronos = kronos;
     prevLocal = now;
 
-    updateMapGraphics();
+    updateGraphics();
+    updateTimeToChange();
 
     if (followUser) {
       _mapController.moveAndRotate(getUserLocation(), _mapController.camera.zoom, _mapController.camera.rotation);
@@ -946,8 +949,6 @@ class MapState extends State<MapPage> {
       frames = timManager.getTimsToShow(
           position.longitude, position.latitude, position.heading, false, settingsController.demoMode.value);
     }
-
-    updateTimeToChange();
 
     List<ItisCode> codes = await timManager.getItisRepresentationForDataFrames(frames);
     List<ItisCode> msgs = messageManager.convertToItisCodes(
@@ -1094,17 +1095,8 @@ class MapState extends State<MapPage> {
     }
   }
 
-  int count = 0;
-  DateTime lastMarkerListUpdateTime = DateTime.now();
-
   List<Marker> getMarkerList() {
     List<Marker> markerList = [];
-
-    count +=1;
-    if(DateTime.now().difference(lastMarkerListUpdateTime).inMilliseconds > 1000){
-        lastMarkerListUpdateTime = DateTime.now();
-        count = 0;
-    }
 
     Position? pos = currentPosition;
     
@@ -1160,8 +1152,8 @@ class MapState extends State<MapPage> {
       }
     }
     DateTime compTime = timingService.getTime();
-    DateTime endTime = compTime.add(const Duration(seconds: 1));
-    DateTime startTime = compTime.subtract(const Duration(seconds: 1));
+    DateTime endTime = compTime.add(const Duration(seconds: 3));
+    DateTime startTime = compTime.subtract(const Duration(seconds: 3));
 
     List<String> removeKeys = [];
     for (String key in messageManager.receivedMsgs.keys) {
@@ -1421,6 +1413,7 @@ class MapState extends State<MapPage> {
 
   void rotateAndUploadLogs() {
 
+    addToAppLog("Rotating Log File. Current Time ${timingService.getTime()}");
 
     String recDataPath = recDataQueue.filePath;
     String pubDataPath = pubDataQueue.filePath;
@@ -1429,6 +1422,8 @@ class MapState extends State<MapPage> {
 
     // Assigns new Data Queue objects for each log. Rotate before upload to ensure no data is lost
     createDataQueues();
+
+    addToAppLog("Log Rotation Complete. Current Time ${timingService.getTime()}");
 
 
     if (settingsController.deviceID.value.isNotEmpty) {
