@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:core';
 import 'package:asn1_plugin/j2735/2024/choice/choice_content.dart';
 import 'package:asn1_plugin/j2735/2024/common/speed_limit.dart';
@@ -10,11 +11,16 @@ import 'package:asn1_plugin/j2735/2024/traveler_information/generic_signage.dart
 import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_data_frame.dart';
 import 'package:asn1_plugin/j2735/2024/traveler_information/work_zone.dart';
 import 'package:cv_mec/models/itis_code.dart';
+import 'package:cv_mec/models/tim_definition.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
 
 class ItisParser {
+
+  late Map<String, Map<String,ItisCode>> timMap;
+
+
   final int speedLimit = 268;
   final int accident = 513;
   final int incident = 531;
@@ -96,6 +102,10 @@ class ItisParser {
   late final Map<int, ItisCode> speedMap;
 
   ItisParser() {
+    
+
+
+
     basicAdvisioryCodeMap = {
       accident:
           ItisCode.withImage(accident, "Accident", [ITIScodes(accident)], AssetImage("$imageDirectory/$accident.png")),
@@ -219,6 +229,36 @@ class ItisParser {
     speedAdvisoryMap = {};
     speedMap = {};
   }
+
+  Future<Map<String, Map<String,ItisCode>>> loadTims() async {
+    final String jsonString = await rootBundle.loadString('assets/tims.json');
+    final Map<String, dynamic> json = jsonDecode(jsonString);
+
+    Map<String, Map<String,ItisCode>> codes = {};
+
+    var timsList = json['tims'] as List;
+    List<TimDefinition> tims = timsList.map((t) => TimDefinition.fromJson(t)).toList();
+    for(TimDefinition def in tims){
+      
+    }
+
+
+
+
+    
+    return codes;
+  }
+
+
+  // String getKeyForTim(String category, List<int> itisCodes){
+  //   String key = "${category}_";
+  //   for(int code in itisCodes){
+
+  //   }
+
+  // }
+
+
 
   Future<ItisCode> getItisRepresentation(TravelerDataFrame frame) async {
     Choice_Content content = frame.content;
