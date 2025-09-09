@@ -26,7 +26,7 @@ class TimManager {
     if (tim.packetID != null) {
       String packetID = ASNService.bytesToHex(tim.packetID!.uniqueMSGID);
       if (storedTims.containsKey(packetID)) {
-        if (isMessageUpdate(tim, packetID)) {
+        if (isMessageUpdate(tim, storedTims[packetID]!)) {
           removeTim(packetID);
           Map<TravelerDataFrame, DataFrameGeometry> newGeometryEntries = geometryService.getTimPolyRegion(tim);
 
@@ -218,14 +218,17 @@ class TimManager {
     return endTime;
   }
 
-  bool isMessageUpdate(TravelerInformation tim, String packetID) {
-    int storedMessageCount = storedTims[packetID]!.msgCnt.msgCount;
+  bool isMessageUpdate(TravelerInformation tim, TravelerInformation oldTim) {
+    int storedMessageCount = oldTim.msgCnt.msgCount;
     int newMessageCount = tim.msgCnt.msgCount;
 
     if (storedMessageCount < newMessageCount) {
       return true; // Base case
-    } else if (storedMessageCount > 120 && newMessageCount < 5) {
-      return true; // handle rollover case
+    } else if (storedMessageCount > 120 && newMessageCount < 10) {
+        if(tim.timestamp!=null && (oldTim.timestamp == null || tim.timestamp!.minuteOfTheYear > oldTim.timestamp!.minuteOfTheYear)){
+          return true;
+        }
+      return false; // handle rollover case
     } else {
       return false; // not an update
     }
