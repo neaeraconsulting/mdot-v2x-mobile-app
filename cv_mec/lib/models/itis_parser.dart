@@ -83,6 +83,17 @@ class ItisParser {
   final int minItisSmallNumber = 12545;
   final int crossing = 13585;
 
+  //units
+  final int inches = 8709;
+  final int feet = 8710;
+  final int mile = 8711;
+  final int miles = 8712;
+  final int nauticalMiles = 8713;
+  final int millimeters = 8714;
+  final int meters = 8715;
+  final int kilometer = 8716;
+  final int kilometers = 8717;
+
   final String imageDirectory = "assets/images/ITIS";
 
   // Font Packs are Bitmap versions of .ttf fonts. They can be converted here: https://ttf2fnt.com/
@@ -90,6 +101,8 @@ class ItisParser {
   final String font72Path = "assets/fonts/HighwayGothic_72.zip";
   final String font48Path = "assets/fonts/HighwayGothic_48.zip";
   final String font40Path = "assets/fonts/HighwayGothic_40.zip";
+  final String font32Path = "assets/fonts/HighwayGothic_32.zip";
+  final String font24Path = "assets/fonts/HighwayGothic_24.zip";
 
   late final Map<int, ItisCode> basicAdvisioryCodeMap;
   late final Map<int, ItisCode> basicWorkZoneCodeMap;
@@ -100,6 +113,8 @@ class ItisParser {
   late final Map<int, ItisCode> speedAdvisoryMap;
   late final Map<int, ItisCode> speedAheadMap;
   late final Map<int, ItisCode> speedMap;
+
+  late final Map<int, ItisCode> heightAdvisoryMap;
 
   ItisParser() {
     
@@ -194,6 +209,10 @@ class ItisParser {
           AssetImage("$imageDirectory/$onlyTravelIfAbsolutelyNecessary.png")),
       fallingRocks: ItisCode.withImage(
           fallingRocks, "Falling Rocks", [ITIScodes(fallingRocks)], AssetImage("$imageDirectory/$fallingRocks.png")),
+      rightLaneClosedAhead: ItisCode.withImage(rightLaneClosedAhead, "Right Lane Closed Ahead", [ITIScodes(rightLaneClosedAhead)],
+          AssetImage("$imageDirectory/$rightLaneClosedAhead.png")),
+      leftLaneClosedAhead: ItisCode.withImage(leftLaneClosedAhead, "Left Lane Closed Ahead", [ITIScodes(leftLaneClosedAhead)],
+          AssetImage("$imageDirectory/$leftLaneClosedAhead.png")),
     };
 
     basicWorkZoneCodeMap = {
@@ -228,6 +247,8 @@ class ItisParser {
     speedAheadMap = {};
     speedAdvisoryMap = {};
     speedMap = {};
+
+    heightAdvisoryMap = {};
   }
 
   Future<Map<String, Map<String,ItisCode>>> loadTims() async {
@@ -293,10 +314,33 @@ class ItisParser {
             (itis.item[1] as ITIScodes).itisCode == crossing) {
           return ItisCode.withImage(
               pedestrian, "Pedestrian Crossing", itis.item, AssetImage("$imageDirectory/pedcrossing.png"));
-        } else if (code == speedLimit) {
+        }else if (code == heightLimit){
+          if(itis.item.length == 3){
+            int height = getIntFromItis((itis.item[1] as ITIScodes).itisCode);
+            if(height != -1){
+              int heightInches = convertToInches(height, (itis.item[2] as ITIScodes).itisCode); // assumes inches if final code is nonsense
+            
+              if (heightAdvisoryMap.containsKey(heightInches)) {
+                  return heightAdvisoryMap[heightInches]!;
+              }
+              ImageProvider? image = await getHeightAdvisoryImage(heightInches);
+              if (image != null) {
+                ItisCode code = ItisCode.withImage(heightLimit, "Height Limit", itis.item, image);
+                heightAdvisoryMap[heightInches] = code;
+                return code;
+              } else {
+                return ItisCode(heightLimit, "Height Limit", itis.item);
+              }
+            }else{
+              return ItisCode.error("Received Itis Code $heightLimit (Speed Limit), but included Height is not a valid Height");
+            }
+          } else {
+            return ItisCode.unknown(code);
+          }
+        }else if (code == speedLimit) {
           if (itis.item.length == 3) {
             // Basic Speed Limit
-            int speed = getSpeedFromItis((itis.item[1] as ITIScodes).itisCode);
+            int speed = getIntFromItis((itis.item[1] as ITIScodes).itisCode);
             if (speed != -1) {
               if (speedAdvisoryMap.containsKey(speed)) {
                 return speedAdvisoryMap[speed]!;
@@ -376,7 +420,7 @@ class ItisParser {
         } else if (code == speedLimit) {
           if (sl.item.length == 3) {
             // Basic Speed Limit
-            int speed = getSpeedFromItis((sl.item[1] as ITIScodes).itisCode);
+            int speed = getIntFromItis((sl.item[1] as ITIScodes).itisCode);
             if (speed != -1) {
               if (speedMap.containsKey(speed)) {
                 return speedMap[speed]!;
@@ -396,7 +440,7 @@ class ItisParser {
           } else if (sl.item.length == 5) {
             // Reduce Speed Ahead
 
-            int speed = getSpeedFromItis((sl.item[2] as ITIScodes).itisCode);
+            int speed = getIntFromItis((sl.item[2] as ITIScodes).itisCode);
 
             if (speedAheadMap.containsKey(speed)) {
               return speedAheadMap[speed]!;
@@ -464,12 +508,31 @@ class ItisParser {
     }
   }
 
-  int getSpeedFromItis(int itis) {
-    int speed = itis - minItisSmallNumber + 1;
-    if (speed >= 0 && speed <= 255) {
-      return speed;
+  int getIntFromItis(int itis) {
+    int value = itis - minItisSmallNumber + 1;
+    if (value >= 0 && value <= 255) {
+      return value;
     }
     return -1;
+  }
+
+  int convertToInches(int originalValue, int itisUnit){
+    if(itisUnit == inches){
+      return originalValue;
+    }else if(itisUnit == feet){
+      return originalValue * 12;
+    }else if(itisUnit == miles || itisUnit == mile){
+      return originalValue * 12 * 5280;
+    }else if (itisUnit == nauticalMiles){
+      return (originalValue * 72913.4).toInt();
+    }else if(itisUnit == millimeters){
+      return (originalValue * 0.0393701).toInt();
+    }else if (itisUnit == meters){
+      return (originalValue * 39.3701).toInt();
+    }else if (itisUnit == kilometer || itisUnit == kilometers){
+      return (originalValue * 39370.1).toInt();
+    }
+    return originalValue;
   }
 
   Future<ImageProvider?> getSpeedImage(int sl) async {
@@ -519,6 +582,30 @@ class ItisParser {
     img.Image? baseSizeImage = img.decodeImage(assetImageByteData.buffer.asUint8List());
     if (baseSizeImage != null) {
       img.drawString(baseSizeImage, "$sl", font: font, color: img.ColorRgba8(0, 0, 0, 200), y: 30);
+      return MemoryImage(img.encodePng(baseSizeImage));
+    }
+    return null;
+  }
+
+  Future<ImageProvider?> getHeightAdvisoryImage(int heightInches) async {
+    final ByteData assetImageByteData = await rootBundle.load('$imageDirectory/2574.png');
+    String assetPath = font24Path;
+
+    int feet = heightInches ~/12;
+    int inches = heightInches % 12;
+
+    final ByteData assetFontByteData = await rootBundle.load(assetPath);
+    final font = img.readFontZip(assetFontByteData.buffer.asUint8List());
+    img.Image? baseSizeImage = img.decodeImage(assetImageByteData.buffer.asUint8List());
+    if (baseSizeImage != null) {
+      
+      img.drawString(baseSizeImage, "$feet", font: font, color: img.ColorRgba8(0, 0, 0, 200), x:60, rightJustify: true);
+      if(inches < 10){
+        img.drawString(baseSizeImage, "$inches", font: font, color: img.ColorRgba8(0, 0, 0, 200), x: 90, rightJustify: true);
+      }else{
+        img.drawString(baseSizeImage, "$inches", font: font, color: img.ColorRgba8(0, 0, 0, 200), x: 103, rightJustify: true);
+      }
+      
       return MemoryImage(img.encodePng(baseSizeImage));
     }
     return null;
