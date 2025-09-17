@@ -251,16 +251,27 @@ class ItisParser {
     heightAdvisoryMap = {};
   }
 
-  Future<Map<String, Map<String,ItisCode>>> loadTims() async {
+  Future<Map<String, ItisCode>> loadTims() async {
     final String jsonString = await rootBundle.loadString('assets/tims.json');
     final Map<String, dynamic> json = jsonDecode(jsonString);
 
-    Map<String, Map<String,ItisCode>> codes = {};
+    Map<String,ItisCode> codes = {};
 
     var timsList = json['tims'] as List;
     List<TimDefinition> tims = timsList.map((t) => TimDefinition.fromJson(t)).toList();
     for(TimDefinition def in tims){
       
+
+      if(isStaticSequence(def.codes)){
+        // Load Code into Dictionary
+        String key = getKeyForTim(def.type, def.codes);
+        codes[key] = ItisCode.withImage(
+          blowingSnow, "Rain", [ITIScodes(blowingSnow)], AssetImage("$imageDirectory/$blowingSnow.png"))
+
+      }else{
+        // Code needs to be procedurally generated
+
+      }
     }
 
 
@@ -271,13 +282,17 @@ class ItisParser {
   }
 
 
-  // String getKeyForTim(String category, List<int> itisCodes){
-  //   String key = "${category}_";
-  //   for(int code in itisCodes){
+  String getKeyForTim(String category, List<int> itisCodes){
+    String key = "${category}_";
+    for(int code in itisCodes){
+      // convert all integer values to -1, otherwise retain itis code
+      int value = isItisNumber(code) ? -1 : code;
 
-  //   }
+      key = "${key}_${code}";
 
-  // }
+    }
+    return key;
+  }
 
 
 
@@ -514,6 +529,23 @@ class ItisParser {
       return value;
     }
     return -1;
+  }
+
+  bool isItisNumber(int itis){
+    int value = itis - minItisSmallNumber + 1;
+    if (value >= 0 && value <= 255) {
+      return true;
+    }
+    return false;
+  }
+  
+  bool isStaticSequence(List<int> codes){
+    for(int code in codes){
+      if(isItisNumber(code)){
+        return false;
+      }
+    }
+    return true;
   }
 
   int convertToInches(int originalValue, int itisUnit){
