@@ -60,6 +60,7 @@ dependencies:
   audioplayers: ^5.2.1
   flutter_libserialport: ^0.6.0
   bluez: ^0.8.3
+  basic_utils: ^5.8.2
 
 dev_dependencies:
   flutter_test:
