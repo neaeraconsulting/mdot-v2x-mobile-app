@@ -34,6 +34,9 @@ class SecureStorage {
   static const _keyPC5BrokerUrl = "pc5BrokerUrl";
   static const _keyEnablePC5 = "enablePC5";
 
+  static const _keyEnableIssSigning = "enableIssSigning";
+  static const _keyIssScmsToken = "issScmsToken";
+
   static final _startUsername = dotenv.env['USERNAME']!;
   static final _startPassword = dotenv.env['PASSWORD']!;
   static final _startBaseURI = dotenv.env['API_ENDPOINT']!;
@@ -53,13 +56,15 @@ class SecureStorage {
   static final _startS3DestDir = dotenv.env['S3_DESTINATION'] ?? "";
 
   static final _pc5BrokerUrl = dotenv.env['PC5_MQTT_BROKER'] ?? "";
+  static final _issScmsToken = dotenv.env['ISS_SCMS_TOKEN'] ?? "";
 
   Future<String> getUsername() async => await _storage.read(key: _keyUsername) ?? Future.value(_startUsername);
   Future<String> getPassword() async => await _storage.read(key: _keyPassword) ?? Future.value(_startPassword);
   Future<String> getBaseURI() async => await _storage.read(key: _keyBaseURI) ?? Future.value(_startBaseURI);
   Future<String> getVendorID() async => await _storage.read(key: _keyVendorID) ?? Future.value(_startVendorID);
   Future<String> getDeviceID() async => await _storage.read(key: _keyDeviceID) ?? Future.value(_startDeviceID);
-  Future<String> getPC5BrokerUrl() async => await _storage.read(key: _pc5BrokerUrl) ?? Future.value(_pc5BrokerUrl);
+  Future<String> getPC5BrokerUrl() async => await _storage.read(key: _keyPC5BrokerUrl) ?? Future.value(_pc5BrokerUrl);
+  Future<String> getIssScmsToken() async => await _storage.read(key: _keyIssScmsToken) ?? Future.value(_issScmsToken);
   Future<bool> getVZMode() async => (await _storage.read(key: _keyVzMode)) == "true";
   Future<bool> getNotificationsEnabled() async => (await _storage.read(key: _keyNotificationsEnabled)) == "true";
   Future<bool> getReadMessages() async => (await _storage.read(key: _keyReadMessages)) == "true";
@@ -67,6 +72,7 @@ class SecureStorage {
   Future<bool> getDeveloperMode() async => (await _storage.read(key: _keyDeveloperMode)) == "true";
   Future<bool> getSoundEffectsEnabled() async => (await _storage.read(key: _keySoundEffectsEnabled)) == "true";
   Future<bool> getPC5Enabled() async => (await _storage.read(key: _keyEnablePC5)) == "true";
+  Future<bool> getIssScmsSigningEnabled() async => (await _storage.read(key: _keyEnableIssSigning)) == "true";
   Future<String> getGPSUsername() async => (await _storage.read(key: _keyGPSUsername)) ?? _startGPSUsername;
   Future<String> getGPSPassword() async => (await _storage.read(key: _keyGPSPassword)) ?? _startGPSPassword;
   Future<String> getGPSIP() async => (await _storage.read(key: _keyGPSIP)) ?? _startGPSIP;
@@ -84,8 +90,8 @@ class SecureStorage {
   Future<void> setBaseURI(String baseURI) async => await _storage.write(key: _keyBaseURI, value: baseURI);
   Future<void> setVendorID(String vendorID) async => await _storage.write(key: _keyVendorID, value: vendorID);
   Future<void> setDeviceID(String deviceID) async => await _storage.write(key: _keyDeviceID, value: deviceID);
-  Future<void> setPC5BrokerUrl(String pc5BrokerUrl) async =>
-      await _storage.write(key: _pc5BrokerUrl, value: pc5BrokerUrl);
+  Future<void> setPC5BrokerUrl(String pc5BrokerUrl) async => await _storage.write(key: _keyPC5BrokerUrl, value: pc5BrokerUrl);
+  Future<void> setIssScmsToken(String issScmsToken) async => await _storage.write(key: _keyIssScmsToken, value: issScmsToken);
   Future<void> setGPSUsername(String v) => _storage.write(key: _keyGPSUsername, value: v);
   Future<void> setGPSPassword(String v) => _storage.write(key: _keyGPSPassword, value: v);
   Future<void> setGPSIP(String v) => _storage.write(key: _keyGPSIP, value: v);
@@ -161,6 +167,14 @@ class SecureStorage {
       await _storage.write(key: _keyEnablePC5, value: "true");
     } else {
       await _storage.write(key: _keyEnablePC5, value: "false");
+    }
+  }
+
+  Future setIssScmsSigningEnabled(bool issScmsSigning) async {
+    if (issScmsSigning) {
+      await _storage.write(key: _keyEnableIssSigning, value: "true");
+    } else {
+      await _storage.write(key: _keyEnableIssSigning, value: "false");
     }
   }
 

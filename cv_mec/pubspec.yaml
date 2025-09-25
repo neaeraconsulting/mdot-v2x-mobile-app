@@ -60,6 +60,8 @@ dependencies:
   audioplayers: ^5.2.1
   flutter_libserialport: ^0.6.0
   bluez: ^0.8.3
+  iss_scms:
+    path: ./packages/iss_scms
 
 dev_dependencies:
   flutter_test:

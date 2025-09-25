@@ -90,6 +90,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:iss_scms/iss_scms.dart';
+import 'package:iss_scms/models/psid.dart';
 import 'package:logger/logger.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:cv_mec/models/protobuf_models/geo_routed_msg.pb.dart' as protobuf;
@@ -124,6 +126,7 @@ class MapState extends State<MapPage> {
   SettingsController settingsController = Get.find<SettingsController>();
   S3Service awsService = Get.find<S3Service>();
   ConfigurationController configController = Get.find<ConfigurationController>();
+  IssScms scms = Get.find<IssScms>();
 
   TimManager timManager = TimManager();
   MapManager mapManager = MapManager();
@@ -814,6 +817,7 @@ class MapState extends State<MapPage> {
     Uint8Buffer buffer = Uint8Buffer();
     msg.position = pos;
     String hex = "";
+    int psid = PSID.BSM.code;
 
     pos.latitude = currentPosition!.latitude;
     pos.longitude = currentPosition!.longitude;
@@ -839,7 +843,7 @@ class MapState extends State<MapPage> {
       }
 
       bsmBuilder.setEmergencyVehicleLights(lightStatus, sirenUse);
-
+      psid = PSID.BSM.code;
       hex = bsmBuilder.build();
     } else {
       psmBuilder.setPosition(currentPosition!);
@@ -849,12 +853,27 @@ class MapState extends State<MapPage> {
       if (configController.selectedPedestrian == PersonalDeviceUserType.APUBLICSAFETYWORKER) {
         psmBuilder.setPublicSafetyWorkerType(configController.selectedPublicSafetyWorker);
       }
+      psid = PSID.PSM.code;
       hex = psmBuilder.build();
     }
 
     if (hex != "") {
-      msg.msgBytes = ASNService.hexToBytes(hex);
+
+      List<int> messageBytes = ASNService.hexToBytes(hex);
+      
+      if(settingsController.enablePC5.value){
+        List<int>? signedMessageBytes = await scms.sign(psid, messageBytes);
+
+        if(signedMessageBytes != null && signedMessageBytes.isNotEmpty){
+          messageBytes = signedMessageBytes;
+        }else{
+          showError("Result of Message Signing was Null or Empty");
+        }
+      }
+
+      msg.msgBytes = messageBytes;
       msg.time = Utils.dateTimeToTimestamp(sendTime);
+      
       buffer.addAll(msg.writeToBuffer());
       mqtt.publishBytes(buffer, publishTopic);
       updateConnectedStatus(ConnectedStatus.CONNECTED);

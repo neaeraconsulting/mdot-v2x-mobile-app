@@ -1,0 +1,8 @@
+enum ValidateStatus {
+  UNKNOWN_CERT,
+  UNRECOGNIZED_ISSUER,
+  NOT_SIGNED,
+  FAILURE,
+  VALID
+}
+

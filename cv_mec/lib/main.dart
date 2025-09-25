@@ -22,9 +22,9 @@ import 'package:cv_mec/services/file_service.dart';
 import 'package:cv_mec/services/geometry_service.dart';
 import 'package:cv_mec/services/location_service.dart';
 import 'package:cv_mec/services/mqtt_service.dart';
-import 'package:cv_mec/services/param_controller.dart';
 import 'package:cv_mec/services/remote_gps.dart';
 import 'package:cv_mec/services/timing.dart';
+import 'package:iss_scms/iss_scms.dart';
 
 void main() async {
   await dotenv.load(fileName: ".env");
@@ -51,6 +51,7 @@ void main() async {
   Get.put(GPSDService());
   Get.put(OBDController());
   Get.put(S3Service());
+  Get.put(IssScms());
 
   runApp(
     Platform.isAndroid || Platform.isIOS

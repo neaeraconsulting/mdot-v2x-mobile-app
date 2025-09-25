@@ -23,8 +23,10 @@ class SettingsPage extends StatelessWidget {
   TextEditingController gpsPasswordController = TextEditingController();
   TextEditingController obuIPController = TextEditingController();
   TextEditingController pc5BrokerUrlController = TextEditingController();
+  TextEditingController issScmsTokenController = TextEditingController();
   TextEditingController registrationLatitudeController = TextEditingController();
   TextEditingController registrationLongitudeController = TextEditingController();
+  TextEditingController scmsApiTokenController = TextEditingController();
 
 
   FileService fileService = Get.find<FileService>();
@@ -42,8 +44,10 @@ class SettingsPage extends StatelessWidget {
     gpsPasswordController.text = controller.cradleGPSPassword.value;
     obuIPController.text = controller.obuIP.value;
     pc5BrokerUrlController.text = controller.pc5BrokerUrl.value;
+    issScmsTokenController.text = controller.issScmsToken.value;
     registrationLatitudeController.text = paramController.manualLatitude.toString();
     registrationLongitudeController.text = paramController.manualLongitude.toString();
+    
 
     return Scaffold(
         appBar: AppBar(
@@ -61,6 +65,8 @@ class SettingsPage extends StatelessWidget {
               configurationSection(),
               verticalSpaceMedium,
               appearanceSection(),
+              verticalSpaceMedium,
+              advancedSection(),
             ]),
           ),
         )));
@@ -343,6 +349,29 @@ class SettingsPage extends StatelessWidget {
                 await controller.secureStorage.setDemoMode(value);
               }
             })),
+        verticalSpaceSmall,
+        SwitchListTile(
+            title: const Text("Enable Signing"),
+            value: controller.enableIssScmsSigning.value,
+            onChanged: (value) async {
+              if (value != controller.enableIssScmsSigning.value) {
+                controller.enableIssScmsSigning.value = value;
+                await controller.secureStorage.setIssScmsSigningEnabled(value);
+              }
+            }),
+        Obx(() => controller.enableIssScmsSigning.value
+            ? TextField(
+                decoration: const InputDecoration(labelText: 'ISS SCMS API Token'),
+                controller: issScmsTokenController,
+                obscureText: true,
+                onChanged: (value) async {
+                  if (value != controller.issScmsToken.value) {
+                    controller.issScmsToken.value = value;
+                    await controller.secureStorage.setIssScmsToken(value);
+                  }
+                },
+              )
+            : const SizedBox.shrink()),
         verticalSpaceMedium,
       ],
     );
@@ -357,6 +386,8 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
+  
+
   appearanceSettings() {
     return Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -370,14 +401,6 @@ class SettingsPage extends StatelessWidget {
                 }),
             verticalSpaceMedium,
             SwitchListTile(
-                title: const Text("Developer Mode"),
-                value: controller.developerMode.value,
-                onChanged: (value) async {
-                  controller.developerMode.value = value;
-                  await controller.secureStorage.setDeveloperMode(value);
-                }),
-            verticalSpaceMedium,
-            SwitchListTile(
                 title: const Text("Allow Sound Effects"),
                 value: controller.soundEffectsEnabled.value,
                 onChanged: (value) async {
@@ -386,6 +409,33 @@ class SettingsPage extends StatelessWidget {
                 }),
           ],
         ));
+  }
+
+  advancedSection() {
+    return Column(
+      children: [
+        headerElement("Advanced", Icons.image),
+        appearanceSettings(),
+      ],
+    );
+  }
+
+  advancedSettigns(){
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        children: [
+          SwitchListTile(
+            title: const Text("Developer Mode"),
+            value: controller.developerMode.value,
+            onChanged: (value) async {
+              controller.developerMode.value = value;
+              await controller.secureStorage.setDeveloperMode(value);
+            }),
+          verticalSpaceMedium,
+        ],
+      )  
+    );
   }
 
   inputValid() {

@@ -28,6 +28,7 @@ class SettingsController extends GetxController {
   RxString baseUri = dotenv.env['API_ENDPOINT']!.obs;
   RxString vendorID = dotenv.env['VENDOR_ID']!.obs;
   RxString pc5BrokerUrl = (dotenv.env['PC5_MQTT_BROKER'] ?? "").obs;
+  RxString issScmsToken = (dotenv.env['ISS_SCMS_TOKEN'] ?? "").obs;
   RxString cradleGPSUsername = (dotenv.env['GPS_USERNAME'] ?? "").obs;
   RxString cradleGPSPassword = (dotenv.env['GPS_PASSWORD'] ?? "").obs;
   RxString cradleGPSIP = (dotenv.env['GPS_IP'] ?? "").obs;
@@ -45,6 +46,9 @@ class SettingsController extends GetxController {
 
   // Automatically enable PC5 if the environment variable is configured
   Rx<bool> enablePC5 = dotenv.env['PC5_MQTT_BROKER'] != null ? true.obs : false.obs;
+
+  // Automatically enable Signing if the environment variable is configured
+  Rx<bool> enableIssScmsSigning = dotenv.env['ISS_SCMS_TOKEN'] != null ? true.obs : false.obs;
 
   RxString deviceID = ''.obs;
   RxString s3AccessKey = (dotenv.env['S3_ACCESS_KEY'] ?? "").obs;
@@ -71,7 +75,9 @@ class SettingsController extends GetxController {
     developerMode.value = await secureStorage.getDeveloperMode();
     soundEffectsEnabled.value = await secureStorage.getSoundEffectsEnabled();
     enablePC5.value = await secureStorage.getPC5Enabled();
+    enableIssScmsSigning.value = await secureStorage.getIssScmsSigningEnabled();
 
+    // Configuration Parameters for AWS S3
     s3AccessKey.value = await secureStorage.getS3AccessKey();
     s3SecretKey.value = await secureStorage.getS3SecretKey();
     s3BucketName.value = await secureStorage.getS3BucketName();
@@ -79,6 +85,8 @@ class SettingsController extends GetxController {
     s3DestDir.value = await secureStorage.getS3DestDir();
 
     gpsType.value = toGPSType(await secureStorage.getGPSType());
+
+
 
     if (gpsType.value == GPSType.mobile && Platform.isLinux) {
       gpsType.value = GPSType.cradle;
