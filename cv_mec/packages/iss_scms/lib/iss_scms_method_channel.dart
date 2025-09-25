@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:iss_scms/models/signing_api_state.dart';
 import 'package:iss_scms/models/token_type.dart';
 import 'package:iss_scms/models/validate_status.dart';
 
@@ -34,14 +35,27 @@ class MethodChannelIssScms extends IssScmsPlatform {
   }
 
   @override
-  Future<ValidateStatus> validate(List<int> bytes, bool shouldValidate) async{
-    int? valid = await methodChannel.invokeMethod<int?>('validate', {'message': bytes, 'shouldValidate': shouldValidate});
-    if(valid != null && valid >= 0 && valid < ValidateStatus.values.length){
-      return ValidateStatus.values[valid];
-    }else{
-      return ValidateStatus.FAILURE;
-    }
+  Future<SigningApiState> getState() async {
+    String? signingApiState = await methodChannel.invokeMethod<String?>('getState');
+    return enumFromString(signingApiState, SigningApiState.values, SigningApiState.NEED_CERTS);
+  }
 
-    
+  @override
+  Future<ValidateStatus> validate(List<int> bytes, bool shouldValidate) async{
+    String? valid = await methodChannel.invokeMethod<String?>('validate', {'message': bytes, 'shouldValidate': shouldValidate});
+    return enumFromString(valid, ValidateStatus.values, ValidateStatus.FAILURE);
+  }
+
+  @override
+  void topOffCerts(String token, TokenType tokenType){
+    methodChannel.invokeMethod<List<int>?>('topOffCerts', {'token': token, 'tokenType': tokenType.index});
+  }
+
+  T enumFromString<T extends Enum>(String? value, List<T> values, T def) {
+    try {
+      return values.firstWhere((e) => e.name == value);
+    } catch (_) {
+      return def; // return null if no match
+    }
   }
 }

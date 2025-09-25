@@ -43,17 +43,17 @@ class IssScmsPlugin: FlutterPlugin, MethodCallHandler {
     if (call.method == "getPlatformVersion") {
       result.success("Android ${android.os.Build.VERSION.RELEASE}")
     }else if(call.method == "init"){
+      Log.i("SCMS", "SCMS Running Init on ISS Signing API")
       LocalSigning.init(context, ScmsEnvironment.PREPRODUCTION)
       result.success(null)
     }
     else if(call.method == "validate"){
       val message = args?.get("message") as ByteArray
-
       val hex = message.joinToString(separator = "") { "%02X".format(it) }
       Log.i("SCMS","SCMS Validating Hex" + hex);
       val (valid, _) = LocalSigning.validate(message, true)
       Log.i("SCMS","SCMS Validation Validation " + valid)
-      result.success(valid.ordinal)
+      result.success(valid.name)
     }else if(call.method == "sign"){
       val state = LocalSigning.getState()
       if( state== SigningAPIState.READY){
@@ -63,9 +63,9 @@ class IssScmsPlugin: FlutterPlugin, MethodCallHandler {
         val digestSigner = args?.get("digestSigner") as? Boolean
 
         val outputArray = LocalSigning.sign(psid, tbsOer)
-        val (valid, _) = LocalSigning.validate(outputArray, true)
+        // val (valid, _) = LocalSigning.validate(outputArray, true)
 
-        Log.i("SCMS","SCMS Self Validation" + valid)
+        // Log.i("SCMS","SCMS Self Validation" + valid)
         result.success(outputArray) 
       }else{
         result.error("Android Signing Error", "Signing is not possible yet. Signing API State is " + state.name, null)
@@ -78,6 +78,25 @@ class IssScmsPlugin: FlutterPlugin, MethodCallHandler {
         try {
             // val certs = LocalSigning.getDeviceCerts("jvKFigeCl81aRAwieGZIo4cKgqq88NH5gRBgbwq7Tecuql4qFRBLoQ==", TokenType.DM_DASHBOARD)
             LocalSigning.getDeviceCerts(token, tokenType)
+            withContext(Dispatchers.Main) {
+                result.success(null)
+            }
+        } catch (e: Exception) {
+            withContext(Dispatchers.Main) {
+                result.error("CERT_ERROR", e.message, null)
+            }
+        }
+      }
+    }else if(call.method == "getState"){
+      val state = LocalSigning.getState()
+      result.success(state.name) // Returning names for Enums because order is not guarenteed.
+    }else if(call.method == "topOffCerts"){
+      val token = args?.get("token") as String
+      val tokenType = TokenType.values()[args?.get("tokenType") as Int]
+      scope.launch {
+        try {
+            // val certs = LocalSigning.getDeviceCerts("jvKFigeCl81aRAwieGZIo4cKgqq88NH5gRBgbwq7Tecuql4qFRBLoQ==", TokenType.DM_DASHBOARD)
+            LocalSigning.topOffCerts(token, tokenType)
             withContext(Dispatchers.Main) {
                 result.success(null)
             }

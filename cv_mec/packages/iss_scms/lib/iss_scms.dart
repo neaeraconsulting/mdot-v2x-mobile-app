@@ -1,5 +1,7 @@
 library iss_scms;
 
+import 'dart:async';
+
 import 'package:iss_scms/models/expiration_information.dart';
 import 'package:iss_scms/models/signing_api_state.dart';
 import 'package:iss_scms/models/token_type.dart';
@@ -12,11 +14,47 @@ class IssScms {
   IssScms(){
     init();
   }
-  
-  Future<String?> getPlatformVersion() {
-    return IssScmsPlatform.instance.getPlatformVersion();
-  }
 
+
+  // Helper Method to perform on necessary checks to prepare the SCMS for Signing
+  Future<bool> activateScms(String token) async{
+
+    SigningApiState state = await getState();
+    if(state == SigningApiState.NEED_INIT){
+      init();
+      state = await getState();
+    }
+
+    if(state == SigningApiState.NEED_CERTS){
+      getDeviceCerts(token);
+      state = await getState();
+    }
+    
+    if(state == SigningApiState.READY){
+      // topOffCerts(token);
+      return true;
+    }
+
+    return false;
+  }
+  
+
+  // Future<void> waitUntilInitialized({
+  //   Duration checkInterval = const Duration(milliseconds: 1000),
+  //   Duration timeout = const Duration(seconds: 60),
+  // }) async {
+  //   final start = DateTime.now();
+  //   while (DateTime.now().difference(start) < timeout) {
+  //     SigningApiState state = await getState();
+  //     print("SCMS Checking State ${state.name}");
+  //     if (state != SigningApiState.NEED_INIT) {
+  //       return; // Condition met, exit the function
+  //     }
+  //     await Future.delayed(checkInterval);
+  //   }
+  // }
+
+  // Message Definition Matches ISS Library
   void init(){
     return IssScmsPlatform.instance.init();
   }

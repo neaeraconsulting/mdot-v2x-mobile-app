@@ -92,6 +92,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:iss_scms/iss_scms.dart';
 import 'package:iss_scms/models/psid.dart';
+import 'package:iss_scms/models/validate_status.dart';
 import 'package:logger/logger.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:cv_mec/models/protobuf_models/geo_routed_msg.pb.dart' as protobuf;
@@ -195,6 +196,7 @@ class MapState extends State<MapPage> {
   bool debugMode = false;
   bool showLoadingIcon = true;
   bool showLightText = true;
+  bool scmsActive = false;
 
   bool showVehicleStats = false;
   RxBool obdConnecting = false.obs;
@@ -252,6 +254,14 @@ class MapState extends State<MapPage> {
 
       if (settingsController.enablePC5.value) {
         connectToPC5Broker();
+      }
+
+      if(settingsController.enableIssScmsSigning.value){
+        scmsActive = await scms.activateScms(settingsController.issScmsToken.value);
+
+        if(!scmsActive){
+          showError("Unable to Activate SCMS Signing");
+        }
       }
 
       int connected = await connectToETXBroker();
@@ -392,7 +402,7 @@ class MapState extends State<MapPage> {
     SensorDataSharingMessage sdsm = asnService.decodeSdsm(TestData.tfhrcSDSM);
     Timer.periodic(const Duration(milliseconds: 100), (timer) async {
       DateTime now = timingService.getTime();
-      processNewSdsm(publicGeoRelevanceSubscribeTopic, TestData.tfhrcSDSM, now, now, "SIM");
+      processNewSdsm(publicGeoRelevanceSubscribeTopic, TestData.tfhrcSDSM, now, now, "SIM", ValidateStatus.NOT_SIGNED);
       // await Future.delayed(const Duration(milliseconds: 100)); // Simulate an async task
     });
   }
@@ -440,7 +450,7 @@ class MapState extends State<MapPage> {
     appDataQueue = DataQueue("APP_LOG_${logTime.millisecondsSinceEpoch}.log");
     timDataQueue = DataQueue("TIM_LOG_${logTime.millisecondsSinceEpoch}.csv");
     String subHeader =
-        "topic,message_type,receive_time_ms,send_time_ms,generation_time_ms,send_rec_delta_time_ms,gen_rec_delta_time_ms,longitude,latitude,broker,msg_bytes,msg_source\n";
+        "topic,message_type,receive_time_ms,send_time_ms,generation_time_ms,send_rec_delta_time_ms,gen_rec_delta_time_ms,longitude,latitude,broker,msg_bytes,msg_source,signature\n";
     String pubHeader = "topic,send_time_ms,longitude,latitude,broker,msg_bytes\n";
     String timHeader = "action,time,longitude,latitude,heading,asn1\n";
 
@@ -572,8 +582,7 @@ class MapState extends State<MapPage> {
   void onPC5Message(MqttReceivedMessage<MqttMessage?> message, DateTime recTime) async {
     addToAppLog("Received ASN1 Message from PC5 Broker");
     final recMess = message.payload as MqttPublishMessage;
-    String hex = ASNService.bytesToHex(recMess.payload.message);
-    processIncomingMessage(message.topic, hex, recTime, null, "PC5");
+    processIncomingMessage(message.topic, recMess.payload.message, recTime, null, "PC5");
   }
 
   void onGeoRelevanceMessage(MqttReceivedMessage<MqttMessage?> message, DateTime recTime) async {
@@ -587,52 +596,51 @@ class MapState extends State<MapPage> {
 
     addToAppLog("${decodedMessage.position.longitude}, ${decodedMessage.position.latitude}");
 
-    String hex = ASNService.bytesToHex(decodedMessage.msgBytes);
-
-    processIncomingMessage(message.topic, hex, recTime, msgTime, "ETX");
+    processIncomingMessage(message.topic, decodedMessage.msgBytes, recTime, msgTime, "ETX");
   }
 
-  void onRawAsnMessage(MqttReceivedMessage<MqttMessage?> message, DateTime recTime) {
+  void onRawAsnMessage(MqttReceivedMessage<MqttMessage?> message, DateTime recTime) async {
     addToAppLog("Received ASN1 Message");
     final recMess = message.payload as MqttPublishMessage;
-    String hex = ASNService.bytesToHex(recMess.payload.message);
-    processIncomingMessage(message.topic, hex, recTime, null, "ETX");
+    processIncomingMessage(message.topic, recMess.payload.message, recTime, null, "ETX");
   }
 
-  void processIncomingMessage(String topic, String hex, DateTime recTime, DateTime? sendTime, String source) {
+  void processIncomingMessage(String topic, List<int> bytes, DateTime recTime, DateTime? sendTime, String source) async {
+    String hex = ASNService.bytesToHex(bytes);
     MsgType msgType = asnService.determineHexMessageType(hex);
+    ValidateStatus validity = await scms.validate(bytes);
 
     switch (msgType) {
       case MsgType.BSM:
         addToAppLog("Identified Message as BSM");
-        processNewBsm(topic, hex, recTime, sendTime, source);
+        processNewBsm(topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.PSM:
         addToAppLog("Identified Message as PSM");
-        processNewPsm(topic, hex, recTime, sendTime, source);
+        processNewPsm(topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.SPAT:
         addToAppLog("Identified Message as SPaT");
-        processNewSpat(topic, hex, recTime, sendTime, source);
+        processNewSpat(topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.MAP:
         addToAppLog("Identified Message as MAP");
-        processNewMap(topic, hex, recTime, sendTime, source);
+        processNewMap(topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.TIM:
         addToAppLog("Identified Message as TIM");
-        processNewTim(topic, hex, recTime, sendTime, source);
+        processNewTim(topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.SDSM:
         addToAppLog("Identified Message as SDSM");
-        processNewSdsm(topic, hex, recTime, sendTime, source);
+        processNewSdsm(topic, hex, recTime, sendTime, source, validity);
         break;
       default:
         addToAppLog("Unable to Identify Message Type: $msgType");
     }
   }
 
-  void processNewBsm(String topic, String hex, DateTime recTime, DateTime? sendTime, String source) {
+  void processNewBsm(String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
     VehicleClass vehicleClass = VehicleClass.unknownVehicleClass;
 
     String trimmedHex = asnService.trimMessageHeaders(hex, asnService.BSM_START_FLAG)!;
@@ -661,10 +669,10 @@ class MapState extends State<MapPage> {
 
     ReceivedMsg msg = ReceivedBsm(vehicleID, bsmTime, position, vehicleClass, lights, sirens);
     messageManager.addOrUpdate(msg);
-    addToReceiveLog(topic, "BSM", recTime, sendTime, bsmTime, trimmedHex, source);
+    addToReceiveLog(topic, "BSM", recTime, sendTime, bsmTime, trimmedHex, source, validity);
   }
 
-  void processNewPsm(String topic, String hex, DateTime recTime, DateTime? sendTime, String source) {
+  void processNewPsm(String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
     String trimmedHex = asnService.trimMessageHeaders(hex, asnService.PSM_START_FLAG)!;
     PersonalSafetyMessage psm = asnService.decodePsm(trimmedHex);
 
@@ -675,10 +683,10 @@ class MapState extends State<MapPage> {
 
     ReceivedMsg msg = ReceivedPsm(pedestrianID, psmTime, position, psm.basicType, psm.eventResponderType);
     messageManager.addOrUpdate(msg);
-    addToReceiveLog(topic, "PSM", recTime, sendTime, psmTime, trimmedHex, source);
+    addToReceiveLog(topic, "PSM", recTime, sendTime, psmTime, trimmedHex, source, validity);
   }
 
-  void processNewSpat(String topic, String hex, DateTime recTime, DateTime? sendTime, String source) {
+  void processNewSpat(String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
     String trimmedHex = asnService.trimMessageHeaders(
         hex, asnService.SPAT_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
     Spat spat = asnService.decodeSpat(trimmedHex);
@@ -691,10 +699,10 @@ class MapState extends State<MapPage> {
       spatGenTime = spat.intersections.intersectionStateList.first.getUtcTime();
     }
 
-    addToReceiveLog(topic, "SPAT", recTime, sendTime, spatGenTime, trimmedHex, source);
+    addToReceiveLog(topic, "SPAT", recTime, sendTime, spatGenTime, trimmedHex, source, validity);
   }
 
-  void processNewMap(String topic, String hex, DateTime recTime, DateTime? sendTime, String source) {
+  void processNewMap(String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
     String trimmedHex = asnService.trimMessageHeaders(
         hex, asnService.MAP_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
     MapData map = asnService.decodeMap(trimmedHex);
@@ -703,10 +711,10 @@ class MapState extends State<MapPage> {
 
     updateGraphics();
 
-    addToReceiveLog(topic, "MAP", recTime, sendTime, LeidosDateExtraction.extractDateFromMap(map), trimmedHex, source);
+    addToReceiveLog(topic, "MAP", recTime, sendTime, LeidosDateExtraction.extractDateFromMap(map), trimmedHex, source, validity);
   }
 
-  void processNewTim(String topic, String hex, DateTime recTime, DateTime? sendTime, String source) {
+  void processNewTim(String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
     String trimmedHex = asnService.trimMessageHeaders(
         hex, asnService.TIM_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
     TravelerInformation tim = asnService.decodeTim(trimmedHex);
@@ -719,11 +727,11 @@ class MapState extends State<MapPage> {
         ItisCode code = await timManager.getItisRepresentationForDataFrame(tim.dataFrames.travelerDataFrameList.first);
         messageType = "TIM ${code.description}";
       }
-      addToReceiveLog(topic, messageType, recTime, sendTime, generationTime, trimmedHex, source);
+      addToReceiveLog(topic, messageType, recTime, sendTime, generationTime, trimmedHex, source, validity);
     });
   }
 
-  void processNewSdsm(String topic, String hex, DateTime recTime, DateTime? sendTime, String source) {
+  void processNewSdsm(String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
     String trimmedHex = asnService.trimMessageHeaders(
         hex, asnService.SDSM_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
     SensorDataSharingMessage sdsm = asnService.decodeSdsm(trimmedHex);
@@ -748,11 +756,11 @@ class MapState extends State<MapPage> {
       messageManager.addOrUpdate(ReceivedSdsm(id, objectTime, shiftedPosition, object.detObjCommon.objType));
     }
 
-    addToReceiveLog(topic, "SDSM", recTime, sendTime, sdsm.sDSMTimeStamp.getAsDateTime(), trimmedHex, source);
+    addToReceiveLog(topic, "SDSM", recTime, sendTime, sdsm.sDSMTimeStamp.getAsDateTime(), trimmedHex, source, validity);
   }
 
   void addToReceiveLog(String topic, String msgType, DateTime recTime, DateTime? sendTime, DateTime? generationTime,
-      String hex, String source) async {
+      String hex, String source, ValidateStatus validity) async {
     int delta = 0;
     int logSendTime = 0;
     if (sendTime != null) {
@@ -775,7 +783,7 @@ class MapState extends State<MapPage> {
     }
 
     String record =
-        "$topic, ${msgType.toString().split('.').last}, ${recTime.millisecondsSinceEpoch},$logSendTime,$messageGenerationTime,$delta,$generationDelta,$longitude,$latitude,$mqttConnectionURL,$hex,$source\n";
+        "$topic, ${msgType.toString().split('.').last}, ${recTime.millisecondsSinceEpoch},$logSendTime,$messageGenerationTime,$delta,$generationDelta,$longitude,$latitude,$mqttConnectionURL,$hex,$source,${validity.name}\n";
     recDataQueue.addItem(record);
   }
 
@@ -861,8 +869,9 @@ class MapState extends State<MapPage> {
 
       List<int> messageBytes = ASNService.hexToBytes(hex);
       
-      if(settingsController.enablePC5.value){
+      if(scmsActive){
         List<int>? signedMessageBytes = await scms.sign(psid, messageBytes);
+        
 
         if(signedMessageBytes != null && signedMessageBytes.isNotEmpty){
           messageBytes = signedMessageBytes;
