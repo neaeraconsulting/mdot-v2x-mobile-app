@@ -47,6 +47,8 @@ import 'package:cv_mec/models/message_builders/bsm_message_builder.dart';
 import 'package:cv_mec/models/message_builders/psm_message_builder.dart';
 import 'package:cv_mec/models/message_managers/map_manager.dart';
 import 'package:cv_mec/models/message_managers/received_message_manager.dart';
+import 'package:cv_mec/models/mqtt/iss_mqtt_agent.dart';
+import 'package:cv_mec/models/mqtt/mqtt_agent_manager.dart';
 import 'package:cv_mec/models/msg_types.dart';
 import 'package:cv_mec/models/imp/registration.dart';
 import 'package:cv_mec/models/received_messages/receieved_msg.dart';
@@ -175,6 +177,8 @@ class MapState extends State<MapPage> {
 
   late FlutterTts flutterTts;
 
+  final MqttAgentManager mqttAgents = MqttAgentManager();
+
   final Map<MovementPhaseState, Image> lightStateMap = {
     MovementPhaseState.UNAVAILABLE: Image.asset("assets/images/Lights/traffic-light-icon-unknown.png"),
     MovementPhaseState.DARK: Image.asset("assets/images/Lights/traffic-light-icon-unknown.png"),
@@ -244,6 +248,7 @@ class MapState extends State<MapPage> {
 
     flutterTts = FlutterTts();
 
+
     Future.delayed(Duration.zero, () async {
       int loggingEnabled = await enableLogging();
       if (loggingEnabled != 0) {
@@ -255,6 +260,8 @@ class MapState extends State<MapPage> {
       if (settingsController.enablePC5.value) {
         connectToPC5Broker();
       }
+
+      await connectMqttAgents();
 
       if(settingsController.enableIssScmsSigning.value){
         scmsActive = await scms.activateScms(settingsController.issScmsToken.value);
@@ -300,6 +307,19 @@ class MapState extends State<MapPage> {
     });
 
      obdController.checkRootStatus();
+  }
+
+  // Helper function to disconnect and reconnect all mqtt agents
+  Future<void> connectMqttAgents() async {
+    mqttAgents.disconnectAll();
+    mqttAgents.clearAgents();
+    
+    mqttAgents.addAgent(IssMqttAgent(processIncomingMessage));
+
+    final success = await mqttAgents.connectAll();
+    if(success != 0){
+      showError("Unable to connect all configured MQTT Agents");
+    }
   }
 
   Future<void> createGPSStream() async{
@@ -826,6 +846,7 @@ class MapState extends State<MapPage> {
     msg.position = pos;
     String hex = "";
     int psid = PSID.BSM.code;
+    MsgType messageType = MsgType.BSM;
 
     pos.latitude = currentPosition!.latitude;
     pos.longitude = currentPosition!.longitude;
@@ -852,6 +873,7 @@ class MapState extends State<MapPage> {
 
       bsmBuilder.setEmergencyVehicleLights(lightStatus, sirenUse);
       psid = PSID.BSM.code;
+      messageType = MsgType.BSM;
       hex = bsmBuilder.build();
     } else {
       psmBuilder.setPosition(currentPosition!);
@@ -862,6 +884,7 @@ class MapState extends State<MapPage> {
         psmBuilder.setPublicSafetyWorkerType(configController.selectedPublicSafetyWorker);
       }
       psid = PSID.PSM.code;
+      messageType = MsgType.PSM;
       hex = psmBuilder.build();
     }
 
@@ -875,16 +898,19 @@ class MapState extends State<MapPage> {
 
         if(signedMessageBytes != null && signedMessageBytes.isNotEmpty){
           messageBytes = signedMessageBytes;
+
         }else{
           showError("Result of Message Signing was Null or Empty");
         }
       }
 
+      mqttAgents.sendMessage(messageBytes, messageType);
+
       msg.msgBytes = messageBytes;
       msg.time = Utils.dateTimeToTimestamp(sendTime);
       
       buffer.addAll(msg.writeToBuffer());
-      mqtt.publishBytes(buffer, publishTopic);
+      //mqtt.publishBytes(buffer, publishTopic);
       updateConnectedStatus(ConnectedStatus.CONNECTED);
     }
 
@@ -1488,6 +1514,7 @@ class MapState extends State<MapPage> {
               uploadTimer?.cancel();
               mqtt.disconnect();
               mqttPC5.disconnect();
+              mqttAgents.disconnectAll();
 
               Future.delayed(const Duration(milliseconds: 100), () async {
                 Get.back();
