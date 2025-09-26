@@ -20,35 +20,65 @@ class MethodChannelIssScms extends IssScmsPlatform {
 
   @override
   void init(){
-    methodChannel.invokeMethod<bool>('init');
+    try{
+      methodChannel.invokeMethod<bool>('init');
+    } on Exception catch(e){
+      print(e);
+    }
+    
   }
 
   @override
   Future<List<int>?> sign(int psid, List<int> tbsOer, int? jIndex, bool? digestSigner) async{
-    final signed = await methodChannel.invokeMethod<List<int>?>('sign', {'psid': psid, 'tbsOer': tbsOer, 'jIndex': null, 'digestSigner': null});
-    return signed;
+    try{
+      final signed = await methodChannel.invokeMethod<List<int>?>('sign', {'psid': psid, 'tbsOer': tbsOer, 'jIndex': null, 'digestSigner': null});
+      return signed;
+    } on Exception catch(e){
+      print(e);
+      return null;
+    }
+    
   }
 
   @override
   void getDeviceCerts(String token, TokenType tokenType){
-    methodChannel.invokeMethod<List<int>?>('getDeviceCerts', {'token': token, 'tokenType': tokenType.index});
+    try{
+      methodChannel.invokeMethod<List<int>?>('getDeviceCerts', {'token': token, 'tokenType': tokenType.index});
+    } on PlatformException catch(e){
+      print(e);
+    }
   }
 
   @override
   Future<SigningApiState> getState() async {
-    String? signingApiState = await methodChannel.invokeMethod<String?>('getState');
-    return enumFromString(signingApiState, SigningApiState.values, SigningApiState.NEED_CERTS);
+    try{
+      String? signingApiState = await methodChannel.invokeMethod<String?>('getState');
+      return enumFromString(signingApiState, SigningApiState.values, SigningApiState.NEED_CERTS);
+    } catch(e){
+      print(e);
+      return SigningApiState.NEED_INIT;
+    }
   }
 
   @override
   Future<ValidateStatus> validate(List<int> bytes, bool shouldValidate) async{
-    String? valid = await methodChannel.invokeMethod<String?>('validate', {'message': bytes, 'shouldValidate': shouldValidate});
-    return enumFromString(valid, ValidateStatus.values, ValidateStatus.FAILURE);
+    try{
+      String? valid = await methodChannel.invokeMethod<String?>('validate', {'message': bytes, 'shouldValidate': shouldValidate});
+      return enumFromString(valid, ValidateStatus.values, ValidateStatus.FAILURE);
+    } catch(e){
+      print(e);
+      return ValidateStatus.FAILURE;
+    }
+    
   }
 
   @override
   void topOffCerts(String token, TokenType tokenType){
-    methodChannel.invokeMethod<List<int>?>('topOffCerts', {'token': token, 'tokenType': tokenType.index});
+    try{
+      methodChannel.invokeMethod<List<int>?>('topOffCerts', {'token': token, 'tokenType': tokenType.index});
+    } catch(e){
+      print(e);
+    }
   }
 
   T enumFromString<T extends Enum>(String? value, List<T> values, T def) {

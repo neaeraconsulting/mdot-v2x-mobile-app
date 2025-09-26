@@ -38,6 +38,8 @@ class SettingsController extends GetxController {
   Rx<bool> notificationsEnabled = false.obs;
   Rx<bool> demoMode = false.obs;
   Rx<bool> readMessages = false.obs;
+  Rx<bool> enableIssMqtt = false.obs;
+  Rx<bool> enableEtxMqtt = true.obs;
 
   //GPS Mode
   Rx<GPSType> gpsType = GPSType.mobile.obs; // Default to mobile
@@ -75,6 +77,8 @@ class SettingsController extends GetxController {
     developerMode.value = await secureStorage.getDeveloperMode();
     soundEffectsEnabled.value = await secureStorage.getSoundEffectsEnabled();
     enablePC5.value = await secureStorage.getPC5Enabled();
+    enableIssMqtt.value = await secureStorage.getISSMqttEnabled();
+    enableEtxMqtt.value = await secureStorage.getEtxMqttEnabled();
     enableIssScmsSigning.value = await secureStorage.getIssScmsSigningEnabled();
 
     // Configuration Parameters for AWS S3

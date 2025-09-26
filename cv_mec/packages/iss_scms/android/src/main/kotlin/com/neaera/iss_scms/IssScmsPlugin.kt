@@ -63,27 +63,25 @@ class IssScmsPlugin: FlutterPlugin, MethodCallHandler {
         val digestSigner = args?.get("digestSigner") as? Boolean
 
         val outputArray = LocalSigning.sign(psid, tbsOer)
-        // val (valid, _) = LocalSigning.validate(outputArray, true)
-
-        // Log.i("SCMS","SCMS Self Validation" + valid)
         result.success(outputArray) 
       }else{
-        result.error("Android Signing Error", "Signing is not possible yet. Signing API State is " + state.name, null)
+        result.success(null)
       }
       
     }else if(call.method == "getDeviceCerts"){
       val token = args?.get("token") as String
       val tokenType = TokenType.values()[args?.get("tokenType") as Int]
+      Log.i("SCMS", "SCMS Getting Device Certs with token: $token and tokenType: $tokenType")
       scope.launch {
         try {
             // val certs = LocalSigning.getDeviceCerts("jvKFigeCl81aRAwieGZIo4cKgqq88NH5gRBgbwq7Tecuql4qFRBLoQ==", TokenType.DM_DASHBOARD)
-            LocalSigning.getDeviceCerts(token, tokenType)
+            LocalSigning.getDeviceCerts(token, TokenType.DM_DASHBOARD)
             withContext(Dispatchers.Main) {
                 result.success(null)
             }
         } catch (e: Exception) {
             withContext(Dispatchers.Main) {
-                result.error("CERT_ERROR", e.message, null)
+                result.success(null)
             }
         }
       }
@@ -95,14 +93,13 @@ class IssScmsPlugin: FlutterPlugin, MethodCallHandler {
       val tokenType = TokenType.values()[args?.get("tokenType") as Int]
       scope.launch {
         try {
-            // val certs = LocalSigning.getDeviceCerts("jvKFigeCl81aRAwieGZIo4cKgqq88NH5gRBgbwq7Tecuql4qFRBLoQ==", TokenType.DM_DASHBOARD)
             LocalSigning.topOffCerts(token, tokenType)
             withContext(Dispatchers.Main) {
                 result.success(null)
             }
         } catch (e: Exception) {
             withContext(Dispatchers.Main) {
-                result.error("CERT_ERROR", e.message, null)
+                result.success(null)
             }
         }
       }

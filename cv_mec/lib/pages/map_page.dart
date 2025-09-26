@@ -314,7 +314,10 @@ class MapState extends State<MapPage> {
     mqttAgents.disconnectAll();
     mqttAgents.clearAgents();
     
-    mqttAgents.addAgent(IssMqttAgent(processIncomingMessage));
+    if(settingsController.enableIssMqtt.value){
+      mqttAgents.addAgent(IssMqttAgent(processIncomingMessage));
+    }
+    
 
     final success = await mqttAgents.connectAll();
     if(success != 0){
@@ -327,7 +330,7 @@ class MapState extends State<MapPage> {
     if (debugMode) {
       stream = fakePosition(TestData.itswcFakePosition);
     } else if (settingsController.demoMode.value) {
-      stream = fakePosition(TestData.tfhrcFakePosition);
+      stream = fakePosition(TestData.plugfestFakePosition);
     } else if (settingsController.gpsType.value == GPSType.cradle) {
       stream = gpsService.positionStream(interval: const Duration(milliseconds: 500));
     } else if (settingsController.gpsType.value == GPSType.obu) {

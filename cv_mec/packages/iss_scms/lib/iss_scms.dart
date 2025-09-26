@@ -20,39 +20,47 @@ class IssScms {
   Future<bool> activateScms(String token) async{
 
     SigningApiState state = await getState();
+
+    print("SCMS State1 $state");
     if(state == SigningApiState.NEED_INIT){
       init();
       state = await getState();
     }
 
+    print("SCMS State2 $state");
+
     if(state == SigningApiState.NEED_CERTS){
       getDeviceCerts(token);
+      await waitUntilCertsDownloaded();
       state = await getState();
     }
+
+    print("SCMS State3 $state");
     
     if(state == SigningApiState.READY){
       // topOffCerts(token);
       return true;
     }
+    
 
     return false;
   }
   
 
-  // Future<void> waitUntilInitialized({
-  //   Duration checkInterval = const Duration(milliseconds: 1000),
-  //   Duration timeout = const Duration(seconds: 60),
-  // }) async {
-  //   final start = DateTime.now();
-  //   while (DateTime.now().difference(start) < timeout) {
-  //     SigningApiState state = await getState();
-  //     print("SCMS Checking State ${state.name}");
-  //     if (state != SigningApiState.NEED_INIT) {
-  //       return; // Condition met, exit the function
-  //     }
-  //     await Future.delayed(checkInterval);
-  //   }
-  // }
+  Future<void> waitUntilCertsDownloaded({
+    Duration checkInterval = const Duration(milliseconds: 100),
+    Duration timeout = const Duration(seconds: 50),
+  }) async {
+    final start = DateTime.now();
+    while (DateTime.now().difference(start) < timeout) {
+      SigningApiState state = await getState();
+      print("SCMS Checking State ${state.name}");
+      if (state == SigningApiState.READY) {
+        return; // Condition met, exit the function
+      }
+      await Future.delayed(checkInterval);
+    }
+  }
 
   // Message Definition Matches ISS Library
   void init(){

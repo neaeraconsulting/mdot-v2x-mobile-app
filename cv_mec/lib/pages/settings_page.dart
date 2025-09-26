@@ -243,7 +243,7 @@ class SettingsPage extends StatelessWidget {
             : const SizedBox.shrink()),
         verticalSpaceSmall,
         SwitchListTile(
-            title: const Text("Use PC5 MQTT Broker"),
+            title: const Text("Enable PC5 MQTT Broker"),
             value: controller.enablePC5.value,
             onChanged: (value) async {
               if (value != controller.enablePC5.value) {
@@ -265,6 +265,26 @@ class SettingsPage extends StatelessWidget {
               )
             : const SizedBox.shrink()),
         verticalSpaceSmall,
+        SwitchListTile(
+            title: const Text("Enable ISS MQTT Broker"),
+            value: controller.enableIssMqtt.value,
+            onChanged: (value) async {
+              if (value != controller.enableIssMqtt.value) {
+                controller.enableIssMqtt.value = value;
+                await controller.secureStorage.setIssMqttEnabled(value);
+              }
+            }),
+        verticalSpaceSmall,
+        // SwitchListTile(
+        //     title: const Text("Enable ETX MQTT Broker"),
+        //     value: controller.enableEtxMqtt.value,
+        //     onChanged: (value) async {
+        //       if (value != controller.enableEtxMqtt.value) {
+        //         controller.enableEtxMqtt.value = value;
+        //         await controller.secureStorage.setEtxMqttEnabled(value);
+        //       }
+        //     }),
+        // verticalSpaceSmall,
         Obx(() => SwitchListTile(
             title: const Text("Enable Manual Registration"),
             value: paramController.manualRegistrationMode.value,

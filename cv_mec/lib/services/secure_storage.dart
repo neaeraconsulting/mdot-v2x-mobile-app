@@ -37,6 +37,9 @@ class SecureStorage {
   static const _keyEnableIssSigning = "enableIssSigning";
   static const _keyIssScmsToken = "issScmsToken";
 
+  static const _keyEnableIssMqtt = "enableIssMqtt";
+  static const _keyEnableEtxMqtt = "enableEtxMqtt";
+
   static final _startUsername = dotenv.env['USERNAME']!;
   static final _startPassword = dotenv.env['PASSWORD']!;
   static final _startBaseURI = dotenv.env['API_ENDPOINT']!;
@@ -58,6 +61,7 @@ class SecureStorage {
   static final _pc5BrokerUrl = dotenv.env['PC5_MQTT_BROKER'] ?? "";
   static final _issScmsToken = dotenv.env['ISS_SCMS_TOKEN'] ?? "";
 
+
   Future<String> getUsername() async => await _storage.read(key: _keyUsername) ?? Future.value(_startUsername);
   Future<String> getPassword() async => await _storage.read(key: _keyPassword) ?? Future.value(_startPassword);
   Future<String> getBaseURI() async => await _storage.read(key: _keyBaseURI) ?? Future.value(_startBaseURI);
@@ -72,7 +76,9 @@ class SecureStorage {
   Future<bool> getDeveloperMode() async => (await _storage.read(key: _keyDeveloperMode)) == "true";
   Future<bool> getSoundEffectsEnabled() async => (await _storage.read(key: _keySoundEffectsEnabled)) == "true";
   Future<bool> getPC5Enabled() async => (await _storage.read(key: _keyEnablePC5)) == "true";
-  Future<bool> getIssScmsSigningEnabled() async => (await _storage.read(key: _keyEnableIssSigning)) == "true";
+  Future<bool> getISSMqttEnabled() async => (await _storage.read(key: _keyEnableIssMqtt)) == "true";
+  Future<bool> getEtxMqttEnabled() async => (await _storage.read(key: _keyEnableEtxMqtt)) == "true";
+  Future<bool> getIssScmsSigningEnabled() async => (await _storage.read(key: _keyEnableIssSigning)?? "true") == "true";
   Future<String> getGPSUsername() async => (await _storage.read(key: _keyGPSUsername)) ?? _startGPSUsername;
   Future<String> getGPSPassword() async => (await _storage.read(key: _keyGPSPassword)) ?? _startGPSPassword;
   Future<String> getGPSIP() async => (await _storage.read(key: _keyGPSIP)) ?? _startGPSIP;
@@ -167,6 +173,22 @@ class SecureStorage {
       await _storage.write(key: _keyEnablePC5, value: "true");
     } else {
       await _storage.write(key: _keyEnablePC5, value: "false");
+    }
+  }
+
+  Future setIssMqttEnabled(bool issMqttEnabled) async {
+    if (issMqttEnabled) {
+      await _storage.write(key: _keyEnableIssMqtt, value: "true");
+    } else {
+      await _storage.write(key: _keyEnableIssMqtt, value: "false");
+    }
+  }
+
+  Future setEtxMqttEnabled(bool etxMqttEnabled) async {
+    if (etxMqttEnabled) {
+      await _storage.write(key: _keyEnableEtxMqtt, value: "true");
+    } else {
+      await _storage.write(key: _keyEnableEtxMqtt, value: "false");
     }
   }
 
