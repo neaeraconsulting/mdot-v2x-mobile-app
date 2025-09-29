@@ -275,16 +275,16 @@ class SettingsPage extends StatelessWidget {
               }
             }),
         verticalSpaceSmall,
-        // SwitchListTile(
-        //     title: const Text("Enable ETX MQTT Broker"),
-        //     value: controller.enableEtxMqtt.value,
-        //     onChanged: (value) async {
-        //       if (value != controller.enableEtxMqtt.value) {
-        //         controller.enableEtxMqtt.value = value;
-        //         await controller.secureStorage.setEtxMqttEnabled(value);
-        //       }
-        //     }),
-        // verticalSpaceSmall,
+        SwitchListTile(
+            title: const Text("Enable ETX MQTT Broker"),
+            value: controller.enableEtxMqtt.value,
+            onChanged: (value) async {
+              if (value != controller.enableEtxMqtt.value) {
+                controller.enableEtxMqtt.value = value;
+                await controller.secureStorage.setEtxMqttEnabled(value);
+              }
+            }),
+        verticalSpaceSmall,
         Obx(() => SwitchListTile(
             title: const Text("Enable Manual Registration"),
             value: paramController.manualRegistrationMode.value,

@@ -46,6 +46,17 @@ class SecureStorage {
   static final _startVendorID = dotenv.env['VENDOR_ID']!;
   static final _startDeviceID = "";
 
+  static final _startVzMode = false;
+  static final _startNotificationsEnabled = false;
+  static final _startReadMessages = false;
+  static final _startDemoMode = false;
+  static final _startDeveloperMode = false;
+  static final _startEnableSoundEffects = false;
+  static final _startEnablePC5 = false;
+  static final _startEnableIssMqtt = false;
+  static final _startEnableEtxMqtt = true;
+  static final _startIssScmsSigningEnabled = dotenv.env['ISS_SCMS_TOKEN'] != null ? true : false;
+
   static final _startGPSType = dotenv.env['GPS_TYPE'] ?? '';
   static final _startGPSUsername = dotenv.env['GPS_USERNAME'] ?? '';
   static final _startGPSPassword = dotenv.env['GPS_PASSWORD'] ?? '';
@@ -62,23 +73,23 @@ class SecureStorage {
   static final _issScmsToken = dotenv.env['ISS_SCMS_TOKEN'] ?? "";
 
 
-  Future<String> getUsername() async => await _storage.read(key: _keyUsername) ?? Future.value(_startUsername);
-  Future<String> getPassword() async => await _storage.read(key: _keyPassword) ?? Future.value(_startPassword);
-  Future<String> getBaseURI() async => await _storage.read(key: _keyBaseURI) ?? Future.value(_startBaseURI);
-  Future<String> getVendorID() async => await _storage.read(key: _keyVendorID) ?? Future.value(_startVendorID);
-  Future<String> getDeviceID() async => await _storage.read(key: _keyDeviceID) ?? Future.value(_startDeviceID);
-  Future<String> getPC5BrokerUrl() async => await _storage.read(key: _keyPC5BrokerUrl) ?? Future.value(_pc5BrokerUrl);
-  Future<String> getIssScmsToken() async => await _storage.read(key: _keyIssScmsToken) ?? Future.value(_issScmsToken);
-  Future<bool> getVZMode() async => (await _storage.read(key: _keyVzMode)) == "true";
-  Future<bool> getNotificationsEnabled() async => (await _storage.read(key: _keyNotificationsEnabled)) == "true";
-  Future<bool> getReadMessages() async => (await _storage.read(key: _keyReadMessages)) == "true";
-  Future<bool> getDemoMode() async => (await _storage.read(key: _keyDemoMode)) == "true";
-  Future<bool> getDeveloperMode() async => (await _storage.read(key: _keyDeveloperMode)) == "true";
-  Future<bool> getSoundEffectsEnabled() async => (await _storage.read(key: _keySoundEffectsEnabled)) == "true";
-  Future<bool> getPC5Enabled() async => (await _storage.read(key: _keyEnablePC5)) == "true";
-  Future<bool> getISSMqttEnabled() async => (await _storage.read(key: _keyEnableIssMqtt)) == "true";
-  Future<bool> getEtxMqttEnabled() async => (await _storage.read(key: _keyEnableEtxMqtt)) == "true";
-  Future<bool> getIssScmsSigningEnabled() async => (await _storage.read(key: _keyEnableIssSigning)?? "true") == "true";
+  Future<String> getUsername() async => await _storage.read(key: _keyUsername) ?? _startUsername;
+  Future<String> getPassword() async => await _storage.read(key: _keyPassword) ?? _startPassword;
+  Future<String> getBaseURI() async => await _storage.read(key: _keyBaseURI) ?? _startBaseURI;
+  Future<String> getVendorID() async => await _storage.read(key: _keyVendorID) ?? _startVendorID;
+  Future<String> getDeviceID() async => await _storage.read(key: _keyDeviceID) ?? _startDeviceID;
+  Future<String> getPC5BrokerUrl() async => await _storage.read(key: _keyPC5BrokerUrl) ?? _pc5BrokerUrl;
+  Future<String> getIssScmsToken() async => await _storage.read(key: _keyIssScmsToken) ?? _issScmsToken;
+  Future<bool> getVZMode() async => (await _storage.read(key: _keyVzMode) ?? _startVzMode.toString()) == "true";
+  Future<bool> getNotificationsEnabled() async => (await _storage.read(key: _keyNotificationsEnabled)?? _startNotificationsEnabled.toString()) == "true";
+  Future<bool> getReadMessages() async => (await _storage.read(key: _keyReadMessages)?? _startReadMessages.toString()) == "true";
+  Future<bool> getDemoMode() async => (await _storage.read(key: _keyDemoMode) ?? _startDemoMode.toString()) == "true";
+  Future<bool> getDeveloperMode() async => (await _storage.read(key: _keyDeveloperMode), _startDeveloperMode) == "true";
+  Future<bool> getSoundEffectsEnabled() async => (await _storage.read(key: _keySoundEffectsEnabled)?? _startEnableSoundEffects.toString()) == "true";
+  Future<bool> getPC5Enabled() async => (await _storage.read(key: _keyEnablePC5)??_startEnablePC5.toString()) == "true";
+  Future<bool> getISSMqttEnabled() async => (await _storage.read(key: _keyEnableIssMqtt)??_startEnableIssMqtt.toString()) == "true";
+  Future<bool> getEtxMqttEnabled() async => (await _storage.read(key: _keyEnableEtxMqtt)?? _startEnableEtxMqtt.toString()) == "true";
+  Future<bool> getIssScmsSigningEnabled() async => (await _storage.read(key: _keyEnableIssSigning)?? _startIssScmsSigningEnabled.toString()) == "true";
   Future<String> getGPSUsername() async => (await _storage.read(key: _keyGPSUsername)) ?? _startGPSUsername;
   Future<String> getGPSPassword() async => (await _storage.read(key: _keyGPSPassword)) ?? _startGPSPassword;
   Future<String> getGPSIP() async => (await _storage.read(key: _keyGPSIP)) ?? _startGPSIP;
