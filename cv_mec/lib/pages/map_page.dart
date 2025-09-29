@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
+import 'dart:core';
 
 import 'package:asn1_plugin/j2735/2024/basic_safety_message/basic_safety_message.dart';
 import 'package:asn1_plugin/j2735/2024/basic_safety_message/bsmpart_iiextension.dart';
@@ -97,6 +98,7 @@ import 'package:typed_data/typed_data.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:cv_mec/controllers/configuration_controller.dart';
 import 'package:toastification/toastification.dart';
+import 'package:basic_utils/basic_utils.dart';
 
 enum ConnectedStatus { UNKNOWN, DISCONNECTED, CONNECTED, PARTIAl }
 
@@ -492,6 +494,22 @@ class MapState extends State<MapPage> {
     if (await fileService.checkIfRegistrationExists()) {
       addToAppLog("Loading Registration from Cache");
       registration = await fileService.getRegistration();
+
+      if (registration != null) {
+        //If the expiration date of cert.pem has passed, request new registration from the partner API^M
+        final cert = X509Utils.x509CertificateFromPem(registration!.certificates.cert);
+        final expirationDateTime = cert.tbsCertificate?.validity.notAfter;
+        if (expirationDateTime != null && expirationDateTime.isBefore(DateTime.now())) {
+          addToAppLog("Cached Registration is Expired (expired: $expirationDateTime), Loading Registration from Server");
+          registration = await apiService.getRegistration(token, paramController.clientType.value, paramController.clientSubtype.value);
+
+          addToAppLog("CREATED REGISTRATION");
+
+          if (registration != null) {
+            fileService.saveRegistration(registration!);
+          }
+        }
+      }
     } else {
       addToAppLog("Loading Registration from Server");
       registration = await apiService.getRegistration(
