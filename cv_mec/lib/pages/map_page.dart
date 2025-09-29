@@ -237,7 +237,29 @@ class MapState extends State<MapPage> {
     currentLightState = lightStateMap[MovementPhaseState.UNAVAILABLE]!;
 
     if (debugMode) {
-      fakeSdsmMessage();
+      TravelerInformation plugfest1 = asnService.decodeTim(TestData.plugfestCSWTim);
+      timManager.addOrUpdate(plugfest1,TestData.plugfestCSWTim);
+
+      TravelerInformation plugfest2 = asnService.decodeTim(TestData.plugfestIncidentTim);
+      timManager.addOrUpdate(plugfest2,TestData.plugfestIncidentTim);
+
+      TravelerInformation plugfest3 = asnService.decodeTim(TestData.plugfestRoadSignIdTim);
+      timManager.addOrUpdate(plugfest3,TestData.plugfestRoadSignIdTim);
+
+      TravelerInformation plugfest4 = asnService.decodeTim(TestData.plugfestWeatherTim);
+      timManager.addOrUpdate(plugfest4,TestData.plugfestWeatherTim);
+
+      TravelerInformation plugfest5 = asnService.decodeTim(TestData.plugfestWeatherPolygonTim);
+      timManager.addOrUpdate(plugfest5,TestData.plugfestWeatherPolygonTim);
+
+      TravelerInformation plugfest6 = asnService.decodeTim(TestData.plugfestWorkZoneTim);
+      timManager.addOrUpdate(plugfest6,TestData.plugfestWorkZoneTim);
+
+
+
+      
+
+      
     } else if (settingsController.demoMode.value) {
       TravelerInformation weatherTimDemo = asnService.decodeTim(TestData.tfhrcWeatherTIMDemo);
       timManager.addOrUpdate(weatherTimDemo, TestData.tfhrcWeatherTIMDemo);
@@ -328,7 +350,7 @@ class MapState extends State<MapPage> {
   Future<void> createGPSStream() async{
     Stream<Position> stream;
     if (debugMode) {
-      stream = fakePosition(TestData.itswcFakePosition);
+      stream = fakePosition(TestData.plugfestFakePosition);
     } else if (settingsController.demoMode.value) {
       stream = fakePosition(TestData.plugfestFakePosition);
     } else if (settingsController.gpsType.value == GPSType.cradle) {
@@ -474,7 +496,7 @@ class MapState extends State<MapPage> {
     timDataQueue = DataQueue("TIM_LOG_${logTime.millisecondsSinceEpoch}.csv");
     String subHeader =
         "topic,message_type,receive_time_ms,send_time_ms,generation_time_ms,send_rec_delta_time_ms,gen_rec_delta_time_ms,longitude,latitude,broker,msg_bytes,msg_source,signature\n";
-    String pubHeader = "topic,send_time_ms,longitude,latitude,broker,msg_bytes\n";
+    String pubHeader = "topic,send_time_ms,longitude,latitude,broker,msg_bytes,signed\n";
     String timHeader = "action,time,longitude,latitude,heading,asn1\n";
 
     recDataQueue.addItem(subHeader);
@@ -891,8 +913,8 @@ class MapState extends State<MapPage> {
       hex = psmBuilder.build();
     }
 
+    bool signed = false;
     if (hex != "") {
-
       List<int> messageBytes = ASNService.hexToBytes(hex);
       
       if(scmsActive){
@@ -901,6 +923,7 @@ class MapState extends State<MapPage> {
 
         if(signedMessageBytes != null && signedMessageBytes.isNotEmpty){
           messageBytes = signedMessageBytes;
+          signed = true;
 
         }else{
           showError("Result of Message Signing was Null or Empty");
@@ -919,7 +942,7 @@ class MapState extends State<MapPage> {
 
     String netStat = "Unavailable";
     String record =
-        "$publishTopic,${sendTime.millisecondsSinceEpoch},${currentPosition!.longitude},${currentPosition!.latitude},$netStat,$mqttConnectionURL,$hex\n";
+        "$publishTopic,${sendTime.millisecondsSinceEpoch},${currentPosition!.longitude},${currentPosition!.latitude},$netStat,$mqttConnectionURL,$hex,$signed\n";
     pubDataQueue.addItem(record);
   }
 
