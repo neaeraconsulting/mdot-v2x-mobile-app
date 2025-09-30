@@ -9,8 +9,10 @@ class MqttAgent{
   String agentName;
   MqttService mqttService = MqttService();
   Logger logger = Logger();
-  Function(String, List<int>, DateTime, DateTime?, String) processingFunction;
-
+  Position? currentPosition;
+  String? connectionUrl;
+  Function(String?, String, List<int>, DateTime, DateTime?, String) processingFunction;
+  
   
 
   MqttAgent(this.agentName, this.processingFunction){}
@@ -25,21 +27,25 @@ class MqttAgent{
     throw UnimplementedError('setupSubscribers method not implemented for mqtt agent $agentName');
   }
 
-  Future<int> updateSubscribers(Position pos){
+  Future<int> updateSubscribers(){
     throw UnimplementedError('updateSubscribers method not implemented for mqtt agent $agentName');
   }
 
-  int sendMessage(List<int> message, MsgType messageType){
+  String sendMessage(List<int> message, MsgType messageType, DateTime sendTime){
     throw UnimplementedError('sendMessage method not implemented for mqtt agent $agentName');
   }
 
   void callback(MqttReceivedMessage<MqttMessage?> message, DateTime recTime){
     final recMess = message.payload as MqttPublishMessage;
     print("Agent Callback received data");
-    processingFunction(message.topic, recMess.payload.message, recTime, null, agentName);
+    processingFunction(connectionUrl, message.topic, recMess.payload.message, recTime, null, agentName);
   }
 
   bool isConnected() {
     return mqttService.client != null && mqttService.client!.connectionStatus!.state == MqttConnectionState.connected;
+  }
+
+  void setPosition(Position? position){
+    currentPosition = position;
   }
 }

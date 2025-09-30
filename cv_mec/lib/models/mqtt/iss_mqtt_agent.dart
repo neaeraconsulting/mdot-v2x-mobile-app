@@ -4,7 +4,7 @@ import 'package:typed_data/typed_data.dart';
 
 class IssMqttAgent extends MqttAgent{
 
-  IssMqttAgent(Function(String, List<int>, DateTime, DateTime?, String) processingFunction): super("ISS", processingFunction);
+  IssMqttAgent(Function(String?, String, List<int>, DateTime, DateTime?, String) processingFunction): super("ISS", processingFunction);
 
   @override
   Future<int> connect() async{
@@ -22,35 +22,35 @@ class IssMqttAgent extends MqttAgent{
 
   @override
   Future<int> setupSubscribers() async{
-    // Hardcoding for now, should be loaded from API in the future
-    mqttService.subscribe("v2x/ta", callback); // Topic for App PSM / BSM Traffic
-    mqttService.subscribe("v2x/ta-srm", callback); // SRM messages from ISS App, SSMs from RSU units
-    mqttService.subscribe("v2x/midot/psm", callback); // PSM messages from RSUs
-    mqttService.subscribe("v2x/midot/bsm", callback); // BSM messages from RSUs
-    mqttService.subscribe("v2x/midot/tim​", callback); // TIM messages from RSUs
-    mqttService.subscribe("v2x/midot/sdsm​", callback); // SDSM messages from RSUs
-    mqttService.subscribe("v2x/midot/map", callback); // MAP messages from RSUs
-    mqttService.subscribe("v2x/spat/+", callback); // SPaT messages from all Intersections
-
+    mqttService.subscribe("v2x/+/psm",callback);
+    mqttService.subscribe("v2x/+/bsm",callback);
+    mqttService.subscribe("v2x/+/psm",callback);
+    mqttService.subscribe("v2x/spat/+", callback);
+    mqttService.subscribe("v2x/midot/+", callback);
+    mqttService.subscribe("v2x/stol/psm", callback);
+    mqttService.subscribe("v2x/stol/bsm", callback);
     return 0;
   }
 
   @override 
-  int sendMessage(List<int> message, MsgType messageType){
+  String sendMessage(List<int> message, MsgType messageType, DateTime sendTime){
     Uint8Buffer buffer = Uint8Buffer();
     buffer.addAll(message);
 
+    String topic = "";
     switch (messageType) {
       case MsgType.BSM:
-        print("Sending BSM to ISS");
-        mqttService.publishBytes(buffer, "v2x/ta");
+        topic = "v2x/stol/bsm";
         break;
       case MsgType.PSM:
-        mqttService.publishBytes(buffer, "v2x/ta");
+        topic = "v2x/stol/psm";
         break;
       default:
-        throw UnimplementedError('$agentName does not support sending ${messageType.name} messages');
+        logger.e('$agentName does not support sending ${messageType.name} messages');
+        break;
     }
-    return 0;
+
+    mqttService.publishBytes(buffer, topic);
+    return topic;
   }
 }

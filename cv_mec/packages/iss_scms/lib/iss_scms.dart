@@ -21,21 +21,16 @@ class IssScms {
 
     SigningApiState state = await getState();
 
-    print("SCMS State1 $state");
     if(state == SigningApiState.NEED_INIT){
       init();
       state = await getState();
     }
-
-    print("SCMS State2 $state");
 
     if(state == SigningApiState.NEED_CERTS){
       getDeviceCerts(token);
       await waitUntilCertsDownloaded();
       state = await getState();
     }
-
-    print("SCMS State3 $state");
     
     if(state == SigningApiState.READY){
       // topOffCerts(token);

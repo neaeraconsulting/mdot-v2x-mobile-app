@@ -255,7 +255,7 @@ class SettingsPage extends StatelessWidget {
             ? TextField(
                 decoration: const InputDecoration(labelText: 'PC5 MQTT Broker URL'),
                 controller: pc5BrokerUrlController,
-                obscureText: true,
+                obscureText: false,
                 onChanged: (value) async {
                   if (value != controller.pc5BrokerUrl.value) {
                     controller.pc5BrokerUrl.value = value;
