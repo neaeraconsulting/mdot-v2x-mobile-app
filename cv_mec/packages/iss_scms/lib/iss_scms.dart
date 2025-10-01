@@ -49,7 +49,6 @@ class IssScms {
     final start = DateTime.now();
     while (DateTime.now().difference(start) < timeout) {
       SigningApiState state = await getState();
-      print("SCMS Checking State ${state.name}");
       if (state == SigningApiState.READY) {
         return; // Condition met, exit the function
       }

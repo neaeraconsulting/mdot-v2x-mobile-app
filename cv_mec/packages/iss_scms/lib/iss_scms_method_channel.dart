@@ -63,7 +63,9 @@ class MethodChannelIssScms extends IssScmsPlatform {
   @override
   Future<ValidateStatus> validate(List<int> bytes, bool shouldValidate) async{
     try{
-      String? valid = await methodChannel.invokeMethod<String?>('validate', {'message': bytes, 'shouldValidate': shouldValidate});
+      
+      final Uint8List byteList = Uint8List.fromList(bytes);
+      String? valid = await methodChannel.invokeMethod<String?>('validate', {'message': byteList, 'shouldValidate': shouldValidate});
       return enumFromString(valid, ValidateStatus.values, ValidateStatus.FAILURE);
     } catch(e){
       print(e);

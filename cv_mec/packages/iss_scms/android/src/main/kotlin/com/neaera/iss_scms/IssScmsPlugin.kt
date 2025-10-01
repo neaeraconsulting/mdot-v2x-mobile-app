@@ -13,9 +13,6 @@ import com.iss_scms.dm.android.localdevicesecurityapi.SigningAPIState
 import android.content.Context
 import kotlinx.coroutines.*
 import android.util.Log
-// import com.iss_scms.dm.android.localdevicesecurityapi.api
-// import com.iss_scms.dm.android.localdevicesecurityapi.db
-// import com.iss_scms.dm.android.localdevicesecurityapi.encoderlibrary
 
 /** IssScmsPlugin */
 class IssScmsPlugin: FlutterPlugin, MethodCallHandler {
@@ -43,17 +40,18 @@ class IssScmsPlugin: FlutterPlugin, MethodCallHandler {
     if (call.method == "getPlatformVersion") {
       result.success("Android ${android.os.Build.VERSION.RELEASE}")
     }else if(call.method == "init"){
-      Log.i("SCMS", "SCMS Running Init on ISS Signing API")
       LocalSigning.init(context, ScmsEnvironment.PREPRODUCTION)
       result.success(null)
     }
     else if(call.method == "validate"){
       val message = args?.get("message") as ByteArray
       val hex = message.joinToString(separator = "") { "%02X".format(it) }
-      Log.i("SCMS","SCMS Validating Hex" + hex);
-      val (valid, _) = LocalSigning.validate(message, true)
-      Log.i("SCMS","SCMS Validation Validation " + valid)
-      result.success(valid.name)
+      try{
+        val (valid, _) = LocalSigning.validate(message, true)
+        result.success(valid.name)
+      } catch (e: IllegalArgumentException) {
+        result.success(ValidateStatus.FAILURE.name)
+      }
     }else if(call.method == "sign"){
       val state = LocalSigning.getState()
       if( state== SigningAPIState.READY){
@@ -71,7 +69,6 @@ class IssScmsPlugin: FlutterPlugin, MethodCallHandler {
     }else if(call.method == "getDeviceCerts"){
       val token = args?.get("token") as String
       val tokenType = TokenType.values()[args?.get("tokenType") as Int]
-      Log.i("SCMS", "SCMS Getting Device Certs with token: $token and tokenType: $tokenType")
       scope.launch {
         try {
             // val certs = LocalSigning.getDeviceCerts("jvKFigeCl81aRAwieGZIo4cKgqq88NH5gRBgbwq7Tecuql4qFRBLoQ==", TokenType.DM_DASHBOARD)

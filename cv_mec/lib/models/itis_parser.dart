@@ -400,7 +400,7 @@ class ItisParser {
           } else if (sl.item.length == 5) {
             // Reduce Speed Ahead
 
-            int speed = getIntFromItis((sl.item[2] as ITIScodes).itisCode);
+            int speed = getIntFromItis((sl.item[1] as ITIScodes).itisCode);
 
             if (speedAheadMap.containsKey(speed)) {
               return speedAheadMap[speed]!;
@@ -469,6 +469,7 @@ class ItisParser {
   }
 
   int getIntFromItis(int itis) {
+    
     int value = itis - minItisSmallNumber + 1;
     if (value >= 0 && value <= 255) {
       return value;

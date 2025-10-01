@@ -241,14 +241,7 @@ class MapState extends State<MapPage> {
       timManager.addOrUpdate(plugfest6,TestData.plugfestWorkZoneTim);
 
 
-      // print("MAP NULL DEBUG");
-      // String hex ="00121F280071C004005494221991804A40B940000035630200F9E00303AAF35341A9FD7BC5A8C0035FD6030080D2140100F0F51340F9F5FFFF17440C407921FE9F52400440F99F00016B63109F9A6300008BE9FFFF17860600B9BF3B03D5A6008052E21B40F9CDFFFF17B5F21BD100008052E10315AAF22D00941F08007141FAFF54E00315AA211080D2220080D2030080D2480C80D2010000D4CBFFFF1782221991000380D2E01F00F9E1E30091402C40F9421441F9E00B04A9000042B260003FD6E30300AAD1FFFF17630000D0610000D0600000D063A01B912180199100C01991020A8052F51300F97E210094FD7BB3A9FD030091FB7305A91CB441F9F55B02A9F60304AABC2700B4F35301A9735595525355B572F40300AAF76303A9337CB39BF70302AAF80303AAE203012AF96B04A973FE64D373EA7BD39503138BA972009120FDDF88400F0034826B73F81A0100F040231991017042B9C1240034A11640B93300001261240037C22D00B4A10640F904038052193441F9EAE30291203840F93B010090A31240B928010090213440F97BE32991000440F908810191260440F91C0080926300A49BA41A40B929008052600440A9E0870BA9E1BB40B9600840F92600068B400900F9E4AF00B9E26300F91F2003D52C1740F9E403132A73060011EC07";
-      // String trimmedHex = asnService.trimMessageHeaders(
-      //   hex, asnService.MAP_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
-      // MapData map = asnService.decodeMap(trimmedHex);
-      
 
-      
     } else if (settingsController.demoMode.value) {
       TravelerInformation weatherTimDemo = asnService.decodeTim(TestData.tfhrcWeatherTIMDemo);
       timManager.addOrUpdate(weatherTimDemo, TestData.tfhrcWeatherTIMDemo);
@@ -283,11 +276,6 @@ class MapState extends State<MapPage> {
         scmsActive = await scms.activateScms(settingsController.issScmsToken.value);
         if(!scmsActive){
           showError("Unable to Activate SCMS Signing");
-        }else{
-          // print("SCMS Map Message Validity Start");
-          // String hex ="00121F280071C004005494221991804A40B940000035630200F9E00303AAF35341A9FD7BC5A8C0035FD6030080D2140100F0F51340F9F5FFFF17440C407921FE9F52400440F99F00016B63109F9A6300008BE9FFFF17860600B9BF3B03D5A6008052E21B40F9CDFFFF17B5F21BD100008052E10315AAF22D00941F08007141FAFF54E00315AA211080D2220080D2030080D2480C80D2010000D4CBFFFF1782221991000380D2E01F00F9E1E30091402C40F9421441F9E00B04A9000042B260003FD6E30300AAD1FFFF17630000D0610000D0600000D063A01B912180199100C01991020A8052F51300F97E210094FD7BB3A9FD030091FB7305A91CB441F9F55B02A9F60304AABC2700B4F35301A9735595525355B572F40300AAF76303A9337CB39BF70302AAF80303AAE203012AF96B04A973FE64D373EA7BD39503138BA972009120FDDF88400F0034826B73F81A0100F040231991017042B9C1240034A11640B93300001261240037C22D00B4A10640F904038052193441F9EAE30291203840F93B010090A31240B928010090213440F97BE32991000440F908810191260440F91C0080926300A49BA41A40B929008052600440A9E0870BA9E1BB40B9600840F92600068B400900F9E4AF00B9E26300F91F2003D52C1740F9E403132A73060011EC07";
-          // ValidateStatus validity = await scms.validate(ASNService.hexToBytes(hex));
-          // print("SCMS Map Message Validity $validity");
         }
       }
 
@@ -534,8 +522,6 @@ class MapState extends State<MapPage> {
     String hex = ASNService.bytesToHex(bytes);
     MsgType msgType = asnService.determineHexMessageType(hex);
     ValidateStatus validity = await scms.validate(bytes);
-
-    print("Process Incoming Message of type $msgType, Validity: $validity $broker $topic");
 
     switch (msgType) {
       case MsgType.BSM:
@@ -812,26 +798,6 @@ class MapState extends State<MapPage> {
       }else{
         updateConnectedStatus(ConnectedStatus.DISCONNECTED);
       }
-      
-
-    //   msg.msgBytes = messageBytes;
-    //   msg.time = Utils.dateTimeToTimestamp(sendTime);
-      
-    //   buffer.addAll(msg.writeToBuffer());
-    //   if(settingsController.enableEtxMqtt.value){
-    //     print("Sending Message to ETX Signed = $signed");
-    //     mqtt.publishBytes(buffer, publishTopic);
-    //   }else{
-    //     print("Skipping Message Send to ETX Signed = $signed");
-    //   }
-      
-    //   updateConnectedStatus(ConnectedStatus.CONNECTED);
-    // }
-
-    // String netStat = "Unavailable";
-    // String record =
-    //     "$publishTopic,${sendTime.millisecondsSinceEpoch},${currentPosition!.longitude},${currentPosition!.latitude},$netStat,$mqttConnectionURL,$hex,$signed\n";
-    // pubDataQueue.addItem(record);
     }
   }
 
