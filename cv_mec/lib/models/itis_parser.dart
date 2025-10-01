@@ -47,6 +47,8 @@ class ItisParser {
   final int heavyRain = 4884;
   final int rain = 4885;
   final int strongWinds = 5127;
+  final int gustyWinds = 5131;
+  final int denseFog = 5377;
   final int fog = 5378;
   final int visibilityReduced = 5383;
   final int blowingSnow = 5385;
@@ -60,7 +62,9 @@ class ItisParser {
   final int dirtRoadSurface = 6016;
   final int milledRoadSurface = 6017;
   final int snowTiresOrChainsRequired = 6156;
+  final int alert = 6916;
   final int lookOutForWorkers = 6952;
+  final int advice = 7712;
   final int keepToRight = 7525;
   final int keepToLeft = 7426;
   final int reduceYourSpeed = 7443;
@@ -70,12 +74,18 @@ class ItisParser {
   final int prepareToStop = 7186;
   final int stopAtNextSafePlace = 7188;
   final int onlyTravelIfAbsolutelyNecessary = 7189;
+  final int on_curve = 8026;
   final int rightLaneClosedAhead = 8196;
   final int pedestrian = 9486;
   final int fallingRocks = 12037;
   final int maxItisSmallNumber = 12799;
   final int minItisSmallNumber = 12545;
+  final int ahead = 13569;
   final int crossing = 13585;
+  final int left_turn = 13594;
+  final int right_turn = 13599;
+  
+  
 
   //units
   final int inches = 8709;
@@ -90,13 +100,16 @@ class ItisParser {
 
   final String imageDirectory = "assets/images/ITIS";
 
-  // Font Packs are Bitmap versions of .ttf fonts. They can be converted here: https://ttf2fnt.com/
+  // Font Packs are Bitmap versions of .ttf fonts. They can be converted here: https://snowb.org/
   final String font80Path = "assets/fonts/HighwayGothic_80.zip";
   final String font72Path = "assets/fonts/HighwayGothic_72.zip";
   final String font48Path = "assets/fonts/HighwayGothic_48.zip";
   final String font40Path = "assets/fonts/HighwayGothic_40.zip";
   final String font32Path = "assets/fonts/HighwayGothic_32.zip";
   final String font24Path = "assets/fonts/HighwayGothic_24.zip";
+  final String font16Path = "assets/fonts/HighwayGothic_16.zip";
+  final String font12Path = "assets/fonts/HighwayGothic_12.zip";
+  final String font8Path = "assets/fonts/HighwayGothic_8.zip";
 
   late final Map<int, ItisCode> basicAdvisioryCodeMap;
   late final Map<int, ItisCode> basicWorkZoneCodeMap;
@@ -292,11 +305,69 @@ class ItisParser {
                 return ItisCode(heightLimit, "Height Limit", itis.item);
               }
             }else{
-              return ItisCode.error("Received Itis Code $heightLimit (Speed Limit), but included Height is not a valid Height");
+              return ItisCode.error("Received Itis Code $heightLimit, but included Height is not a valid Height");
             }
           } else {
             return ItisCode.unknown(code);
           }
+        }else if(code == right_turn){
+          if(itis.item.length == 6){
+            final code2 = (itis.item[1] as ITIScodes).itisCode;
+            final code3 = (itis.item[2] as ITIScodes).itisCode;
+            final code4 = (itis.item[3] as ITIScodes).itisCode;
+            final code5 = (itis.item[4] as ITIScodes).itisCode;
+
+            int speed = getIntFromItis(code5);
+
+            if(code2 == advice && code3 == on_curve && code4 == speedLimit){
+              ImageProvider? image = await getCurveSpeedImage(speed, true);
+              if(image != null){
+                return ItisCode.withImage(right_turn, "Right Turn Advice On Curve Speed Limit ${speed} Miles Per Hour", itis.item, image);
+              }else{
+                return ItisCode.error("Received Itis Code $speed (Speed Limit), but included Speed is not a valid Speed"); 
+              }
+              
+            }
+          }
+          return ItisCode.unknown(code);
+        }else if(code == left_turn){
+          if(itis.item.length == 6){
+            final code2 = (itis.item[1] as ITIScodes).itisCode;
+            final code3 = (itis.item[2] as ITIScodes).itisCode;
+            final code4 = (itis.item[3] as ITIScodes).itisCode;
+            final code5 = (itis.item[4] as ITIScodes).itisCode;
+
+            int speed = getIntFromItis(code5);
+
+            if(code2 == advice && code3 == on_curve && code4 == speedLimit){
+              ImageProvider? image = await getCurveSpeedImage(speed, false);
+              if(image != null){
+                return ItisCode.withImage(right_turn, "Right Turn Advice On Curve Speed Limit ${speed} Miles Per Hour", itis.item, image);
+              }else{
+                return ItisCode.error("Received Itis Code $speed (Speed Limit), but included Speed is not a valid Speed"); 
+              }
+              
+            }
+          }
+          return ItisCode.unknown(code);
+        }
+        
+        else if (code == alert){
+          if(itis.item.length == 2){
+            final code2 = (itis.item[1] as ITIScodes).itisCode;
+            if(code2 == gustyWinds){
+              return ItisCode.withImage(gustyWinds, "Gusty Winds Ahead", itis.item, AssetImage("$imageDirectory/$gustyWinds.png"));
+            }
+          }
+          if(itis.item.length == 3){
+            final code2 = (itis.item[1] as ITIScodes).itisCode;
+            final code3 = (itis.item[2] as ITIScodes).itisCode;
+
+            if(code2 == denseFog && code3 == ahead){
+              return ItisCode.withImage(denseFog, "Alert Dense Fog Ahead", itis.item, AssetImage("$imageDirectory/$denseFog.png"));
+            }
+          }
+          return ItisCode.error("TIM message has no ITIS Codes");
         }else if (code == speedLimit) {
           if (itis.item.length == 3) {
             // Basic Speed Limit
@@ -398,8 +469,6 @@ class ItisParser {
               return ItisCode.error("Received Itis Code 268 (Speed Limit), but included Speed is not a valid Speed");
             }
           } else if (sl.item.length == 5) {
-            // Reduce Speed Ahead
-
             int speed = getIntFromItis((sl.item[1] as ITIScodes).itisCode);
 
             if (speedAheadMap.containsKey(speed)) {
@@ -567,6 +636,28 @@ class ItisParser {
         img.drawString(baseSizeImage, "$inches", font: font, color: img.ColorRgba8(0, 0, 0, 200), x: 103, rightJustify: true);
       }
       
+      return MemoryImage(img.encodePng(baseSizeImage));
+    }
+    return null;
+  }
+
+  Future<ImageProvider?> getCurveSpeedImage(int sl, bool rightTurn) async {
+    ByteData assetImageByteData;
+    if(rightTurn){
+      assetImageByteData = await rootBundle.load('$imageDirectory/right_curve_speed_warning.png');
+    }else{
+      assetImageByteData = await rootBundle.load('$imageDirectory/left_curve_speed_warning.png');
+    }
+
+    String assetPath = font24Path;
+    if (sl >= 100) {
+      assetPath = font24Path;
+    }
+    final ByteData assetFontByteData = await rootBundle.load(assetPath);
+    final font = img.readFontZip(assetFontByteData.buffer.asUint8List());
+    img.Image? baseSizeImage = img.decodeImage(assetImageByteData.buffer.asUint8List());
+    if (baseSizeImage != null) {
+      img.drawString(baseSizeImage, "$sl", font: font, color: img.ColorRgb8(0, 0, 0), y: 200, x:112);
       return MemoryImage(img.encodePng(baseSizeImage));
     }
     return null;
