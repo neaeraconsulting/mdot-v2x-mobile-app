@@ -1,7 +1,7 @@
 class TimDefinition {
   final String name;
   final String type;
-  final List<int> codes;
+  final List<String> codes;
   final String graphic;
 
   TimDefinition({
@@ -15,7 +15,7 @@ class TimDefinition {
     return TimDefinition(
       name: json['name'],
       type: json['type'],
-      codes: List<int>.from(json['codes']),
+      codes: List<String>.from(json['codes']),
       graphic: json['graphic'],
     );
   }
