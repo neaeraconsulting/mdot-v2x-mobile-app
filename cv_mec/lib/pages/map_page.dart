@@ -187,7 +187,7 @@ class MapState extends State<MapPage> {
   late Image currentLightState;
   late String nextLightText = "";
 
-  bool debugMode = false;
+  bool debugMode = true;
   bool showLoadingIcon = true;
   bool showLightText = true;
   bool scmsActive = false;
@@ -272,11 +272,13 @@ class MapState extends State<MapPage> {
             IosTextToSpeechAudioMode.voicePrompt);
       }
 
-      if(settingsController.enableIssScmsSigning.value){
+      if(settingsController.enableIssScmsSigning.value && Platform.isAndroid){
         scmsActive = await scms.activateScms(settingsController.issScmsToken.value);
         if(!scmsActive){
           showError("Unable to Activate SCMS Signing");
         }
+      }else{
+        scmsActive =false;
       }
 
       await createGPSStream();
@@ -521,7 +523,12 @@ class MapState extends State<MapPage> {
   void processIncomingMessage(String? broker, String topic, List<int> bytes, DateTime recTime, DateTime? sendTime, String source) async {
     String hex = ASNService.bytesToHex(bytes);
     MsgType msgType = asnService.determineHexMessageType(hex);
-    ValidateStatus validity = await scms.validate(bytes);
+    ValidateStatus validity;
+    if(Platform.isAndroid){
+      validity= await scms.validate(bytes);
+    }else{
+      validity = ValidateStatus.FAILURE;
+    }
 
     switch (msgType) {
       case MsgType.BSM:
