@@ -5,6 +5,7 @@ import 'package:cv_mec/models/mqtt/mqtt_agent.dart';
 import 'package:cv_mec/models/msg_types.dart';
 import 'package:cv_mec/models/utils.dart';
 import 'package:cv_mec/services/api_service.dart';
+import 'package:cv_mec/services/asn_service.dart';
 import 'package:cv_mec/services/file_service.dart';
 import 'package:cv_mec/services/param_controller.dart';
 import 'package:cv_mec/services/timing.dart';
@@ -21,6 +22,7 @@ class EtxMqttAgent extends MqttAgent{
   SettingsController settingsController = Get.find<SettingsController>();
   ConfigurationController configController = Get.find<ConfigurationController>();
   Timing timingService = Get.find<Timing>();
+  ASNService asnService = Get.find<ASNService>();
   Registration? registration;
 
   EtxMqttAgent(Function(String?, String, List<int>, DateTime, DateTime?, String) processingFunction): super("ETX", processingFunction);
@@ -85,7 +87,7 @@ class EtxMqttAgent extends MqttAgent{
 
   @override
   Future<int> setupSubscribers() async{
-    mqttService.subscribe("vzimp/1/Private/+/+/+/j2735_gr/+/+", onRawAsnMessage); //MAP / TIM
+    mqttService.subscribe("vzimp/1/Private/+/+/+/j2735/+/+", onRawAsnMessage); //MAP / TIM
     mqttService.subscribe("vzimp/1/Private/+/+/+/j2735_gr/+/+", onGeoRelevanceMessage);
     mqttService.subscribe("vzimp/1/GeoRelevance/+/+/Public/j2735/+/+", onRawAsnMessage); // SPaT
     mqttService.subscribe("vzimp/1/GeoRelevance/+/+/Public/j2735_gr/+/+", onGeoRelevanceMessage);
@@ -104,11 +106,24 @@ class EtxMqttAgent extends MqttAgent{
     }else{
       return "Failure to Send Message - No Position";
     }
-    
 
     msg.position = pos;
 
     Uint8Buffer buffer = Uint8Buffer();
+
+    if(settingsController.enableIssScmsSigning.value){
+      String? trimmedMessage;
+      if(messageType == MsgType.BSM){
+        trimmedMessage = asnService.trimMessageHeaders(ASNService.bytesToHex(message), asnService.BSM_START_FLAG);
+      }else if(messageType == MsgType.PSM){
+        trimmedMessage = asnService.trimMessageHeaders(ASNService.bytesToHex(message), asnService.BSM_START_FLAG);
+      }
+      
+      if(trimmedMessage != null){
+        message = ASNService.hexToBytes(trimmedMessage);
+      }
+    }
+    
 
     msg.msgBytes = message;
     msg.time = Utils.dateTimeToTimestamp(sendTime);
