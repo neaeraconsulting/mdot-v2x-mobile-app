@@ -9,6 +9,7 @@ import 'package:cv_mec/styles/spacing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:cv_mec/models/RangeInputFormatter.dart';
 import 'package:get/get.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -252,6 +253,7 @@ class SettingsPage extends StatelessWidget {
           keyboardType: TextInputType.number,
           inputFormatters: [
             FilteringTextInputFormatter.digitsOnly, // Only allow 0–9
+            RangeInputFormatter(min: 1, max: 100),
           ],
           onChanged: (value) async {
             final parsed = int.tryParse(value);

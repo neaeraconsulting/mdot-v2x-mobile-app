@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -57,7 +59,7 @@ class SecureStorage {
   static final _startEnableIssMqtt = false;
   static final _startEnableEtxMqtt = true;
   static final _startIssScmsSigningEnabled = dotenv.env['ISS_SCMS_TOKEN'] != null ? true : false;
-  static final _startBroadcastRate = dotenv.env["BROADCAST_RATE"] != null ? int.tryParse(dotenv.env['BROADCAST_RATE']!) : 10;
+  static final _startBroadcastRate = dotenv.env["BROADCAST_RATE"] != null ? min(100, max(1, int.tryParse(dotenv.env['BROADCAST_RATE']!)??10)) : 10;
 
   static final _startGPSType = dotenv.env['GPS_TYPE'] ?? '';
   static final _startGPSUsername = dotenv.env['GPS_USERNAME'] ?? '';
