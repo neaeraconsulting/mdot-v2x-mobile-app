@@ -40,6 +40,7 @@ class SettingsController extends GetxController {
   Rx<bool> readMessages = false.obs;
   Rx<bool> enableIssMqtt = false.obs;
   Rx<bool> enableEtxMqtt = true.obs;
+  RxInt broadcastRate = 10.obs;
 
   //GPS Mode
   Rx<GPSType> gpsType = GPSType.mobile.obs; // Default to mobile
@@ -80,6 +81,7 @@ class SettingsController extends GetxController {
     enableIssMqtt.value = await secureStorage.getISSMqttEnabled();
     enableEtxMqtt.value = await secureStorage.getEtxMqttEnabled();
     enableIssScmsSigning.value = await secureStorage.getIssScmsSigningEnabled();
+    broadcastRate.value = await secureStorage.getBroadcastRate();
 
     // Configuration Parameters for AWS S3
     s3AccessKey.value = await secureStorage.getS3AccessKey();

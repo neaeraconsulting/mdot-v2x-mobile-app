@@ -99,7 +99,6 @@ import 'package:uuid/uuid.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:cv_mec/controllers/configuration_controller.dart';
 import 'package:toastification/toastification.dart';
-import 'package:basic_utils/basic_utils.dart';
 
 enum ConnectedStatus { UNKNOWN, DISCONNECTED, CONNECTED, PARTIAL }
 
@@ -723,8 +722,10 @@ class MapState extends State<MapPage> {
     // Stop any previous timer
     sendMessageTimer?.cancel();
 
-    // Set the timer to call _runFunction every 100 milliseconds
-    sendMessageTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+    int broadcastIntervalMilliseconds = (1000 / settingsController.broadcastRate.value).toInt();
+    print("Sending Message BroadcastRateInterval $broadcastIntervalMilliseconds");
+
+    sendMessageTimer = Timer.periodic(Duration(milliseconds: broadcastIntervalMilliseconds), (timer) {
       sendMessage();
       if (!isConnected()) {
         stopSendingBSM();
@@ -739,6 +740,8 @@ class MapState extends State<MapPage> {
       updateConnectedStatus(ConnectedStatus.PARTIAL);
       return;
     }
+
+    print("Sending Message");
 
     DateTime sendTime = timingService.getTime();
     String hex = "";
