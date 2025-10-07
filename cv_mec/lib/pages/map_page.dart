@@ -99,7 +99,6 @@ import 'package:uuid/uuid.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:cv_mec/controllers/configuration_controller.dart';
 import 'package:toastification/toastification.dart';
-import 'package:basic_utils/basic_utils.dart';
 
 enum ConnectedStatus { UNKNOWN, DISCONNECTED, CONNECTED, PARTIAL }
 
