@@ -253,7 +253,7 @@ class SettingsPage extends StatelessWidget {
           keyboardType: TextInputType.number,
           inputFormatters: [
             FilteringTextInputFormatter.digitsOnly, // Only allow 0–9
-            RangeInputFormatter(min: 1, max: 100),
+            RangeInputFormatter(min: 1, max: 10),
           ],
           onChanged: (value) async {
             final parsed = int.tryParse(value);
