@@ -82,6 +82,8 @@ flutter:
     - assets/images/Siren/
     - assets/images/Bus/
     - assets/audio/
+    - assets/images/tims/
+    - assets/tims.json
 
   # fonts:
   #   - family: HighwayGothic
