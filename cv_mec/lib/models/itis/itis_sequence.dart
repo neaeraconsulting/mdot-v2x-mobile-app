@@ -1,40 +1,36 @@
 import 'package:asn1_plugin/j2735/2024/choice/choice_item.dart';
+import 'package:asn1_plugin/j2735/2024/itis/itis_codes.dart';
+import 'package:asn1_plugin/j2735/2024/itis/itis_text.dart';
+import 'package:cv_mec/models/itis/itis_converter.dart';
 import 'package:flutter/material.dart';
 
 class ItisSequence {
   late ImageProvider image;
   late List<Choice_Item> associatedCodes;
+  late String description;
 
-  String? name;
+  ItisSequence(this.associatedCodes, this.image){}
 
-  ItisCode(List<Choice_Item> associatedCodes, ImageProvider image) {
-    this.associatedCodes = associatedCodes;
-    this.image = image;
+  ItisSequence.fromText(List<String> codes, ImageProvider image){
+    associatedCodes = [];
+    description = "";
+    image = image;
+    for(String code in codes){
+      int? parsedCode = int.tryParse(code);
+      if(parsedCode != null){
+        associatedCodes.add(ITIScodes(parsedCode));
+        if(ItisConverter.codeLookup.containsKey(parsedCode)){
+          description = "$description ${ItisConverter.codeLookup[parsedCode]!}";
+        }  
+      }else{
+        associatedCodes.add(ITIStext(code));
+      }
+    }
   }
 
-  // ItisCode.withImage(int itis, String description, List<Choice_Item> associatedCodes, ImageProvider image) {
-  //   this.itis = itis;
-  //   this.description = description;
-  //   this.associatedCodes = associatedCodes;
-  //   this.image = image;
-  //   status = ITIS_CODE_STATUS.VALID;
-  // }
-
-  // ItisCode.error(String error) {
-  //   itis = -1;
-  //   description = error;
-  //   image = null;
-  //   associatedCodes = [];
-  //   status = ITIS_CODE_STATUS.ERROR;
-  // }
-
-  // ItisCode.unknown(int itis) {
-  //   this.itis = -1;
-  //   description = "Received TIM Message with ITIS: $itis";
-  //   image = null;
-  //   associatedCodes = [];
-  //   status = ITIS_CODE_STATUS.UNKNOWN;
-  // }
+  ItisSequence.fromDescription(String description, ImageProvider image){
+    associatedCodes = [];
+    description = description;
+    image = image;
+  }
 }
-
-// enum ITIS_CODE_STATUS { UNKNOWN, VALID, ERROR }
