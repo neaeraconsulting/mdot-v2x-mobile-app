@@ -251,35 +251,6 @@ class ItisParser {
     heightAdvisoryMap = {};
   }
 
-  Future<Map<String, ItisCode>> loadTims() async {
-    final String jsonString = await rootBundle.loadString('assets/tims.json');
-    final Map<String, dynamic> json = jsonDecode(jsonString);
-
-    Map<String,ItisCode> codes = {};
-
-    var timsList = json['tims'] as List;
-    List<TimDefinition> tims = timsList.map((t) => TimDefinition.fromJson(t)).toList();
-    for(TimDefinition def in tims){
-      
-
-      if(isStaticSequence(def.codes)){
-        // Load Code into Dictionary
-        String key = getKeyForTim(def.type, def.codes);
-        codes[key] = ItisCode.withImage(
-          blowingSnow, "Rain", [ITIScodes(blowingSnow)], AssetImage("$imageDirectory/$blowingSnow.png"))
-
-      }else{
-        // Code needs to be procedurally generated
-
-      }
-    }
-
-
-
-
-    
-    return codes;
-  }
 
 
   String getKeyForTim(String category, List<int> itisCodes){

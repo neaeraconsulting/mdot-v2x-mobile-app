@@ -3,10 +3,11 @@ import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_data_frame.
 import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_information.dart';
 import 'package:cv_mec/models/geometry_direction.dart';
 import 'package:cv_mec/models/data_frame_geometry.dart';
-import 'package:cv_mec/models/itis_code.dart';
-import 'package:cv_mec/models/itis_parser.dart';
+import 'package:cv_mec/models/itis/itis_sequence.dart';
 import 'package:cv_mec/services/asn_service.dart';
 import 'package:cv_mec/services/geometry_service.dart';
+import 'package:cv_mec/services/itis_decoding_service.dart';
+import 'package:get/get.dart';
 import 'package:uuid/uuid.dart';
 
 class TimManager {
@@ -17,8 +18,8 @@ class TimManager {
   Map<TravelerDataFrame, String> asn1Map = <TravelerDataFrame, String>{};
 
   GeometryService geometryService = GeometryService();
+  ItisDecodingService itisDecodingService = Get.find<ItisDecodingService>();
 
-  ItisParser itisParser = ItisParser();
 
   final uuid = const Uuid();
 
@@ -166,10 +167,10 @@ class TimManager {
     return showDataFrames;
   }
 
-  Future<List<ItisCode>> getItisRepresentationForDataFrames(List<TravelerDataFrame> frames) async {
-    List<ItisCode> codes = [];
+  Future<List<ItisSequence>> getItisRepresentationForDataFrames(List<TravelerDataFrame> frames) async {
+    List<ItisSequence> codes = [];
     for (TravelerDataFrame frame in frames) {
-      codes.add(await itisParser.getItisRepresentation(frame));
+      codes.add(await itisDecodingService.getSequenceForFrame(frame));
     }
     return codes;
   }
@@ -187,8 +188,8 @@ class TimManager {
     return asn;
   }
 
-  Future<ItisCode> getItisRepresentationForDataFrame(TravelerDataFrame frame) async {
-    return await itisParser.getItisRepresentation(frame);
+  Future<ItisSequence> getItisRepresentationForDataFrame(TravelerDataFrame frame) async {
+    return await itisDecodingService.getSequenceForFrame(frame);
   }
 
   DateTime getTimStartTime(TravelerDataFrame dataFrame) {

@@ -1,5 +1,6 @@
 import 'package:asn1_plugin/j2735/2024/personal_safety_message/personal_device_user_type.dart';
 import 'package:asn1_plugin/j2735/2024/sensor_data_sharing_message/object_type.dart';
+import 'package:cv_mec/models/itis/itis_sequence.dart';
 import 'package:cv_mec/models/itis_code.dart';
 import 'package:cv_mec/models/msg_types.dart';
 import 'package:cv_mec/models/received_messages/receieved_msg.dart';
@@ -67,46 +68,66 @@ class ReceivedMessageManager {
     return activeMessages;
   }
 
-  List<ItisCode> convertToItisCodes(List<ReceivedMsg> messages) {
-    List<ItisCode> codes = [];
+  // List<ItisCode> convertToItisCodes(List<ReceivedMsg> messages) {
+  //   List<ItisCode> codes = [];
+  //   for (ReceivedMsg msg in messages) {
+  //     if (msg.type == MsgType.SDSM) {
+  //       ? code = getITISForSDSM(msg as ReceivedSdsm);
+  //       if (code != null) {
+  //         codes.add(code);
+  //       }
+  //     } else if (msg.type == MsgType.PSM) {
+  //       ItisCode? code = getITISForPSM(msg as ReceivedPsm);
+  //       if (code != null) {
+  //         codes.add(code);
+  //       }
+  //     } else if (msg.type == MsgType.BSM) {
+  //       // No alerts currently supported for BSM messages.
+  //     }
+  //   }
+  //   return codes;
+  // }
+
+  List<ItisSequence> convertToItisSequence(List<ReceivedMsg> messages) {
+    List<ItisSequence> sequences = [];
     for (ReceivedMsg msg in messages) {
       if (msg.type == MsgType.SDSM) {
-        ItisCode? code = getITISForSDSM(msg as ReceivedSdsm);
-        if (code != null) {
-          codes.add(code);
+        ItisSequence? sequence = getITISForSDSM(msg as ReceivedSdsm);
+        if (sequence != null) {
+          sequences.add(sequence);
         }
       } else if (msg.type == MsgType.PSM) {
-        ItisCode? code = getITISForPSM(msg as ReceivedPsm);
-        if (code != null) {
-          codes.add(code);
+        ItisSequence? sequence = getITISForPSM(msg as ReceivedPsm);
+        if (sequence != null) {
+          sequences.add(sequence);
         }
       } else if (msg.type == MsgType.BSM) {
         // No alerts currently supported for BSM messages.
       }
     }
-    return codes;
+    return sequences;
   }
 
-  ItisCode? getITISForSDSM(ReceivedSdsm sdsm) {
+  ItisSequence? getITISForSDSM(ReceivedSdsm sdsm) {
     if (sdsm.objectType == ObjectType.animal) {
-      return ItisCode.withImage(43, "Animal Ahead", [], AssetImage("$imageDirectory/dog.png"));
+      return ItisSequence.fromDescription("Animal Ahead", AssetImage("$imageDirectory/dog.png"));
     } else if (sdsm.objectType == ObjectType.vru) {
-      return ItisCode.withImage(43, "Pedestrian Ahead", [], AssetImage("$imageDirectory/pedcrossing.png"));
+      return ItisSequence.fromDescription("Pedestrian Ahead", AssetImage("$imageDirectory/pedcrossing.png"));
     } else if (sdsm.objectType == ObjectType.unknown) {
-      return ItisCode.withImage(43, "Unknown Object Ahead", [], AssetImage("$imageDirectory/pedcrossing.png"));
+      return ItisSequence.fromDescription("Unknown Object Ahead", AssetImage("$imageDirectory/pedcrossing.png"));
     }
     return null;
   }
 
-  ItisCode? getITISForPSM(ReceivedPsm psm) {
+  ItisSequence? getITISForPSM(ReceivedPsm psm) {
     if (psm.deviceType == PersonalDeviceUserType.APEDESTRIAN) {
-      return ItisCode.withImage(43, "Pedestrian Ahead", [], AssetImage("$imageDirectory/pedcrossing.png"));
+      return ItisSequence.fromDescription("Pedestrian Ahead", AssetImage("$imageDirectory/pedcrossing.png"));
     } else if (psm.deviceType == PersonalDeviceUserType.APEDALCYCLIST) {
-      return ItisCode.withImage(43, "Cyclist Ahead", [], AssetImage("$imageDirectory/bicycle.png"));
+      return ItisSequence.fromDescription("Cyclist Ahead", AssetImage("$imageDirectory/bicycle.png"));
     } else if (psm.deviceType == PersonalDeviceUserType.ANANIMAL) {
-      return ItisCode.withImage(43, "Animal Ahead", [], AssetImage("$imageDirectory/dog.png"));
+      return ItisSequence.fromDescription("Animal Ahead", AssetImage("$imageDirectory/dog.png"));
     } else if (psm.deviceType == PersonalDeviceUserType.APUBLICSAFETYWORKER) {
-      return ItisCode.withImage(43, "Public Safety Worker Ahead", [], AssetImage("$imageDirectory/pedcrossing.png"));
+      return ItisSequence.fromDescription("Public Safety Worker Ahead", AssetImage("$imageDirectory/pedcrossing.png"));
     }
     return null;
   }

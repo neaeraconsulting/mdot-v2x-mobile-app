@@ -104,8 +104,6 @@ class _MQTTTestingState extends State<MQTTTesting> {
   // Map<String, TravelerInformation> receivedTims = <String, TravelerInformation>{};
   TimManager timManager = TimManager();
 
-  ItisParser itisParser = ItisParser();
-
   _MQTTTestingState() {
     _locationService = Get.find<LocationService>();
 
@@ -367,9 +365,6 @@ class _MQTTTestingState extends State<MQTTTesting> {
 
   void updatePosition(Position position) {
     currentPosition = position;
-    List<TravelerDataFrame> newActiveTims =
-        timManager.getNewActiveTims(position.longitude, position.latitude, position.heading);
-    showTimMessage(newActiveTims);
   }
 
   void addToAppLog(String message) {
@@ -458,87 +453,6 @@ class _MQTTTestingState extends State<MQTTTesting> {
       }
     } else {
       addToAppLog("MQTT Connection is not available because the connection URL or Registration are missing");
-    }
-  }
-
-  void showTimMessage(List<TravelerDataFrame> newActiveTims) async {
-    for (TravelerDataFrame dataFrame in newActiveTims) {
-      addToAppLog("Showing Tim from ASN.1");
-
-      ItisCode displayCode = await itisParser.getItisRepresentation(dataFrame);
-
-      addToAppLog("Showing TIM: ${displayCode.itis}, ${displayCode.status}");
-
-      Color borderColor = Colors.blue;
-
-      if (displayCode.status == ITIS_CODE_STATUS.VALID) {
-        borderColor = Colors.green;
-      } else if (displayCode.status == ITIS_CODE_STATUS.UNKNOWN) {
-        borderColor = Colors.yellow;
-      } else if (displayCode.status == ITIS_CODE_STATUS.ERROR) {
-        borderColor = Colors.red;
-      }
-
-      ToastificationItem? item;
-      item = toastification.showCustom(
-        context: context, // optional if you use ToastificationWrapper
-        autoCloseDuration: const Duration(seconds: 5),
-        alignment: Alignment.topCenter,
-        animationDuration: const Duration(milliseconds: 500),
-        builder: (BuildContext context, ToastificationItem holder) {
-          return Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              color: Colors.white,
-              border: Border.all(color: borderColor, width: 2.0),
-            ),
-            padding: const EdgeInsets.all(16),
-            margin: const EdgeInsets.all(8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Traveler Information Message',
-                    style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (displayCode.image != null)
-                      Expanded(
-                          child: Image(
-                        image: displayCode.image!,
-                      ))
-                    else
-                      Expanded(
-                        child: Text(displayCode.description, style: const TextStyle(color: Colors.black)),
-                      )
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Expanded(
-                        child: ToastTimerAnimationBuilder(
-                      item: item!,
-                      builder: (context, value, _) {
-                        return LinearProgressIndicator(value: value);
-                      },
-                    )),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: () {
-                        toastification.dismiss(item!);
-                      },
-                      child: const Text('Close'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          );
-        },
-      );
     }
   }
 
