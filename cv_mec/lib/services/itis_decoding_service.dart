@@ -75,7 +75,7 @@ class ItisDecodingService{
         return ItisSequence(items, await createDynamicImage(def, populateValues));
       }
     }
-    logger.e("Unable to find Matching TIM definition for message");
+    logger.e("Unable to find Matching TIM definition for message $category ${ItisConverter.getItisListAsString(items)}");
     return ItisSequence(items, missing);
   }
 
@@ -181,7 +181,7 @@ class ItisDecodingService{
   }
 
   String getKeyForTimDefinition(String category, List<String> itisCodes){
-    String key = "${category}_";
+    String key = "${category}";
     for(String code in itisCodes){
       key = "${key}_${code}";
     }
@@ -242,7 +242,12 @@ class ItisDecodingService{
   bool doesCodeMatchSymbol(String symbol, Choice_Item item){
     if (item is ITIScodes) {
       int code = item.itisCode;
-      if(symbol == "#" && isItisNumber(code)){
+      if(symbol == '*'){
+        return true;
+      }else if(symbol.length > 0 && symbol[0] == '['){
+        List<int> numbers = (jsonDecode(symbol) as List).map((e) => int.tryParse(e.toString()) ?? 0).toList();
+        return numbers.contains(code);
+      }else if(symbol == "#" && isItisNumber(code)){
         return true;
       }else{
         return symbol == code.toString();
@@ -260,6 +265,10 @@ class ItisDecodingService{
     int value = itis - minItisSmallNumber + 1;
     if (value >= 0 && value <= 255) {
       return value;
+    }else if(itis >= 11531 && value <= 11613){
+      if(ItisConverter.codeLookup.containsKey(itis)){
+        return int.tryParse(ItisConverter.codeLookup[itis]!)??0;
+      }
     }
     return -1;
   }

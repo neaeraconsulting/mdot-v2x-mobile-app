@@ -9,23 +9,22 @@ class ItisSequence {
   late List<Choice_Item> associatedCodes;
   late String description;
 
-  ItisSequence(this.associatedCodes, this.image){}
+  ItisSequence(this.associatedCodes, this.image){
+    description = ItisConverter.getItisListAsString(associatedCodes);
+  }
 
   ItisSequence.fromText(List<String> codes, ImageProvider image){
     associatedCodes = [];
-    description = "";
     image = image;
     for(String code in codes){
       int? parsedCode = int.tryParse(code);
       if(parsedCode != null){
         associatedCodes.add(ITIScodes(parsedCode));
-        if(ItisConverter.codeLookup.containsKey(parsedCode)){
-          description = "$description ${ItisConverter.codeLookup[parsedCode]!}";
-        }  
       }else{
         associatedCodes.add(ITIStext(code));
       }
     }
+    description = ItisConverter.getItisListAsString(associatedCodes);
   }
 
   ItisSequence.fromDescription(String description, ImageProvider image){

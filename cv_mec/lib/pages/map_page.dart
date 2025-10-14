@@ -189,7 +189,7 @@ class MapState extends State<MapPage> {
   late Image currentLightState;
   late String nextLightText = "";
 
-  bool debugMode = false;
+  bool debugMode = true;
   bool showLoadingIcon = true;
   bool showLightText = true;
 
@@ -292,9 +292,9 @@ class MapState extends State<MapPage> {
   Future<void> createGPSStream() async{
     Stream<Position> stream;
     if (debugMode) {
-      stream = fakePosition(TestData.itswcFakePosition);
+      stream = fakePosition(TestData.plugfestFakePosition);
     } else if (settingsController.demoMode.value) {
-      stream = fakePosition(TestData.tfhrcFakePosition);
+      stream = fakePosition(TestData.plugfestFakePosition);
     } else if (settingsController.gpsType.value == GPSType.cradle) {
       stream = gpsService.positionStream(interval: const Duration(milliseconds: 500));
     } else if (settingsController.gpsType.value == GPSType.obu) {
