@@ -292,9 +292,9 @@ class MapState extends State<MapPage> {
   Future<void> createGPSStream() async{
     Stream<Position> stream;
     if (debugMode) {
-      stream = fakePosition(TestData.plugfestFakePosition);
+      stream = fakePosition(TestData.tfhrcFakePosition);
     } else if (settingsController.demoMode.value) {
-      stream = fakePosition(TestData.plugfestFakePosition);
+      stream = fakePosition(TestData.tfhrcFakePosition);
     } else if (settingsController.gpsType.value == GPSType.cradle) {
       stream = gpsService.positionStream(interval: const Duration(milliseconds: 500));
     } else if (settingsController.gpsType.value == GPSType.obu) {
@@ -1973,7 +1973,7 @@ class MapState extends State<MapPage> {
   Widget timsDisplay(double heightBottomDisplay, double screenWidth) {
     List<Widget> timIcons = [];
     final int maxTimsInRow = (screenWidth / (heightBottomDisplay / 2)).floor();
-    for (ItisSequence sequence in showTims) {      
+    for (ItisSequence sequence in showTims) {  
       timIcons.add(Image(image: sequence.image));
     }
     if (timIcons.length <= maxTimsInRow) {

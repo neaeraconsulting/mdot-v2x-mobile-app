@@ -16,7 +16,7 @@ class ReceivedMessageManager {
   Map<String, ReceivedMsg> receivedMsgs = {};
   Map<String, bool> shown = {};
   final GeometryService _geometryService = Get.find<GeometryService>();
-  final String imageDirectory = "assets/images/ITIS";
+  final String imageDirectory = "assets/images/generic";
 
   final double fov = 90;
   final double projectionDistanceMeters = 100;
@@ -120,6 +120,7 @@ class ReceivedMessageManager {
   }
 
   ItisSequence? getITISForPSM(ReceivedPsm psm) {
+    print("SEQUENCE DEBUG Getting ITIS for PSM");
     if (psm.deviceType == PersonalDeviceUserType.APEDESTRIAN) {
       return ItisSequence.fromDescription("Pedestrian Ahead", AssetImage("$imageDirectory/pedcrossing.png"));
     } else if (psm.deviceType == PersonalDeviceUserType.APEDALCYCLIST) {
