@@ -53,7 +53,7 @@
             "name": "alert, right-lane, <small_number>, lanes, blocked-ahead",
             "source": "guidance",
             "type": "advisory",
-            "codes": ["916", "13579", "#", "13588", "776"],
+            "codes": ["6916", "13579", "#", "13588", "776"],
             "graphic":"right_lane_blocked.png"
         },
         {
@@ -64,10 +64,10 @@
             "graphic":"gusty_winds.png",
             "overlays":[
                 {
-                    "majorFontSize": 24,
-                    "minorFontSize": 16,
-                    "xPos": 0,
-                    "yPos": 0
+                    "majorFontSize": 20,
+                    "minorFontSize": 12,
+                    "xPos": 157,
+                    "yPos": 230
                 }
             ]
         },
@@ -87,9 +87,9 @@
             "overlays":[
                 {
                     "majorFontSize": 24,
-                    "minorFontSize": 16,
-                    "xPos": 0,
-                    "yPos": 0
+                    "minorFontSize": 12,
+                    "xPos": 160,
+                    "yPos": 230
                 }
             ]
         },
