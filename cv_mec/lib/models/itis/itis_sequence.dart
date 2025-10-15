@@ -9,13 +9,15 @@ class ItisSequence {
   late List<Choice_Item> associatedCodes;
   late String description;
 
-  ItisSequence(this.associatedCodes, this.image){
+  ItisSequence(List<Choice_Item> codes, ImageProvider imageProvider){
     description = ItisConverter.getItisListAsString(associatedCodes);
+    associatedCodes = codes;
+    image = imageProvider;
   }
 
-  ItisSequence.fromText(List<String> codes, ImageProvider image){
+  ItisSequence.fromText(List<String> codes, ImageProvider imageProvider){
     associatedCodes = [];
-    image = image;
+    image = imageProvider;
     for(String code in codes){
       int? parsedCode = int.tryParse(code);
       if(parsedCode != null){
@@ -27,9 +29,9 @@ class ItisSequence {
     description = ItisConverter.getItisListAsString(associatedCodes);
   }
 
-  ItisSequence.fromDescription(String description, ImageProvider image){
+  ItisSequence.fromDescription(String textDescription, ImageProvider imageProvider){
     associatedCodes = [];
-    description = description;
-    image = image;
+    description = textDescription;
+    image = imageProvider;
   }
 }
