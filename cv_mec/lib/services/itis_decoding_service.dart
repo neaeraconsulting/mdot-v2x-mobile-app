@@ -112,8 +112,10 @@ class ItisDecodingService{
         if(graphicsMap.containsKey(key)){
           logger.w("Key $key has already been loaded into graphics map. Duplicate entries in TIM JSON file. The first option will be used.");
         }else{
-          ImageProvider image = getImage(def.graphic) ?? missing;
-          graphicsMap[key] = ItisSequence.fromText(def.codes, image); 
+          if(isStringSequenceStatic(def.codes)){
+            ImageProvider image = getImage(def.graphic) ?? missing;
+            graphicsMap[key] = ItisSequence.fromText(def.codes, image); 
+          }
         }
       }else{
         // Dynamic TIMs will be generated and cached as needed. Keep a short list of TIM message definitions to match.
@@ -121,6 +123,15 @@ class ItisDecodingService{
       }
     }
     return codes;
+  }
+
+  bool isStringSequenceStatic(List<String> sequence){
+    for(String elem in sequence){
+      if (elem == "#" || elem == "*" || (elem.isNotEmpty && elem[0] == '[')) {
+        return false;
+      }
+    }
+    return true;
   }
 
   Future<ImageProvider<Object>> createDynamicImage(TimDefinition definition, List<String> values) async{
@@ -280,6 +291,6 @@ class ItisDecodingService{
     }
     return false;
   }
-
+  
 }
 
