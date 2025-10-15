@@ -10,9 +10,9 @@ class ItisSequence {
   late String description;
 
   ItisSequence(List<Choice_Item> codes, ImageProvider imageProvider){
-    description = ItisConverter.getItisListAsString(associatedCodes);
     associatedCodes = codes;
     image = imageProvider;
+    description = ItisConverter.getItisListAsString(associatedCodes);
   }
 
   ItisSequence.fromText(List<String> codes, ImageProvider imageProvider){
