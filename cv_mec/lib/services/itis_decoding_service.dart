@@ -23,6 +23,9 @@ class ItisDecodingService{
 
   final int maxItisSmallNumber = 12799;
   final int minItisSmallNumber = 12545;
+  final int minItisLargeNumber = 11531;
+  final int maxItisLargeNumber = 11613;
+
   final Logger logger = Logger();
   final String imageDirectory = "assets/images/tims";
   final String fontDirectory = "assets/fonts";
@@ -69,7 +72,9 @@ class ItisDecodingService{
   }
 
   Future<ItisSequence> getDynamicSequence(String category, List<Choice_Item> items) async {
+    print("Checking TIM Definition");
     for(TimDefinition def in dynamicTims){
+
       if(doesTimMatchSequence(def, category, items)){
         List<String> populateValues = getValuesForSequence(def, items);
         return ItisSequence(items, await createDynamicImage(def, populateValues));
@@ -82,11 +87,21 @@ class ItisDecodingService{
 
   List<String> getValuesForSequence(TimDefinition definition, List<Choice_Item> items){
     List<String> values = [];
+
+    String codeString = "";
+    for(Choice_Item code in items){
+      if(code is ITIScodes){
+        codeString = "$codeString ${code.itisCode}";
+      }
+    }
+
     for(int i=0; i< definition.codes.length; i++){
       if(definition.codes[i] == "#"){
-        values.add(getIntFromItis((items[i] as ITIScodes).itisCode).toString());
-      }else{
-        values.add((items[i] as ITIStext).itisText);
+        if(items[i] is ITIScodes){
+          values.add(getIntFromItis((items[i] as ITIScodes).itisCode).toString());
+        }else{
+          values.add((items[i] as ITIStext).itisText);
+        }
       }
     }
     return values;
@@ -106,16 +121,14 @@ class ItisDecodingService{
     for(TimDefinition def in tims){
 
       // Pre-Cache all of the static TIMs into memory to improve performance.
-      if(def.overlays.isEmpty){
+      if(isStringSequenceStatic(def.codes)){
         String key = getKeyForTimDefinition(def.type, def.codes);
 
         if(graphicsMap.containsKey(key)){
           logger.w("Key $key has already been loaded into graphics map. Duplicate entries in TIM JSON file. The first option will be used.");
         }else{
-          if(isStringSequenceStatic(def.codes)){
-            ImageProvider image = getImage(def.graphic) ?? missing;
-            graphicsMap[key] = ItisSequence.fromText(def.codes, image); 
-          }
+          ImageProvider image = getImage(def.graphic) ?? missing;
+          graphicsMap[key] = ItisSequence.fromText(def.codes, image); 
         }
       }else{
         // Dynamic TIMs will be generated and cached as needed. Keep a short list of TIM message definitions to match.
@@ -152,7 +165,7 @@ class ItisDecodingService{
             font = await getFont(overlay.majorFontSize);
           }
 
-          Image.drawString(baseSizeImage, values[i], font: font, color: Image.ColorRgba8(0, 0, 0, 200),x:overlay.xPos, y: overlay.yPos);
+          Image.drawString(baseSizeImage, values[i], font: font, color: Image.ColorRgba8(0, 0, 0, 200), x:overlay.xPos, y: overlay.yPos);
         }
         return MemoryImage(Image.encodePng(baseSizeImage));
       }else{
@@ -231,17 +244,21 @@ class ItisDecodingService{
   }
 
   bool doesTimMatchSequence(TimDefinition def, String category, List<Choice_Item> codes){
+    print("    Checking ${def.codes}");
     if(category != def.type){
+      print("        Checking Rejected on Type");
       return false;
     }
 
     if(def.codes.length != codes.length){
+      print("        Checking Rejected on Length");
       return false;
     }
 
     for(int i=0; i< def.codes.length; i++){
       // Perform Numeric Comparison
       if(!doesCodeMatchSymbol(def.codes[i], codes[i])){
+        print("        Checking Rejected on Codes ${def.codes[i]} ${codes[i]}");
         return false;
       }
     }
@@ -285,12 +302,11 @@ class ItisDecodingService{
   }
 
   bool isItisNumber(int itis){
-    int value = itis - minItisSmallNumber + 1;
-    if (value >= 0 && value <= 255) {
+    if ((itis >= minItisSmallNumber && itis <= maxItisSmallNumber) || (itis >= minItisLargeNumber && itis < maxItisLargeNumber)) {
       return true;
     }
     return false;
   }
-  
+
 }
 

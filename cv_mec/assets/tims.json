@@ -86,10 +86,10 @@
             "graphic":"wind_closure.png",
             "overlays":[
                 {
-                    "majorFontSize": 24,
-                    "minorFontSize": 12,
-                    "xPos": 160,
-                    "yPos": 230
+                    "majorFontSize": 30,
+                    "minorFontSize": 24,
+                    "xPos": 20,
+                    "yPos": 220
                 }
             ]
         },
@@ -174,7 +174,7 @@
             "name": "left, <small number>, lanes, closed-ahead",
             "source": "guidance",
             "type": "workZone",
-            "codes": ["13580", "#", "13588", "771"],
+            "codes": ["13580", "*", "13588", "771"],
             "graphic":"left_lane_closed_ahead.png"
         },
         {
@@ -250,8 +250,8 @@
                 {
                     "majorFontSize": 80,
                     "minorFontSize": 48,
-                    "xPos": 0,
-                    "yPos": 30
+                    "xPos": 60,
+                    "yPos": 60
                 }
             ]
         },
@@ -259,14 +259,14 @@
             "name": "Advice, speed limit, <small number>, kph",
             "source": "guidance",
             "type": "speedLimit",
-            "codes": ["7712", "268", "#", "8720"],
+            "codes": ["7712", "268", "#", "8721"],
             "graphic":"advisory_speed_limit_kph.png",
             "overlays":[
                 {
                     "majorFontSize": 80,
                     "minorFontSize": 48,
-                    "xPos": 0,
-                    "yPos": 30
+                    "xPos": 60,
+                    "yPos": 60
                 }
             ]
         },
@@ -280,8 +280,8 @@
                 {
                     "majorFontSize": 72,
                     "minorFontSize": 40,
-                    "xPos": 0,
-                    "yPos": 200
+                    "xPos": 45,
+                    "yPos": 150
                 }
             ]
         },
@@ -293,10 +293,10 @@
             "graphic":"speed_limit_ahead.png",
             "overlays":[
                 {
-                    "majorFontSize": 72,
-                    "minorFontSize": 40,
-                    "xPos": 0,
-                    "yPos": 200
+                    "majorFontSize": 44,
+                    "minorFontSize": 32,
+                    "xPos": 96,
+                    "yPos": 136
                 }
             ]
         },
@@ -304,14 +304,14 @@
             "name": "speed limit, trucks, buses, <small number>",
             "source": "guidance",
             "type": "speedLimit",
-            "codes": ["268", "9227", "9228", "12589", "8720"],
+            "codes": ["268", "9227", "9228", "#", "8720"],
             "graphic":"speed_limit_trucks_buses.png",
             "overlays":[
                 {
                     "majorFontSize": 72,
                     "minorFontSize": 40,
-                    "xPos": 0,
-                    "yPos": 200
+                    "xPos": 45,
+                    "yPos": 150
                 }
             ]
         },
@@ -323,10 +323,10 @@
             "graphic":"speed_limit_school_zone.png",
             "overlays":[
                 {
-                    "majorFontSize": 72,
-                    "minorFontSize": 40,
-                    "xPos": 0,
-                    "yPos": 200
+                    "majorFontSize": 44,
+                    "minorFontSize": 32,
+                    "xPos": 96,
+                    "yPos": 144
                 }
             ]
         },
@@ -335,19 +335,19 @@
             "source": "guidance",
             "type": "speedLimit",
             "codes": ["268", "12303", "#", "8720", "12304", "#", "8720"],
-            "graphic":"combined_speed_limit.png",
+            "graphic":"speed_limit_combined.png",
             "overlays":[
                 {
-                    "majorFontSize": 72,
-                    "minorFontSize": 40,
-                    "xPos": 0,
-                    "yPos": 200
+                    "majorFontSize": 48,
+                    "minorFontSize": 36,
+                    "xPos": 20,
+                    "yPos": 95
                 },
                 {
                     "majorFontSize": 48,
-                    "minorFontSize": 32,
-                    "xPos": 0,
-                    "yPos": 300
+                    "minorFontSize": 36,
+                    "xPos": 20,
+                    "yPos": 190
                 }
             ]
         },
