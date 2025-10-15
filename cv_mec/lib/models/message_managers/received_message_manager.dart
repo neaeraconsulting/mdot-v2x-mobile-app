@@ -120,7 +120,6 @@ class ReceivedMessageManager {
   }
 
   ItisSequence? getITISForPSM(ReceivedPsm psm) {
-    print("SEQUENCE DEBUG Getting ITIS for PSM");
     if (psm.deviceType == PersonalDeviceUserType.APEDESTRIAN) {
       return ItisSequence.fromDescription("Pedestrian Ahead", AssetImage("$imageDirectory/pedcrossing.png"));
     } else if (psm.deviceType == PersonalDeviceUserType.APEDALCYCLIST) {

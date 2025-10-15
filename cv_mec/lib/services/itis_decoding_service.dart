@@ -72,7 +72,6 @@ class ItisDecodingService{
   }
 
   Future<ItisSequence> getDynamicSequence(String category, List<Choice_Item> items) async {
-    print("Checking TIM Definition");
     for(TimDefinition def in dynamicTims){
 
       if(doesTimMatchSequence(def, category, items)){
@@ -244,21 +243,17 @@ class ItisDecodingService{
   }
 
   bool doesTimMatchSequence(TimDefinition def, String category, List<Choice_Item> codes){
-    print("    Checking ${def.codes}");
     if(category != def.type){
-      print("        Checking Rejected on Type");
       return false;
     }
 
     if(def.codes.length != codes.length){
-      print("        Checking Rejected on Length");
       return false;
     }
 
     for(int i=0; i< def.codes.length; i++){
       // Perform Numeric Comparison
       if(!doesCodeMatchSymbol(def.codes[i], codes[i])){
-        print("        Checking Rejected on Codes ${def.codes[i]} ${codes[i]}");
         return false;
       }
     }
