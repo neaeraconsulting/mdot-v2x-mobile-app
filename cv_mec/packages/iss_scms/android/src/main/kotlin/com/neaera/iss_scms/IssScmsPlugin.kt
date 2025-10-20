@@ -24,14 +24,11 @@ class IssScmsPlugin: FlutterPlugin, MethodCallHandler {
   private lateinit var context : Context
   private lateinit var scope : CoroutineScope
 
-  // private lateinit var signing : LocalSigning
-
   override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
     channel = MethodChannel(flutterPluginBinding.binaryMessenger, "iss_scms")
     channel.setMethodCallHandler(this)
     context = flutterPluginBinding.applicationContext
     scope = CoroutineScope(Dispatchers.IO)
-    // signing = LocalSigning.LocalSigning
   }
 
   @kotlin.ExperimentalStdlibApi
@@ -71,7 +68,6 @@ class IssScmsPlugin: FlutterPlugin, MethodCallHandler {
       val tokenType = TokenType.values()[args?.get("tokenType") as Int]
       scope.launch {
         try {
-            // val certs = LocalSigning.getDeviceCerts("jvKFigeCl81aRAwieGZIo4cKgqq88NH5gRBgbwq7Tecuql4qFRBLoQ==", TokenType.DM_DASHBOARD)
             LocalSigning.getDeviceCerts(token, TokenType.DM_DASHBOARD)
             withContext(Dispatchers.Main) {
                 result.success(null)
@@ -84,7 +80,7 @@ class IssScmsPlugin: FlutterPlugin, MethodCallHandler {
       }
     }else if(call.method == "getState"){
       val state = LocalSigning.getState()
-      result.success(state.name) // Returning names for Enums because order is not guarenteed.
+      result.success(state.name) // Returning names for Enums because order is not guaranteed.
     }else if(call.method == "topOffCerts"){
       val token = args?.get("token") as String
       val tokenType = TokenType.values()[args?.get("tokenType") as Int]

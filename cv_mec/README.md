@@ -62,6 +62,7 @@ cp sample.env .env
 | GPS_IP | If using a remote GPS (Cradlepoint), the IP address of the GPSD server | | No | Yes |
 | OBU_IP | If using an OBU GPS (Ettifos), the IP address of the OBU | | No |  Yes |
 | ISS_SCMS_TOKEN | Token for SCMS if signing is enabled. Will automatically enable signing if set | | No | Yes |
+| BROADCAST_RATE | Number of messages to broadcast each second. Value must be between 1 and 10 (inclusive) | 10 | No | Yes |
 
 
 The NOAA_GEOMAG_API_TOKEN included in the sample.env file is currently set to the publically available token specified on the NOAA site. This doesn't need to be changed at this time. For more information on this service please see the NOAA site here:

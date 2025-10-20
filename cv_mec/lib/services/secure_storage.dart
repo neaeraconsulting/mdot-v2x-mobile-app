@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -24,6 +26,7 @@ class SecureStorage {
   static const _keyManualRegistrationMode = "manualRegistrationMode";
   static const _keyRegistrationLatitude = "registrationLatitude";
   static const _keyRegistrationLongitude = "registrationLongitude";
+  static const _keyBroadcastRate = "broadcastRate";
 
   static const _keyS3Accesskey = "s3AccessKey";
   static const _keyS3SecretKey = "s3SecretKey";
@@ -56,6 +59,7 @@ class SecureStorage {
   static final _startEnableIssMqtt = false;
   static final _startEnableEtxMqtt = true;
   static final _startIssScmsSigningEnabled = dotenv.env['ISS_SCMS_TOKEN'] != null ? true : false;
+  static final _startBroadcastRate = dotenv.env["BROADCAST_RATE"] != null ? min(10, max(1, int.tryParse(dotenv.env['BROADCAST_RATE']!)??10)) : 10;
 
   static final _startGPSType = dotenv.env['GPS_TYPE'] ?? '';
   static final _startGPSUsername = dotenv.env['GPS_USERNAME'] ?? '';
@@ -101,6 +105,8 @@ class SecureStorage {
       double.tryParse(await _storage.read(key: _keyRegistrationLatitude) ?? "0.0") ?? 0.0;
   Future<double> getRegistrationLongitude() async =>
       double.tryParse(await _storage.read(key: _keyRegistrationLongitude) ?? "0.0") ?? 0.0;
+  Future<int> getBroadcastRate() async =>
+      int.tryParse(await _storage.read(key: _keyBroadcastRate) ?? _startBroadcastRate.toString()) ?? 0;
 
   Future<void> setUsername(String username) async => await _storage.write(key: _keyUsername, value: username);
   Future<void> setPassword(String password) async => await _storage.write(key: _keyPassword, value: password);
@@ -115,6 +121,7 @@ class SecureStorage {
   Future<void> setOBUIP(String v) => _storage.write(key: _keyOBUIP, value: v);
   Future<void> setGPSType(GPSType gpsType) async =>
       await _storage.write(key: _keyGPSType, value: gpsType.toString().split('.').last);
+  Future<void> setBroadcastRate(int broadcastRate) async => await _storage.write(key: _keyBroadcastRate, value: broadcastRate.toString());
   Future setVZMode(bool vzMode) async {
     if (vzMode) {
       await _storage.write(key: _keyVzMode, value: "true");

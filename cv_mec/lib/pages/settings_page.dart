@@ -7,7 +7,9 @@ import 'package:cv_mec/services/vehicle_notification_manager.dart';
 import 'package:cv_mec/styles/app_colors.dart';
 import 'package:cv_mec/styles/spacing.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:cv_mec/models/RangeInputFormatter.dart';
 import 'package:get/get.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -27,6 +29,8 @@ class SettingsPage extends StatelessWidget {
   TextEditingController registrationLatitudeController = TextEditingController();
   TextEditingController registrationLongitudeController = TextEditingController();
   TextEditingController scmsApiTokenController = TextEditingController();
+  TextEditingController broadcastRateController = TextEditingController();
+
 
 
   FileService fileService = Get.find<FileService>();
@@ -45,6 +49,7 @@ class SettingsPage extends StatelessWidget {
     obuIPController.text = controller.obuIP.value;
     pc5BrokerUrlController.text = controller.pc5BrokerUrl.value;
     issScmsTokenController.text = controller.issScmsToken.value;
+    broadcastRateController.text = controller.broadcastRate.value.toString();
     registrationLatitudeController.text = paramController.manualLatitude.toString();
     registrationLongitudeController.text = paramController.manualLongitude.toString();
     
@@ -242,6 +247,23 @@ class SettingsPage extends StatelessWidget {
               ])
             : const SizedBox.shrink()),
         verticalSpaceSmall,
+        TextField(
+          decoration: const InputDecoration(labelText: 'Broadcast Rate'),
+          controller: broadcastRateController,
+          keyboardType: TextInputType.number,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly, // Only allow 0–9
+            RangeInputFormatter(min: 1, max: 10),
+          ],
+          onChanged: (value) async {
+            final parsed = int.tryParse(value);
+            if (parsed != null && parsed != controller.broadcastRate.value) {
+              controller.broadcastRate.value = parsed;
+              await controller.secureStorage.setBroadcastRate(parsed);
+            }
+          },
+        ),
+        verticalSpaceSmall,
         SwitchListTile(
             title: const Text("Enable PC5 MQTT Broker"),
             value: controller.enablePC5.value,
@@ -391,7 +413,7 @@ class SettingsPage extends StatelessWidget {
                   }
                 },
               )
-            : const SizedBox.shrink()),
+            : const SizedBox.shrink()),               
         verticalSpaceMedium,
       ],
     );
