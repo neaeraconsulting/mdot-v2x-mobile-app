@@ -71,7 +71,7 @@ class MqttService extends GetxService {
     }
 
     try {
-      await client!.connect();
+      var status = await client!.connect();
     } on NoConnectionException catch (e) {
       // Raised by the client when connection fails.
       _logger.e('CV_MEC::client exception - $e');
@@ -174,7 +174,7 @@ class MqttService extends GetxService {
     }
   }
 
-  void unsubsubscribe(String topicName) {
+  void unsubscribe(String topicName) {
     _logger.i('CV_MEC::Unsubscribing');
     if (client != null) {
       client!.unsubscribe(topicName);
