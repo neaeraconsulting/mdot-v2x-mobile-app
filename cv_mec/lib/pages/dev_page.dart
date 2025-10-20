@@ -15,12 +15,6 @@ class DevPage extends StatelessWidget {
           children: [
             ElevatedButton(
               onPressed: () {
-                
-              },
-              child: const Text('MQTT Testing'),
-            ),
-            ElevatedButton(
-              onPressed: () {
                 Get.to(() => const MapPage());
               },
               child: const Text('Map'),
