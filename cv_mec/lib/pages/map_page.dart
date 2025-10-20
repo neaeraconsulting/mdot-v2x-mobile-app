@@ -723,8 +723,6 @@ class MapState extends State<MapPage> {
       return;
     }
 
-    print("Sending Message");
-
     DateTime sendTime = timingService.getTime();
     String hex = "";
     int psid = PSID.BSM.code;
