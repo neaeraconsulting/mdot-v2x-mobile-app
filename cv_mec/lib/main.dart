@@ -42,8 +42,6 @@ void main() async {
   await settingsController.initialize();
   Get.put(ConfigurationController());
   Get.put(GeometryService());
-  // Get.put(MqttService(), tag: MqttService.etxTag);
-  // Get.put(MqttService(), tag: MqttService.pc5Tag);
   Get.put(ASNService());
   Get.put(ApiService());
   Get.put(RemoteGPSService());
