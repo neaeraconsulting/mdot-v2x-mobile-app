@@ -1,4 +1,5 @@
 {
+    "version": "1.0.0",
     "tims":[
         {
             "name": "closed-to-traffic, local-traffic, only",
@@ -56,21 +57,8 @@
             "codes": ["6916", "13579", "#", "13588", "776"],
             "graphic":"right_lane_blocked.png"
         },
-        {
-            "name": "alert, gusty-winds, may-exceed, <number>, mph",
-            "source": "guidance",
-            "type": "advisory",
-            "codes": ["6916", "*", "7759", "#", "8720"],
-            "graphic":"gusty_winds.png",
-            "overlays":[
-                {
-                    "majorFontSize": 20,
-                    "minorFontSize": 12,
-                    "xPos": 157,
-                    "yPos": 230
-                }
-            ]
-        },
+        
+        
         {
             "name": "caution-high-winds",
             "source": "guidance",
