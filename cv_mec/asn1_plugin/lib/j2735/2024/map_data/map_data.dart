@@ -24,7 +24,7 @@ class MapData {
     if (c_map.timeStamp.address != 0) {
       timeStamp = MinuteOfTheYear(c_map.timeStamp.value);
     }
-
+    
     msgIssueRevision = MsgCount(c_map.msgIssueRevision);
 
     if (c_map.layerType.address != 0) {
@@ -35,7 +35,9 @@ class MapData {
       layerID = LayerID(c_map.layerID.value);
     }
 
-    intersections = IntersectionGeometryList.fromC(c_map.intersections.ref);
+    if(c_map.intersections.address != 0){
+      intersections = IntersectionGeometryList.fromC(c_map.intersections.ref);
+    }
 
     if (c_map.roadSegments.address != 0) {
       roadSegments = RoadSegmentList.fromC(c_map.roadSegments.ref);

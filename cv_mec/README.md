@@ -42,22 +42,33 @@ This application requires multiple environment variables in order to connect to 
 cp sample.env .env
 ```
 
-| Variable              | Purpose                                                           | Default Value | Required |
-| :-------------------- | :---------------------------------------------------------------- | :------------ | -------- |
-| NOAA_GEOMAG_API_TOKEN | Allow the App to query current magnetic offsets                   | zNEw7         | Yes      |
-| MAPBOX_ACCESS_TOKEN   | Required for Rendering MAP tiles. Acquired from MapBox account    |               | Yes      |
-| API_ENDPOINT          | Location of the CV-MEC partner API.                               |               | Yes      |
-| USERNAME              | Username for the app to login to the partner API with             |               | Yes      |
-| PASSWORD              | Password for the app to login to the partner API with             |               | Yes      |
-| VENDOR_ID             | Vendor ID to use when the APP registers and Connects with the IMP |               | Yes      |
-| S3_ACCESS_KEY         | An AWS IAM access key for connecting to an S3 Bucket              |               | No       |
-| S3_SECRET_KEY         | An AWS IAM secret Key for connecting to an S3 Bucket              |               | No       |
-| S3_BUCKET_NAME        | The Name of the S3 Bucket to offload log files to                 |               | No       |
-| S3_REGION             | The AWS region hosting the S3 Bucket and IAM credentials          |               | No       |
-| S3_DESTINATION        | A subfolder within the Bucket to Place Log files                  |               | No       |
+| Variable              | Purpose                                                           | Default Value | Required | Changeable in App|
+| :-------------------- | :---------------------------------------------------------------- | :------------ | -------- | -------- |
+| NOAA_GEOMAG_API_TOKEN | Allow the App to query current magnetic offsets                   | zNEw7         | Yes      | No |
+| MAPBOX_ACCESS_TOKEN   | Required for Rendering MAP tiles. Acquired from MapBox account    |               | Yes      | No |
+| API_ENDPOINT          | Location of the CV-MEC partner API.                               |               | Yes      | Yes |
+| USERNAME              | Username for the app to login to the partner API with             |               | Yes      | Yes |
+| PASSWORD              | Password for the app to login to the partner API with             |               | Yes      | Yes |
+| VENDOR_ID             | Vendor ID to use when the APP registers and Connects with the ETX |               | Yes      | Yes |
+| S3_ACCESS_KEY         | An AWS IAM access key for connecting to an S3 Bucket              |               | No       | No |
+| S3_SECRET_KEY         | An AWS IAM secret Key for connecting to an S3 Bucket              |               | No       | No |
+| S3_BUCKET_NAME        | The Name of the S3 Bucket to offload log files to                 |               | No       | No |
+| S3_REGION             | The AWS region hosting the S3 Bucket and IAM credentials          |               | No       | No |
+| S3_DESTINATION        | A subfolder within the Bucket to Place Log files                  |               | No       | No |
+| PC5_MQTT_BROKER       | Ettifos OBU Server location. Should be formatted as mqtt://<hostname>:1883 | | No | Yes |
+| GPS_TYPE              | Specifies the default GPS type to use within the app, valid values: mobile, obu, cradle | | No | Yes |
+| GPS_USERNAME | If using a remote GPS (Cradlepoint), username to use when connecting | | No | Yes |
+| GPS_PASSWORD | If using a remote GPS (Cradlepoint), password to use when connecting | | No | Yes |
+| GPS_IP | If using a remote GPS (Cradlepoint), the IP address of the GPSD server | | No | Yes |
+| OBU_IP | If using an OBU GPS (Ettifos), the IP address of the OBU | | No |  Yes |
+| ISS_SCMS_TOKEN | Token for SCMS if signing is enabled. Will automatically enable signing if set | | No | Yes |
+| BROADCAST_RATE | Number of messages to broadcast each second. Value must be between 1 and 10 (inclusive) | 10 | No | Yes |
+
 
 The NOAA_GEOMAG_API_TOKEN included in the sample.env file is currently set to the publically available token specified on the NOAA site. This doesn't need to be changed at this time. For more information on this service please see the NOAA site here:
 https://www.ncei.noaa.gov/maps/historical-declination/
+
+
 
 ### Download Dependencies
 

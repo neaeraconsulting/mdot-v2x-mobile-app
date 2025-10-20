@@ -2,7 +2,7 @@ name: cv_mec
 description: "A new Flutter project."
 
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
-version: 11.9.12+64
+version: 11.12.0+69
 
 environment:
   sdk: ">=3.4.3 <4.0.0"
@@ -60,6 +60,8 @@ dependencies:
   audioplayers: ^5.2.1
   flutter_libserialport: ^0.6.0
   bluez: ^0.8.3
+  iss_scms:
+    path: ./packages/iss_scms
 
 dev_dependencies:
   flutter_test:

@@ -25,6 +25,7 @@ import 'package:cv_mec/services/location_service.dart';
 import 'package:cv_mec/services/mqtt_service.dart';
 import 'package:cv_mec/services/remote_gps.dart';
 import 'package:cv_mec/services/timing.dart';
+import 'package:iss_scms/iss_scms.dart';
 
 void main() async {
   await dotenv.load(fileName: ".env");
@@ -43,8 +44,6 @@ void main() async {
   await settingsController.initialize();
   Get.put(ConfigurationController());
   Get.put(GeometryService());
-  Get.put(MqttService(), tag: MqttService.etxTag);
-  Get.put(MqttService(), tag: MqttService.pc5Tag);
   Get.put(ASNService());
   Get.put(ApiService());
   Get.put(RemoteGPSService());
@@ -52,6 +51,7 @@ void main() async {
   Get.put(OBDController());
   Get.put(S3Service());
   Get.put(ItisDecodingService());
+  Get.put(IssScms());
 
   runApp(
     Platform.isAndroid || Platform.isIOS

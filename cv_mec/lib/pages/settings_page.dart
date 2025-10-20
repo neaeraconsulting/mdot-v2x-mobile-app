@@ -7,7 +7,9 @@ import 'package:cv_mec/services/vehicle_notification_manager.dart';
 import 'package:cv_mec/styles/app_colors.dart';
 import 'package:cv_mec/styles/spacing.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:cv_mec/models/RangeInputFormatter.dart';
 import 'package:get/get.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -23,8 +25,12 @@ class SettingsPage extends StatelessWidget {
   TextEditingController gpsPasswordController = TextEditingController();
   TextEditingController obuIPController = TextEditingController();
   TextEditingController pc5BrokerUrlController = TextEditingController();
+  TextEditingController issScmsTokenController = TextEditingController();
   TextEditingController registrationLatitudeController = TextEditingController();
   TextEditingController registrationLongitudeController = TextEditingController();
+  TextEditingController scmsApiTokenController = TextEditingController();
+  TextEditingController broadcastRateController = TextEditingController();
+
 
 
   FileService fileService = Get.find<FileService>();
@@ -42,8 +48,11 @@ class SettingsPage extends StatelessWidget {
     gpsPasswordController.text = controller.cradleGPSPassword.value;
     obuIPController.text = controller.obuIP.value;
     pc5BrokerUrlController.text = controller.pc5BrokerUrl.value;
+    issScmsTokenController.text = controller.issScmsToken.value;
+    broadcastRateController.text = controller.broadcastRate.value.toString();
     registrationLatitudeController.text = paramController.manualLatitude.toString();
     registrationLongitudeController.text = paramController.manualLongitude.toString();
+    
 
     return Scaffold(
         appBar: AppBar(
@@ -61,6 +70,8 @@ class SettingsPage extends StatelessWidget {
               configurationSection(),
               verticalSpaceMedium,
               appearanceSection(),
+              verticalSpaceMedium,
+              advancedSection(),
             ]),
           ),
         )));
@@ -236,8 +247,25 @@ class SettingsPage extends StatelessWidget {
               ])
             : const SizedBox.shrink()),
         verticalSpaceSmall,
+        TextField(
+          decoration: const InputDecoration(labelText: 'Broadcast Rate'),
+          controller: broadcastRateController,
+          keyboardType: TextInputType.number,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly, // Only allow 0–9
+            RangeInputFormatter(min: 1, max: 10),
+          ],
+          onChanged: (value) async {
+            final parsed = int.tryParse(value);
+            if (parsed != null && parsed != controller.broadcastRate.value) {
+              controller.broadcastRate.value = parsed;
+              await controller.secureStorage.setBroadcastRate(parsed);
+            }
+          },
+        ),
+        verticalSpaceSmall,
         SwitchListTile(
-            title: const Text("Use PC5 MQTT Broker"),
+            title: const Text("Enable PC5 MQTT Broker"),
             value: controller.enablePC5.value,
             onChanged: (value) async {
               if (value != controller.enablePC5.value) {
@@ -249,7 +277,7 @@ class SettingsPage extends StatelessWidget {
             ? TextField(
                 decoration: const InputDecoration(labelText: 'PC5 MQTT Broker URL'),
                 controller: pc5BrokerUrlController,
-                obscureText: true,
+                obscureText: false,
                 onChanged: (value) async {
                   if (value != controller.pc5BrokerUrl.value) {
                     controller.pc5BrokerUrl.value = value;
@@ -258,6 +286,26 @@ class SettingsPage extends StatelessWidget {
                 },
               )
             : const SizedBox.shrink()),
+        verticalSpaceSmall,
+        SwitchListTile(
+            title: const Text("Enable ISS MQTT Broker"),
+            value: controller.enableIssMqtt.value,
+            onChanged: (value) async {
+              if (value != controller.enableIssMqtt.value) {
+                controller.enableIssMqtt.value = value;
+                await controller.secureStorage.setIssMqttEnabled(value);
+              }
+            }),
+        verticalSpaceSmall,
+        SwitchListTile(
+            title: const Text("Enable ETX MQTT Broker"),
+            value: controller.enableEtxMqtt.value,
+            onChanged: (value) async {
+              if (value != controller.enableEtxMqtt.value) {
+                controller.enableEtxMqtt.value = value;
+                await controller.secureStorage.setEtxMqttEnabled(value);
+              }
+            }),
         verticalSpaceSmall,
         Obx(() => SwitchListTile(
             title: const Text("Enable Manual Registration"),
@@ -343,6 +391,29 @@ class SettingsPage extends StatelessWidget {
                 await controller.secureStorage.setDemoMode(value);
               }
             })),
+        verticalSpaceSmall,
+        SwitchListTile(
+            title: const Text("Enable Signing"),
+            value: controller.enableIssScmsSigning.value,
+            onChanged: (value) async {
+              if (value != controller.enableIssScmsSigning.value) {
+                controller.enableIssScmsSigning.value = value;
+                await controller.secureStorage.setIssScmsSigningEnabled(value);
+              }
+            }),
+        Obx(() => controller.enableIssScmsSigning.value
+            ? TextField(
+                decoration: const InputDecoration(labelText: 'ISS SCMS API Token'),
+                controller: issScmsTokenController,
+                obscureText: true,
+                onChanged: (value) async {
+                  if (value != controller.issScmsToken.value) {
+                    controller.issScmsToken.value = value;
+                    await controller.secureStorage.setIssScmsToken(value);
+                  }
+                },
+              )
+            : const SizedBox.shrink()),               
         verticalSpaceMedium,
       ],
     );
@@ -357,6 +428,8 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
+  
+
   appearanceSettings() {
     return Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -370,14 +443,6 @@ class SettingsPage extends StatelessWidget {
                 }),
             verticalSpaceMedium,
             SwitchListTile(
-                title: const Text("Developer Mode"),
-                value: controller.developerMode.value,
-                onChanged: (value) async {
-                  controller.developerMode.value = value;
-                  await controller.secureStorage.setDeveloperMode(value);
-                }),
-            verticalSpaceMedium,
-            SwitchListTile(
                 title: const Text("Allow Sound Effects"),
                 value: controller.soundEffectsEnabled.value,
                 onChanged: (value) async {
@@ -386,6 +451,33 @@ class SettingsPage extends StatelessWidget {
                 }),
           ],
         ));
+  }
+
+  advancedSection() {
+    return Column(
+      children: [
+        headerElement("Advanced", Icons.image),
+        appearanceSettings(),
+      ],
+    );
+  }
+
+  advancedSettigns(){
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        children: [
+          SwitchListTile(
+            title: const Text("Developer Mode"),
+            value: controller.developerMode.value,
+            onChanged: (value) async {
+              controller.developerMode.value = value;
+              await controller.secureStorage.setDeveloperMode(value);
+            }),
+          verticalSpaceMedium,
+        ],
+      )  
+    );
   }
 
   inputValid() {

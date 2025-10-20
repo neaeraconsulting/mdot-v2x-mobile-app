@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
+import 'dart:core';
 
 import 'package:asn1_plugin/j2735/2024/basic_safety_message/basic_safety_message.dart';
 import 'package:asn1_plugin/j2735/2024/basic_safety_message/bsmpart_iiextension.dart';
@@ -47,8 +48,11 @@ import 'package:cv_mec/models/message_builders/bsm_message_builder.dart';
 import 'package:cv_mec/models/message_builders/psm_message_builder.dart';
 import 'package:cv_mec/models/message_managers/map_manager.dart';
 import 'package:cv_mec/models/message_managers/received_message_manager.dart';
+import 'package:cv_mec/models/mqtt/etx_mqtt_agent.dart';
+import 'package:cv_mec/models/mqtt/iss_mqtt_agent.dart';
+import 'package:cv_mec/models/mqtt/mqtt_agent_manager.dart';
+import 'package:cv_mec/models/mqtt/pc5_mqtt_agent.dart';
 import 'package:cv_mec/models/msg_types.dart';
-import 'package:cv_mec/models/imp/registration.dart';
 import 'package:cv_mec/models/received_messages/receieved_msg.dart';
 import 'package:cv_mec/models/received_messages/received_bsm.dart';
 import 'package:cv_mec/models/received_messages/received_psm.dart';
@@ -60,9 +64,7 @@ import 'package:cv_mec/models/test_data.dart';
 import 'package:cv_mec/models/message_managers/tim_manager.dart';
 import 'package:cv_mec/models/type_definitions.dart';
 import 'package:cv_mec/models/light_change_time.dart';
-import 'package:cv_mec/models/utils.dart';
 import 'package:cv_mec/models/vehicle.dart';
-import 'package:cv_mec/services/api_service.dart';
 import 'package:cv_mec/services/gpsd_service.dart';
 import 'package:cv_mec/services/remote_gps.dart';
 import 'package:cv_mec/services/asn_service.dart';
@@ -70,7 +72,6 @@ import 'package:cv_mec/services/aws_service.dart';
 import 'package:cv_mec/services/file_service.dart';
 import 'package:cv_mec/services/geometry_service.dart';
 import 'package:cv_mec/services/location_service.dart';
-import 'package:cv_mec/services/mqtt_service.dart';
 import 'package:cv_mec/services/param_controller.dart';
 import 'package:cv_mec/services/secure_storage.dart';
 import 'package:cv_mec/services/vehicle_notification_manager.dart';
@@ -90,15 +91,16 @@ import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:iss_scms/iss_scms.dart';
+import 'package:iss_scms/models/psid.dart';
+import 'package:iss_scms/models/validate_status.dart';
 import 'package:logger/logger.dart';
-import 'package:mqtt_client/mqtt_client.dart';
-import 'package:cv_mec/models/protobuf_models/geo_routed_msg.pb.dart' as protobuf;
-import 'package:typed_data/typed_data.dart';
+import 'package:uuid/uuid.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:cv_mec/controllers/configuration_controller.dart';
 import 'package:toastification/toastification.dart';
 
-enum ConnectedStatus { UNKNOWN, DISCONNECTED, CONNECTED, PARTIAl }
+enum ConnectedStatus { UNKNOWN, DISCONNECTED, CONNECTED, PARTIAL }
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -113,17 +115,17 @@ class MapState extends State<MapPage> {
   ParamController paramController = Get.find<ParamController>();
   GeometryService geometryService = Get.find<GeometryService>();
   ASNService asnService = Get.find<ASNService>();
-  ApiService apiService = Get.find<ApiService>();
+  
   RemoteGPSService gpsService = Get.find<RemoteGPSService>();
   GPSDService gpsdService = Get.find<GPSDService>();
   Timing timingService = Get.find<Timing>();
   FileService fileService = Get.find<FileService>();
-  MqttService mqtt = Get.find<MqttService>(tag: MqttService.etxTag);
-  MqttService mqttPC5 = Get.find<MqttService>(tag: MqttService.pc5Tag);
+
   LocationService locationService = Get.find<LocationService>();
   SettingsController settingsController = Get.find<SettingsController>();
   S3Service awsService = Get.find<S3Service>();
   ConfigurationController configController = Get.find<ConfigurationController>();
+  IssScms scms = Get.find<IssScms>();
 
   TimManager timManager = TimManager();
   MapManager mapManager = MapManager();
@@ -132,15 +134,10 @@ class MapState extends State<MapPage> {
 
   SecureStorage secureStorage = SecureStorage();
 
-  Registration? registration;
-  String? mqttConnectionURL;
-  Position? currentPosition;
+  Uuid uuid = const Uuid();
 
-  late String publishTopic;
-  late String publicGeoRelevanceRawSubscribeTopic;
-  late String publicGeoRelevanceSubscribeTopic;
-  late String privateSubscribeTopic;
-  late String privateRawSubscribeTopic;
+  Position? currentPosition;
+  late String deviceID;
 
   Timer? sendMessageTimer;
   late BsmMessageBuilder bsmBuilder;
@@ -171,6 +168,8 @@ class MapState extends State<MapPage> {
 
   late FlutterTts flutterTts;
 
+  final MqttAgentManager mqttAgents = MqttAgentManager();
+
   final Map<MovementPhaseState, Image> lightStateMap = {
     MovementPhaseState.UNAVAILABLE: Image.asset("assets/images/Lights/traffic-light-icon-unknown.png"),
     MovementPhaseState.DARK: Image.asset("assets/images/Lights/traffic-light-icon-unknown.png"),
@@ -192,6 +191,7 @@ class MapState extends State<MapPage> {
   bool debugMode = false;
   bool showLoadingIcon = true;
   bool showLightText = true;
+  bool scmsActive = false;
 
   bool showVehicleStats = false;
   RxBool obdConnecting = false.obs;
@@ -203,7 +203,8 @@ class MapState extends State<MapPage> {
   @override
   void initState() {
     super.initState();
-    showLoadingIcon = true;
+
+    deviceID = uuid.v4();
 
     _mapController = MapController();
     timingService.startAllUpdates();
@@ -211,24 +212,37 @@ class MapState extends State<MapPage> {
     bsmBuilder = BsmMessageBuilder();
     psmBuilder = PsmMessageBuilder();
 
-    if (configController.isVehicleConfig.value) {
-      publishTopic =
-          "vzimp/1/GeoRelevance/${paramController.clientType.value}/${paramController.clientSubtype.value}/Public/${paramController.messageFormat}/BSM";
-    } else {
-      publishTopic =
-          "vzimp/1/GeoRelevance/${paramController.clientType.value}/${paramController.clientSubtype.value}/Public/${paramController.messageFormat}/PSM";
+    if (mounted) {
+      setState(() {
+        showLoadingIcon = true;
+      });
     }
 
-    publicGeoRelevanceSubscribeTopic = "vzimp/1/GeoRelevance/+/+/Public/j2735_gr/+/+";
-    publicGeoRelevanceRawSubscribeTopic = "vzimp/1/GeoRelevance/+/+/Public/j2735/+/+";
-
-    privateSubscribeTopic = "vzimp/1/Private/+/+/+/j2735_gr/+/+";
-    privateRawSubscribeTopic = "vzimp/1/Private/+/+/+/j2735/+/+";
+    updateConnectedStatus(ConnectedStatus.PARTIAL);
 
     currentLightState = lightStateMap[MovementPhaseState.UNAVAILABLE]!;
 
     if (debugMode) {
-      fakeSdsmMessage();
+      TravelerInformation plugfest1 = asnService.decodeTim(TestData.plugfestCSWTim);
+      timManager.addOrUpdate(plugfest1,TestData.plugfestCSWTim);
+
+      TravelerInformation plugfest2 = asnService.decodeTim(TestData.plugfestIncidentTim);
+      timManager.addOrUpdate(plugfest2,TestData.plugfestIncidentTim);
+
+      TravelerInformation plugfest3 = asnService.decodeTim(TestData.plugfestRoadSignIdTim);
+      timManager.addOrUpdate(plugfest3,TestData.plugfestRoadSignIdTim);
+
+      TravelerInformation plugfest4 = asnService.decodeTim(TestData.plugfestWeatherTim);
+      timManager.addOrUpdate(plugfest4,TestData.plugfestWeatherTim);
+
+      TravelerInformation plugfest5 = asnService.decodeTim(TestData.plugfestWeatherPolygonTim);
+      timManager.addOrUpdate(plugfest5,TestData.plugfestWeatherPolygonTim);
+
+      TravelerInformation plugfest6 = asnService.decodeTim(TestData.plugfestWorkZoneTim);
+      timManager.addOrUpdate(plugfest6,TestData.plugfestWorkZoneTim);
+
+
+
     } else if (settingsController.demoMode.value) {
       TravelerInformation weatherTimDemo = asnService.decodeTim(TestData.tfhrcWeatherTIMDemo);
       timManager.addOrUpdate(weatherTimDemo, TestData.tfhrcWeatherTIMDemo);
@@ -239,33 +253,12 @@ class MapState extends State<MapPage> {
 
     flutterTts = FlutterTts();
 
+
     Future.delayed(Duration.zero, () async {
       int loggingEnabled = await enableLogging();
       if (loggingEnabled != 0) {
         return;
       }
-
-      await createGPSStream();
-
-      if (settingsController.enablePC5.value) {
-        connectToPC5Broker();
-      }
-
-      int connected = await connectToETXBroker();
-      if (connected != 0) {
-        return;
-      }
-
-      if(settingsController.gpsType.value == GPSType.cradle) {
-        int gpsConnected = await checkRemoteGPSConnection();
-        if (gpsConnected != 0) {
-          addToAppLog("COULDN'T CONNECT TO GPS");
-        }
-      }
-
-      
-
-      updateConnectedStatus(ConnectedStatus.CONNECTED);  
 
       if (Platform.isIOS) {
         await flutterTts.setSharedInstance(true);
@@ -279,22 +272,87 @@ class MapState extends State<MapPage> {
             ],
             IosTextToSpeechAudioMode.voicePrompt);
       }
+
+      if(settingsController.enableIssScmsSigning.value && Platform.isAndroid){
+        scmsActive = await scms.activateScms(settingsController.issScmsToken.value);
+        if(!scmsActive){
+          showError("Unable to Activate SCMS Signing");
+        }
+      }else{
+        scmsActive =false;
+      }
+
+      await createGPSStream();
+      await connectMqttAgents();
+
+      
+
+      
+      startSendingBSM();
+
+      
+      if (Platform.isAndroid || Platform.isIOS) {
+        WakelockPlus.enable();
+      }
+
+      updateConnectedStatus(ConnectedStatus.CONNECTED);
+      setState(() {
+        showLoadingIcon = false;
+      });
+
+      
     });
 
     updateGraphics();
+    
+
+    obdController.checkRootStatus();
+  }
+
+  // Helper function to disconnect and reconnect all mqtt agents
+  Future<void> connectMqttAgents() async {
     setState(() {
       showLoadingIcon = true;
     });
+    mqttAgents.disconnectAll();
+    mqttAgents.clearAgents();
 
-     obdController.checkRootStatus();
+    if(settingsController.enableEtxMqtt.value){
+      addToAppLog("Adding ETX MQTT Agent");
+      mqttAgents.addAgent(EtxMqttAgent(processIncomingMessage));
+
+    }
+
+    if(settingsController.enablePC5.value){
+      addToAppLog("Adding PC5 MQTT Agent");
+      mqttAgents.addAgent(Pc5MqttAgent(processIncomingMessage));
+    }
+    
+    if(settingsController.enableIssMqtt.value){
+      addToAppLog("Adding ISS MQTT Agent");
+      mqttAgents.addAgent(IssMqttAgent(processIncomingMessage));
+    }
+    
+    mqttAgents.setPosition(currentPosition);
+    var success = await mqttAgents.connectAll();
+    if(success != 0){
+      showError("Unable to connect all configured MQTT Agents");
+    }
+    success = await mqttAgents.subscribeAll();
+    if(success != 0){
+      showError("Unable to Subscribe all configured MQTT Agents");
+    }
+    setState(() {
+      showLoadingIcon = false;
+    });
   }
 
   Future<void> createGPSStream() async{
     Stream<Position> stream;
     if (debugMode) {
-      stream = fakePosition(TestData.tfhrcFakePosition);
+      stream = fakePosition(TestData.plugfestFakePosition);
     } else if (settingsController.demoMode.value) {
-      stream = fakePosition(TestData.tfhrcFakePosition);
+      stream = fakePosition(TestData.plugfestFakePosition);
     } else if (settingsController.gpsType.value == GPSType.cradle) {
       stream = gpsService.positionStream(interval: const Duration(milliseconds: 500));
     } else if (settingsController.gpsType.value == GPSType.obu) {
@@ -385,15 +443,6 @@ class MapState extends State<MapPage> {
     });
   }
 
-  void fakeSdsmMessage() {
-    SensorDataSharingMessage sdsm = asnService.decodeSdsm(TestData.tfhrcSDSM);
-    Timer.periodic(const Duration(milliseconds: 100), (timer) async {
-      DateTime now = timingService.getTime();
-      processNewSdsm(publicGeoRelevanceSubscribeTopic, TestData.tfhrcSDSM, now, now, "SIM");
-      // await Future.delayed(const Duration(milliseconds: 100)); // Simulate an async task
-    });
-  }
-
   Stream<Position> fakePosition(List<List<double>> fakePosition) {
     return Stream<Position>.periodic(const Duration(milliseconds: 500), (count) {
       List<List<double>> route = fakePosition.reversed.toList();
@@ -437,8 +486,8 @@ class MapState extends State<MapPage> {
     appDataQueue = DataQueue("APP_LOG_${logTime.millisecondsSinceEpoch}.log");
     timDataQueue = DataQueue("TIM_LOG_${logTime.millisecondsSinceEpoch}.csv");
     String subHeader =
-        "topic,message_type,receive_time_ms,send_time_ms,generation_time_ms,send_rec_delta_time_ms,gen_rec_delta_time_ms,longitude,latitude,broker,msg_bytes,msg_source\n";
-    String pubHeader = "topic,send_time_ms,longitude,latitude,broker,msg_bytes\n";
+        "topic,message_type,receive_time_ms,send_time_ms,generation_time_ms,send_rec_delta_time_ms,gen_rec_delta_time_ms,longitude,latitude,broker,msg_bytes,msg_source,signature\n";
+    String pubHeader = "topic,send_time_ms,longitude,latitude,broker,msg_bytes,signed\n";
     String timHeader = "action,time,longitude,latitude,heading,asn1\n";
 
     recDataQueue.addItem(subHeader);
@@ -456,180 +505,47 @@ class MapState extends State<MapPage> {
     return 0;
   }
 
-  Future<int> checkRemoteGPSConnection() async {
-    Map<String, String>? gpsToken;
-    try {
-      gpsToken = await gpsService.getToken().timeout(Duration(seconds: 30));
-    } catch (e) {
-      addToAppLog('GPS token request timed out or failed: $e');
-    }
-
-    if (gpsToken == null) {
-      showError("Unable to get GPS token");
-      return 1;
-    }
-
-    return 0;
-  }
-
-  Future<int> connectToETXBroker() async {
-    String? token = await apiService.getToken();
-
-    if (mounted) {
-      setState(() {
-        showLoadingIcon = true;
-      });
-    }
-
-    updateConnectedStatus(ConnectedStatus.PARTIAl);
-
-    if (token == null) {
-      showError("Unable to retrieve token from partner API. Please verify partner API credentials in settings menu");
-      return 1;
-    }
-
-    //Add Loading Registration from Cache
-    if (await fileService.checkIfRegistrationExists()) {
-      addToAppLog("Loading Registration from Cache");
-      registration = await fileService.getRegistration();
-    } else {
-      addToAppLog("Loading Registration from Server");
-      registration = await apiService.getRegistration(
-          token, paramController.clientType.value, paramController.clientSubtype.value);
-
-      addToAppLog("CREATED REGISTRATION");
-
-      if (registration != null) {
-        fileService.saveRegistration(registration!);
-      }
-    }
-
-    if (registration == null) {
-      showError("Unable to retrieve registration information from partner API");
-      return 2;
-    }
-
-    addToAppLog("Acquired Certificates for DeviceID: ${registration!.deviceID}");
-
-    String vzString = paramController.networkType.value;
-
-    if (settingsController.vzMode.value) {
-      vzString = "VZ";
-    } else {
-      vzString = "non-VZ";
-    }
-
-    if(paramController.manualRegistrationMode.value || currentPosition == null){
-      mqttConnectionURL = await apiService.getConnection(token, registration!.deviceID,
-        paramController.registrationLatitude.value, paramController.registrationLongitude.value, vzString);
-    }else{
-      mqttConnectionURL = await apiService.getConnection(token, registration!.deviceID,
-        currentPosition!.latitude, currentPosition!.longitude, vzString);
-    }
-    
-
-    int result = await mqtt.connect(mqttConnectionURL!, registration!);
-    if (result != 0) {
-      showError("Unable to Connect to MQTT Broker");
-      return 3;
-    }
-
-    mqtt.subscribe(privateRawSubscribeTopic, onRawAsnMessage); //MAP / TIM
-    mqtt.subscribe(privateSubscribeTopic, onGeoRelevanceMessage);
-    mqtt.subscribe(publicGeoRelevanceRawSubscribeTopic, onRawAsnMessage); // SPaT
-    mqtt.subscribe(publicGeoRelevanceSubscribeTopic, onGeoRelevanceMessage);
-
-    startSendingBSM();
-    if (Platform.isAndroid || Platform.isIOS) {
-      WakelockPlus.enable();
-    }
-
-    if (mounted) {
-      setState(() {
-        showLoadingIcon = false;
-      });
-    }
-
-    return 0;
-  }
-
-  Future<int> connectToPC5Broker() async {
-    addToAppLog("Connecting to PC5 Broker");
-
-    int result = await mqttPC5.connect(settingsController.pc5BrokerUrl.value, null);
-    if (result != 0) {
-      showError("Unable to Connect to MQTT Broker");
-      return 1;
-    }
-
-    mqttPC5.subscribe("Ettifos/V2X/ind/J2735/#", onPC5Message); //MAP / TIM
-    return 0;
-  }
-
-  void onPC5Message(MqttReceivedMessage<MqttMessage?> message, DateTime recTime) async {
-    addToAppLog("Received ASN1 Message from PC5 Broker");
-    final recMess = message.payload as MqttPublishMessage;
-    String hex = ASNService.bytesToHex(recMess.payload.message);
-    processIncomingMessage(message.topic, hex, recTime, null, "PC5");
-  }
-
-  void onGeoRelevanceMessage(MqttReceivedMessage<MqttMessage?> message, DateTime recTime) async {
-    addToAppLog("Received Geo Relevance Message");
-
-    final recMess = message.payload as MqttPublishMessage;
-
-    protobuf.GeoRoutedMsg decodedMessage = protobuf.GeoRoutedMsg.fromBuffer(recMess.payload.message);
-
-    DateTime msgTime = Utils.timeStampToDateTime(decodedMessage.time);
-
-    addToAppLog("${decodedMessage.position.longitude}, ${decodedMessage.position.latitude}");
-
-    String hex = ASNService.bytesToHex(decodedMessage.msgBytes);
-
-    processIncomingMessage(message.topic, hex, recTime, msgTime, "ETX");
-  }
-
-  void onRawAsnMessage(MqttReceivedMessage<MqttMessage?> message, DateTime recTime) {
-    addToAppLog("Received ASN1 Message");
-    final recMess = message.payload as MqttPublishMessage;
-    String hex = ASNService.bytesToHex(recMess.payload.message);
-    processIncomingMessage(message.topic, hex, recTime, null, "ETX");
-  }
-
-  void processIncomingMessage(String topic, String hex, DateTime recTime, DateTime? sendTime, String source) {
+  void processIncomingMessage(String? broker, String topic, List<int> bytes, DateTime recTime, DateTime? sendTime, String source) async {
+    String hex = ASNService.bytesToHex(bytes);
     MsgType msgType = asnService.determineHexMessageType(hex);
+    ValidateStatus validity;
+    if(Platform.isAndroid){
+      validity= await scms.validate(bytes);
+    }else{
+      validity = ValidateStatus.FAILURE;
+    }
 
     switch (msgType) {
       case MsgType.BSM:
         addToAppLog("Identified Message as BSM");
-        processNewBsm(topic, hex, recTime, sendTime, source);
+        processNewBsm(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.PSM:
         addToAppLog("Identified Message as PSM");
-        processNewPsm(topic, hex, recTime, sendTime, source);
+        processNewPsm(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.SPAT:
         addToAppLog("Identified Message as SPaT");
-        processNewSpat(topic, hex, recTime, sendTime, source);
+        processNewSpat(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.MAP:
         addToAppLog("Identified Message as MAP");
-        processNewMap(topic, hex, recTime, sendTime, source);
+        processNewMap(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.TIM:
         addToAppLog("Identified Message as TIM");
-        processNewTim(topic, hex, recTime, sendTime, source);
+        processNewTim(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.SDSM:
         addToAppLog("Identified Message as SDSM");
-        processNewSdsm(topic, hex, recTime, sendTime, source);
+        processNewSdsm(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       default:
         addToAppLog("Unable to Identify Message Type: $msgType");
     }
   }
 
-  void processNewBsm(String topic, String hex, DateTime recTime, DateTime? sendTime, String source) {
+  void processNewBsm(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
     VehicleClass vehicleClass = VehicleClass.unknownVehicleClass;
 
     String trimmedHex = asnService.trimMessageHeaders(hex, asnService.BSM_START_FLAG)!;
@@ -658,10 +574,10 @@ class MapState extends State<MapPage> {
 
     ReceivedMsg msg = ReceivedBsm(vehicleID, bsmTime, position, vehicleClass, lights, sirens);
     messageManager.addOrUpdate(msg);
-    addToReceiveLog(topic, "BSM", recTime, sendTime, bsmTime, trimmedHex, source);
+    addToReceiveLog(broker, topic, "BSM", recTime, sendTime, bsmTime, trimmedHex, source, validity);
   }
 
-  void processNewPsm(String topic, String hex, DateTime recTime, DateTime? sendTime, String source) {
+  void processNewPsm(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
     String trimmedHex = asnService.trimMessageHeaders(hex, asnService.PSM_START_FLAG)!;
     PersonalSafetyMessage psm = asnService.decodePsm(trimmedHex);
 
@@ -672,10 +588,10 @@ class MapState extends State<MapPage> {
 
     ReceivedMsg msg = ReceivedPsm(pedestrianID, psmTime, position, psm.basicType, psm.eventResponderType);
     messageManager.addOrUpdate(msg);
-    addToReceiveLog(topic, "PSM", recTime, sendTime, psmTime, trimmedHex, source);
+    addToReceiveLog(broker, topic, "PSM", recTime, sendTime, psmTime, trimmedHex, source, validity);
   }
 
-  void processNewSpat(String topic, String hex, DateTime recTime, DateTime? sendTime, String source) {
+  void processNewSpat(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
     String trimmedHex = asnService.trimMessageHeaders(
         hex, asnService.SPAT_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
     Spat spat = asnService.decodeSpat(trimmedHex);
@@ -688,10 +604,10 @@ class MapState extends State<MapPage> {
       spatGenTime = spat.intersections.intersectionStateList.first.getUtcTime();
     }
 
-    addToReceiveLog(topic, "SPAT", recTime, sendTime, spatGenTime, trimmedHex, source);
+    addToReceiveLog(broker, topic, "SPAT", recTime, sendTime, spatGenTime, trimmedHex, source, validity);
   }
 
-  void processNewMap(String topic, String hex, DateTime recTime, DateTime? sendTime, String source) {
+  void processNewMap(String? broker,String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
     String trimmedHex = asnService.trimMessageHeaders(
         hex, asnService.MAP_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
     MapData map = asnService.decodeMap(trimmedHex);
@@ -700,10 +616,10 @@ class MapState extends State<MapPage> {
 
     updateGraphics();
 
-    addToReceiveLog(topic, "MAP", recTime, sendTime, LeidosDateExtraction.extractDateFromMap(map), trimmedHex, source);
+    addToReceiveLog(broker, topic, "MAP", recTime, sendTime, LeidosDateExtraction.extractDateFromMap(map), trimmedHex, source, validity);
   }
 
-  void processNewTim(String topic, String hex, DateTime recTime, DateTime? sendTime, String source) {
+  void processNewTim(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
     String trimmedHex = asnService.trimMessageHeaders(
         hex, asnService.TIM_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
     TravelerInformation tim = asnService.decodeTim(trimmedHex);
@@ -716,15 +632,14 @@ class MapState extends State<MapPage> {
         ItisSequence sequence = await timManager.getItisRepresentationForDataFrame(tim.dataFrames.travelerDataFrameList.first);
         messageType = "TIM ${sequence.description}";
       }
-      addToReceiveLog(topic, messageType, recTime, sendTime, generationTime, trimmedHex, source);
+      addToReceiveLog(broker, topic, messageType, recTime, sendTime, generationTime, trimmedHex, source, validity);
     });
   }
 
-  void processNewSdsm(String topic, String hex, DateTime recTime, DateTime? sendTime, String source) {
+  void processNewSdsm(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
     String trimmedHex = asnService.trimMessageHeaders(
         hex, asnService.SDSM_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
     SensorDataSharingMessage sdsm = asnService.decodeSdsm(trimmedHex);
-    // sdsmManager.addOrUpdateWithTime(sdsm, hex, recTime);
     sdsm.sDSMTimeStamp.year ??= DYear(recTime.year);
     sdsm.sDSMTimeStamp.month ??= DMonth(recTime.month);
     sdsm.sDSMTimeStamp.day ??= DDay(recTime.day);
@@ -745,11 +660,11 @@ class MapState extends State<MapPage> {
       messageManager.addOrUpdate(ReceivedSdsm(id, objectTime, shiftedPosition, object.detObjCommon.objType));
     }
 
-    addToReceiveLog(topic, "SDSM", recTime, sendTime, sdsm.sDSMTimeStamp.getAsDateTime(), trimmedHex, source);
+    addToReceiveLog(broker, topic, "SDSM", recTime, sendTime, sdsm.sDSMTimeStamp.getAsDateTime(), trimmedHex, source, validity);
   }
 
-  void addToReceiveLog(String topic, String msgType, DateTime recTime, DateTime? sendTime, DateTime? generationTime,
-      String hex, String source) async {
+  void addToReceiveLog(String? broker, String topic, String msgType, DateTime recTime, DateTime? sendTime, DateTime? generationTime,
+      String hex, String source, ValidateStatus validity) async {
     int delta = 0;
     int logSendTime = 0;
     if (sendTime != null) {
@@ -772,7 +687,7 @@ class MapState extends State<MapPage> {
     }
 
     String record =
-        "$topic, ${msgType.toString().split('.').last}, ${recTime.millisecondsSinceEpoch},$logSendTime,$messageGenerationTime,$delta,$generationDelta,$longitude,$latitude,$mqttConnectionURL,$hex,$source\n";
+        "$topic, ${msgType.toString().split('.').last}, ${recTime.millisecondsSinceEpoch},$logSendTime,$messageGenerationTime,$delta,$generationDelta,$longitude,$latitude,$broker,$hex,$source,${validity.name}\n";
     recDataQueue.addItem(record);
   }
 
@@ -790,8 +705,9 @@ class MapState extends State<MapPage> {
     // Stop any previous timer
     sendMessageTimer?.cancel();
 
-    // Set the timer to call _runFunction every 100 milliseconds
-    sendMessageTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+    int broadcastIntervalMilliseconds = (1000 / settingsController.broadcastRate.value).toInt();
+
+    sendMessageTimer = Timer.periodic(Duration(milliseconds: broadcastIntervalMilliseconds), (timer) {
       sendMessage();
       if (!isConnected()) {
         stopSendingBSM();
@@ -801,22 +717,17 @@ class MapState extends State<MapPage> {
   }
 
   void sendMessage() async {
-    protobuf.GeoRoutedMsg msg = protobuf.GeoRoutedMsg();
-    protobuf.Position pos = protobuf.Position();
     if (currentPosition == null) {
       addToAppLog("Cannot Send BSM. Location is Null");
-      updateConnectedStatus(ConnectedStatus.PARTIAl);
+      updateConnectedStatus(ConnectedStatus.PARTIAL);
       return;
     }
 
     DateTime sendTime = timingService.getTime();
-
-    Uint8Buffer buffer = Uint8Buffer();
-    msg.position = pos;
     String hex = "";
+    int psid = PSID.BSM.code;
+    MsgType messageType = MsgType.BSM;
 
-    pos.latitude = currentPosition!.latitude;
-    pos.longitude = currentPosition!.longitude;
 
     // Switch to PSM messages depending on config settings.
     if (configController.isVehicleConfig.value) {
@@ -839,7 +750,8 @@ class MapState extends State<MapPage> {
       }
 
       bsmBuilder.setEmergencyVehicleLights(lightStatus, sirenUse);
-
+      psid = PSID.BSM.code;
+      messageType = MsgType.BSM;
       hex = bsmBuilder.build();
     } else {
       psmBuilder.setPosition(currentPosition!);
@@ -849,21 +761,36 @@ class MapState extends State<MapPage> {
       if (configController.selectedPedestrian == PersonalDeviceUserType.APUBLICSAFETYWORKER) {
         psmBuilder.setPublicSafetyWorkerType(configController.selectedPublicSafetyWorker);
       }
+      psid = PSID.PSM.code;
+      messageType = MsgType.PSM;
       hex = psmBuilder.build();
     }
 
+    bool signed = false;
     if (hex != "") {
-      msg.msgBytes = ASNService.hexToBytes(hex);
-      msg.time = Utils.dateTimeToTimestamp(sendTime);
-      buffer.addAll(msg.writeToBuffer());
-      mqtt.publishBytes(buffer, publishTopic);
-      updateConnectedStatus(ConnectedStatus.CONNECTED);
-    }
+      List<int> messageBytes = ASNService.hexToBytes(hex);
+      
+      if(scmsActive){
+        List<int>? signedMessageBytes = await scms.sign(psid, messageBytes);
+        if(signedMessageBytes != null && signedMessageBytes.isNotEmpty){
+          messageBytes = signedMessageBytes;
+          signed = true;
 
-    String netStat = "Unavailable";
-    String record =
-        "$publishTopic,${sendTime.millisecondsSinceEpoch},${currentPosition!.longitude},${currentPosition!.latitude},$netStat,$mqttConnectionURL,$hex\n";
-    pubDataQueue.addItem(record);
+        }else{
+          showError("Result of Message Signing was Null or Empty");
+        }
+      }
+      
+      mqttAgents.sendMessage(messageBytes, messageType, sendTime, pubDataQueue, signed);
+      int connectionCount = mqttAgents.getConnectionCount();
+      if( connectionCount == mqttAgents.agents.length){
+        updateConnectedStatus(ConnectedStatus.CONNECTED);
+      }else if(connectionCount > 0){
+        updateConnectedStatus(ConnectedStatus.PARTIAL);
+      }else{
+        updateConnectedStatus(ConnectedStatus.DISCONNECTED);
+      }
+    }
   }
 
   void stopSendingBSM() {
@@ -877,6 +804,7 @@ class MapState extends State<MapPage> {
 
   Future<void> updatePosition(Position position) async {
     currentPosition = position;
+    mqttAgents.setPosition(currentPosition);
 
     DateTime now = DateTime.now();
 
@@ -977,14 +905,13 @@ class MapState extends State<MapPage> {
         showTims = uniqueSequences.values.toList();
       });
     }
-    // showTimMessage(newActiveTims);
   }
 
   void onMqttDisconnect() {
-    showError("Disconnected from MQTT Broker Randomly");
+    showError("Lost Connection to All MQTT Brokers");
     updateConnectedStatus(ConnectedStatus.DISCONNECTED);
     stopSendingBSM();
-    mqtt.subscriberList.clear();
+    mqttAgents.clearAgents();
     if (Platform.isAndroid || Platform.isIOS) {
       WakelockPlus.disable();
     }
@@ -992,7 +919,7 @@ class MapState extends State<MapPage> {
   }
 
   bool isConnected() {
-    return mqtt.client != null && mqtt.client!.connectionStatus!.state == MqttConnectionState.connected;
+    return mqttAgents.getConnectionCount() > 0;
   }
 
   LatLng getUserLocation() {
@@ -1012,7 +939,7 @@ class MapState extends State<MapPage> {
           connectedButtonColor = Colors.green;
         } else if (status == ConnectedStatus.DISCONNECTED) {
           connectedButtonColor = Colors.red;
-        } else if (status == ConnectedStatus.PARTIAl) {
+        } else if (status == ConnectedStatus.PARTIAL) {
           connectedButtonColor = Colors.orange;
         }
       });
@@ -1029,7 +956,6 @@ class MapState extends State<MapPage> {
       for (GeoMap map in geoMaps) {
         List<int> activeLaneIds = mapManager.getActiveLaneIds(map, pos.longitude, pos.latitude);
 
-        // if(activeLaneIds.isNotEmpty){
         List<int> signalGroups = [];
         for (int activeLane in activeLaneIds) {
           if (map.laneSignalGroups.containsKey(activeLane)) {
@@ -1433,13 +1359,11 @@ class MapState extends State<MapPage> {
       awsService.uploadFile(pubDataPath, "publish/${settingsController.deviceID.value}");
       awsService.uploadFile(timDataPath, "tim/${settingsController.deviceID.value}");
       awsService.uploadFile(appDataPath, "app/${settingsController.deviceID.value}");
-    } else if (registration != null) {
-      awsService.uploadFile(recDataPath, "subscribe/${registration!.deviceID}");
-      awsService.uploadFile(pubDataPath, "publish/${registration!.deviceID}");
-      awsService.uploadFile(timDataPath, "tim/${registration!.deviceID}");
-      awsService.uploadFile(appDataPath, "app/${registration!.deviceID}");
     } else {
-      addToAppLog("Cannot Upload Logs - Device ID is Unavailable");
+      awsService.uploadFile(recDataPath, "subscribe/$deviceID");
+      awsService.uploadFile(pubDataPath, "publish/$deviceID");
+      awsService.uploadFile(timDataPath, "tim/$deviceID");
+      awsService.uploadFile(appDataPath, "app/$deviceID");
     }
   }
 
@@ -1460,8 +1384,7 @@ class MapState extends State<MapPage> {
               sendMessageTimer?.cancel();
               positionStream?.cancel();
               uploadTimer?.cancel();
-              mqtt.disconnect();
-              mqttPC5.disconnect();
+              mqttAgents.disconnectAll();
 
               Future.delayed(const Duration(milliseconds: 100), () async {
                 Get.back();
@@ -1716,10 +1639,8 @@ class MapState extends State<MapPage> {
             onPressed: () {
               updateConnectedStatus(ConnectedStatus.DISCONNECTED);
               stopSendingBSM();
-              connectToETXBroker();
-              if (settingsController.enablePC5.value) {
-                connectToPC5Broker();
-              }
+              connectMqttAgents();
+              startSendingBSM();
             },
             style: ElevatedButton.styleFrom(
               shape: const CircleBorder(),
