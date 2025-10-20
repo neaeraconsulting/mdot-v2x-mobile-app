@@ -706,7 +706,6 @@ class MapState extends State<MapPage> {
     sendMessageTimer?.cancel();
 
     int broadcastIntervalMilliseconds = (1000 / settingsController.broadcastRate.value).toInt();
-    print("Sending Message BroadcastRateInterval $broadcastIntervalMilliseconds");
 
     sendMessageTimer = Timer.periodic(Duration(milliseconds: broadcastIntervalMilliseconds), (timer) {
       sendMessage();
