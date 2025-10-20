@@ -505,22 +505,6 @@ class MapState extends State<MapPage> {
     return 0;
   }
 
-  // Future<int> checkRemoteGPSConnection() async {
-  //   Map<String, String>? gpsToken;
-  //   try {
-  //     gpsToken = await gpsService.getToken().timeout(Duration(seconds: 30));
-  //   } catch (e) {
-  //     addToAppLog('GPS token request timed out or failed: $e');
-  //   }
-
-  //   if (gpsToken == null) {
-  //     showError("Unable to get GPS token");
-  //     return 1;
-  //   }
-
-  //   return 0;
-  // }
-
   void processIncomingMessage(String? broker, String topic, List<int> bytes, DateTime recTime, DateTime? sendTime, String source) async {
     String hex = ASNService.bytesToHex(bytes);
     MsgType msgType = asnService.determineHexMessageType(hex);
@@ -656,7 +640,6 @@ class MapState extends State<MapPage> {
     String trimmedHex = asnService.trimMessageHeaders(
         hex, asnService.SDSM_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
     SensorDataSharingMessage sdsm = asnService.decodeSdsm(trimmedHex);
-    // sdsmManager.addOrUpdateWithTime(sdsm, hex, recTime);
     sdsm.sDSMTimeStamp.year ??= DYear(recTime.year);
     sdsm.sDSMTimeStamp.month ??= DMonth(recTime.month);
     sdsm.sDSMTimeStamp.day ??= DDay(recTime.day);
@@ -923,7 +906,6 @@ class MapState extends State<MapPage> {
         showTims = uniqueCodes.values.toList();
       });
     }
-    // showTimMessage(newActiveTims);
   }
 
   void onMqttDisconnect() {
@@ -975,7 +957,6 @@ class MapState extends State<MapPage> {
       for (GeoMap map in geoMaps) {
         List<int> activeLaneIds = mapManager.getActiveLaneIds(map, pos.longitude, pos.latitude);
 
-        // if(activeLaneIds.isNotEmpty){
         List<int> signalGroups = [];
         for (int activeLane in activeLaneIds) {
           if (map.laneSignalGroups.containsKey(activeLane)) {
