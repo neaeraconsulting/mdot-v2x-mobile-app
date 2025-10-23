@@ -253,7 +253,7 @@ class GeometryService {
 
   LatLng coordinateToLatLng(Coordinate coordinate, Position3D anchorPoint) {
     LatLng anchor = LatLng(anchorPoint.lat.getDecimalLatitude(), anchorPoint.long.getDecimalLongitude());
-    return shiftLatLng(anchor, coordinate.y, coordinate.x);
+    return shiftLatLngByMeters(anchor, coordinate.x, coordinate.y);
   }
 
   // This function is wrong. The angle calculated in this function appears to be in reference to East,
@@ -466,7 +466,6 @@ class GeometryService {
           latLngs.add(LatLng(offset[1] + anchorLatLng.latitude, offset[0] + anchorLatLng.longitude));
         } else {
           latLngs.add(LatLng(latLngs.last.latitude + offset[1], latLngs.last.longitude + offset[0]));
-          // points.add(Coordinate(points.last.x + offset[0], points.last.y + offset[1]));
         }
       }
     }
@@ -494,7 +493,7 @@ class GeometryService {
     List<LatLng> latLngCoordinates = [];
     for (int i = 0; i < polygon.length; i++) {
       LatLng anchor = LatLng(position.latitude, position.longitude);
-      final converted = shiftLatLng(anchor, polygon[i].y, polygon[i].x);
+      final converted = shiftLatLngByMeters(anchor, polygon[i].x, polygon[i].y);
       latLngCoordinates.add(LatLng(converted.latitude, converted.longitude));
     }
     return latLngCoordinates;

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:cv_mec/pages/load.dart';
 import 'package:cv_mec/services/gpsd_service.dart';
+import 'package:cv_mec/services/itis_decoding_service.dart';
 import 'package:cv_mec/services/vehicle_notification_manager.dart';
 import 'package:cv_mec/styles/theme_setting.dart';
 import 'package:flutter/material.dart';
@@ -21,6 +22,7 @@ import 'package:cv_mec/services/aws_service.dart';
 import 'package:cv_mec/services/file_service.dart';
 import 'package:cv_mec/services/geometry_service.dart';
 import 'package:cv_mec/services/location_service.dart';
+import 'package:cv_mec/services/mqtt_service.dart';
 import 'package:cv_mec/services/remote_gps.dart';
 import 'package:cv_mec/services/timing.dart';
 import 'package:iss_scms/iss_scms.dart';
@@ -48,6 +50,7 @@ void main() async {
   Get.put(GPSDService());
   Get.put(OBDController());
   Get.put(S3Service());
+  Get.put(ItisDecodingService());
   Get.put(IssScms());
 
   runApp(

@@ -39,10 +39,10 @@ import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/models/data_queue.dart';
 import 'package:cv_mec/models/geometry_direction.dart';
 import 'package:cv_mec/models/icon_manager.dart';
-import 'package:cv_mec/models/itis_converter.dart';
+import 'package:cv_mec/models/itis/itis_converter.dart';
+import 'package:cv_mec/models/itis/itis_sequence.dart';
 import 'package:cv_mec/models/data_frame_geometry.dart';
 import 'package:cv_mec/models/geo_map.dart';
-import 'package:cv_mec/models/itis_code.dart';
 import 'package:cv_mec/models/leidos_date_extraction.dart';
 import 'package:cv_mec/models/message_builders/bsm_message_builder.dart';
 import 'package:cv_mec/models/message_builders/psm_message_builder.dart';
@@ -148,7 +148,7 @@ class MapState extends State<MapPage> {
   Color connectedButtonColor = Colors.red;
   StreamSubscription<Position>? positionStream;
 
-  List<ItisCode> showTims = [];
+  List<ItisSequence> showTims = [];
   List<Polygon<HitValue>> drawnPolygons = [];
   List<Polyline<PolyLineHitValue>> drawnPolylines = [];
   List<Marker> lightMarkerList = [];
@@ -629,8 +629,8 @@ class MapState extends State<MapPage> {
     Future.delayed(const Duration(milliseconds: 0), () async {
       String messageType = "TIM";
       if (tim.dataFrames.travelerDataFrameList.isNotEmpty) {
-        ItisCode code = await timManager.getItisRepresentationForDataFrame(tim.dataFrames.travelerDataFrameList.first);
-        messageType = "TIM ${code.description}";
+        ItisSequence sequence = await timManager.getItisRepresentationForDataFrame(tim.dataFrames.travelerDataFrameList.first);
+        messageType = "TIM ${sequence.description}";
       }
       addToReceiveLog(broker, topic, messageType, recTime, sendTime, generationTime, trimmedHex, source, validity);
     });
@@ -830,32 +830,33 @@ class MapState extends State<MapPage> {
     List<TravelerDataFrame> newActiveTims = [];
     List<ReceivedMsg> newReceivedMessages = messageManager.getNewReceivedMessages(
         LatLng(currentPosition!.latitude, currentPosition!.longitude), currentPosition!.heading);
-    List<ItisCode> receivedMessageItisCodes = messageManager.convertToItisCodes(newReceivedMessages);
+    
+    List<ItisSequence> receivedMessageItisSequence = messageManager.convertToItisSequence(newReceivedMessages);
 
     secureStorage.getNotificationsEnabled().then((enabled) {
       if (enabled) {
-        timManager.getItisRepresentationForDataFrames(newActiveTims).then((codes) async {
-          for (ItisCode code in codes) {
-            await VehicleNotificationManager.notifyVehicleFromItisCode(code);
+        timManager.getItisRepresentationForDataFrames(newActiveTims).then((sequences) async {
+          for (ItisSequence sequence in sequences) {
+            await VehicleNotificationManager.notifyVehicleFromItisSequence(sequence);
           }
         });
 
-        for (ItisCode code in receivedMessageItisCodes) {
-          VehicleNotificationManager.notifyVehicleFromDescriptionImage(code.description, code.image!);
+        for (ItisSequence sequence in receivedMessageItisSequence) {
+          VehicleNotificationManager.notifyVehicleFromItisSequence(sequence);
         }
       }
     });
 
     secureStorage.getReadMessages().then((enabled) {
       if (enabled) {
-        timManager.getItisRepresentationForDataFrames(newActiveTims).then((codes) async {
-          for (ItisCode code in codes) {
-            String message = ItisConverter.getItisListAsString(code.associatedCodes);
+        timManager.getItisRepresentationForDataFrames(newActiveTims).then((sequences) async {
+          for (ItisSequence sequence in sequences) {
+            String message = ItisConverter.getItisListAsString(sequence.associatedCodes);
             await flutterTts.speak(message);
           }
 
-          for (ItisCode code in receivedMessageItisCodes) {
-            await flutterTts.speak(code.description);
+          for (ItisSequence sequence in receivedMessageItisSequence) {
+            await flutterTts.speak(sequence.description);
           }
         });
       }
@@ -878,8 +879,8 @@ class MapState extends State<MapPage> {
           position.longitude, position.latitude, position.heading, false, settingsController.demoMode.value);
     }
 
-    List<ItisCode> codes = await timManager.getItisRepresentationForDataFrames(frames);
-    List<ItisCode> msgs = messageManager.convertToItisCodes(
+    List<ItisSequence> sequences = await timManager.getItisRepresentationForDataFrames(frames);
+    List<ItisSequence> msgs = messageManager.convertToItisSequence(
         messageManager.getActiveMessages(LatLng(position.latitude, position.longitude), position.heading));
 
     List<String> hex = timManager.getUniqueAsnFromDataFrames(frames);
@@ -887,20 +888,20 @@ class MapState extends State<MapPage> {
       addToTimLog("ALERT", str);
     }
 
-    codes.addAll(msgs);
+    sequences.addAll(msgs);
 
-    Map<ImageProvider, ItisCode> uniqueCodes = <ImageProvider, ItisCode>{};
+    Map<ImageProvider, ItisSequence> uniqueSequences = <ImageProvider, ItisSequence>{};
 
     // Tims with Identical Images are considerd the same. All images are pulled from image map so object comparison is sufficient.
-    for(ItisCode code in codes){
-      if(code.image != null && !uniqueCodes.containsKey(code.image)){
-        uniqueCodes[code.image!] = code;
+    for(ItisSequence sequence in sequences){
+      if(!uniqueSequences.containsKey(sequence.image)){
+        uniqueSequences[sequence.image] = sequence;
       }
     }
 
     if (mounted) {
       setState(() {
-        showTims = uniqueCodes.values.toList();
+        showTims = uniqueSequences.values.toList();
       });
     }
   }
@@ -1892,16 +1893,8 @@ class MapState extends State<MapPage> {
   Widget timsDisplay(double heightBottomDisplay, double screenWidth) {
     List<Widget> timIcons = [];
     final int maxTimsInRow = (screenWidth / (heightBottomDisplay / 2)).floor();
-    for (ItisCode code in showTims) {
-      Widget icon = code.image != null
-          ? Image(
-              image: code.image!,
-            )
-          : Text(
-              code.description,
-              style: const TextStyle(fontSize: 16.0),
-            );
-      timIcons.add(icon);
+    for (ItisSequence sequence in showTims) {  
+      timIcons.add(Image(image: sequence.image));
     }
     if (timIcons.length <= maxTimsInRow) {
       return Row(
@@ -2327,7 +2320,7 @@ class MapState extends State<MapPage> {
                 itemBuilder: (context, index) {
                   final tappedLineData = tappedLines[index];
                   TravelerDataFrame frame = tappedLineData.frame;
-                  return FutureBuilder<ItisCode>(
+                  return FutureBuilder<ItisSequence>(
                       future: timManager.getItisRepresentationForDataFrame(tappedLineData.frame),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -2345,18 +2338,12 @@ class MapState extends State<MapPage> {
                           );
                         } else if (snapshot.hasData) {
                           // Show the actual data once it has been fetched
-                          final ItisCode code = snapshot.data!;
+                          final ItisSequence sequence = snapshot.data!;
                           return ListTile(
-                            leading: index == 0
-                                ? code.image != null
-                                    ? Image(image: code.image!)
-                                    : Text(code.description, style: const TextStyle(fontSize: 16.0))
-                                : index == tappedLines.length - 1
-                                    ? const Icon(Icons.vertical_align_bottom)
-                                    : const SizedBox.shrink(),
+                            leading: Image(image: sequence.image),
                             title: const Text("TIM Message"),
                             subtitle: Text(
-                                "Description: ${code.description}\nStart Time: ${timManager.getTimStartTime(frame)}\n End Time: ${timManager.getTimEndTime(frame)}"),
+                                "Description: ${sequence.description}\nStart Time: ${timManager.getTimStartTime(frame)}\n End Time: ${timManager.getTimEndTime(frame)}"),
                             dense: false,
                           );
                         }
