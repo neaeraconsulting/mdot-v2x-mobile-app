@@ -1,7 +1,6 @@
 import 'package:asn1_plugin/j2735/2024/personal_safety_message/personal_device_user_type.dart';
 import 'package:asn1_plugin/j2735/2024/sensor_data_sharing_message/object_type.dart';
 import 'package:cv_mec/models/itis/itis_sequence.dart';
-import 'package:cv_mec/models/itis_code.dart';
 import 'package:cv_mec/models/msg_types.dart';
 import 'package:cv_mec/models/received_messages/receieved_msg.dart';
 import 'package:cv_mec/models/received_messages/received_psm.dart';
@@ -67,26 +66,6 @@ class ReceivedMessageManager {
     }
     return activeMessages;
   }
-
-  // List<ItisCode> convertToItisCodes(List<ReceivedMsg> messages) {
-  //   List<ItisCode> codes = [];
-  //   for (ReceivedMsg msg in messages) {
-  //     if (msg.type == MsgType.SDSM) {
-  //       ? code = getITISForSDSM(msg as ReceivedSdsm);
-  //       if (code != null) {
-  //         codes.add(code);
-  //       }
-  //     } else if (msg.type == MsgType.PSM) {
-  //       ItisCode? code = getITISForPSM(msg as ReceivedPsm);
-  //       if (code != null) {
-  //         codes.add(code);
-  //       }
-  //     } else if (msg.type == MsgType.BSM) {
-  //       // No alerts currently supported for BSM messages.
-  //     }
-  //   }
-  //   return codes;
-  // }
 
   List<ItisSequence> convertToItisSequence(List<ReceivedMsg> messages) {
     List<ItisSequence> sequences = [];

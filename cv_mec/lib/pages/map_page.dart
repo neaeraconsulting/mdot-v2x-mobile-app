@@ -842,7 +842,6 @@ class MapState extends State<MapPage> {
         });
 
         for (ItisSequence sequence in receivedMessageItisSequence) {
-          // VehicleNotificationManager.notifyVehicleFromDescriptionImage(code.description, code.image);
           VehicleNotificationManager.notifyVehicleFromItisSequence(sequence);
         }
       }

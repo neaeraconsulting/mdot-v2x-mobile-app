@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/models/itis/itis_sequence.dart';
-import 'package:cv_mec/models/itis_code.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -52,14 +51,6 @@ class VehicleNotificationManager {
       'description': message,
       'image_b64': imageB64,
     });
-  }
-
-  static Future<void> notifyVehicleFromItisCode(ItisCode code) async {
-    if (code.image != null) {
-      String imageB64String = await _convertImageProviderToBase64(code.image!);
-      int id = DateTime.now().millisecondsSinceEpoch;
-      _sendNotificationCommand(id, code.description, imageB64String);
-    }
   }
 
   static Future<void> notifyVehicleFromItisSequence(ItisSequence sequence) async {

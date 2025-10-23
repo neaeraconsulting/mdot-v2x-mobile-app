@@ -253,7 +253,6 @@ class GeometryService {
 
   LatLng coordinateToLatLng(Coordinate coordinate, Position3D anchorPoint) {
     LatLng anchor = LatLng(anchorPoint.lat.getDecimalLatitude(), anchorPoint.long.getDecimalLongitude());
-    // return shiftLatLng(anchor, coordinate.y, coordinate.x);
     return shiftLatLngByMeters(anchor, coordinate.x, coordinate.y);
   }
 
@@ -467,7 +466,6 @@ class GeometryService {
           latLngs.add(LatLng(offset[1] + anchorLatLng.latitude, offset[0] + anchorLatLng.longitude));
         } else {
           latLngs.add(LatLng(latLngs.last.latitude + offset[1], latLngs.last.longitude + offset[0]));
-          // points.add(Coordinate(points.last.x + offset[0], points.last.y + offset[1]));
         }
       }
     }
@@ -528,7 +526,6 @@ class GeometryService {
     List<Coordinate> latLngCoordinates = [];
     for (int i = 0; i < coordinates.length; i++) {
       final converted = shiftLatLng(position, coordinates[i].x, coordinates[i].y);
-      // final converted = shiftLatLngByMeters(position, coordinates[i].x, coordinates[i].y); // This should definitely break something
       latLngCoordinates.add(Coordinate(converted.longitude, converted.latitude));
     }
 
