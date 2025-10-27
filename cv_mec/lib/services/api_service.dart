@@ -69,7 +69,40 @@ class ApiService extends GetxController {
       _logger.e("Caught exception when attempting to register app with API: $e");
       return null;
     } catch (e) {
-      _logger.e("Unable to Register app for unknown reasons");
+      _logger.e("Unable to Register app for unknown reasons $e");
+      return null;
+    }
+  }
+
+  Future updateRegistration(String token, String deviceID) async {
+    try {
+      _logger.i("Updating Device Registration");
+      final String uri = "${settingsController.baseUri.value}/prd/v2/registration";
+      final Map<String, String> headers = {"Content-Type": "application/json", "Authorization": "Bearer $token"};
+
+      final String body = jsonEncode({
+        "DeviceID": deviceID
+      });
+
+      var response = await http.put(Uri.parse(uri), headers: headers, body: body);
+
+      if (response.statusCode == 200) {
+        dynamic registrationDyanmic = jsonDecode(response.body.toString());
+
+        Registration registration = Registration.fromJson(registrationDyanmic);
+
+        return registration;
+      } else if (response.statusCode == 404){
+        return null;
+      }else {
+        _logger.e("Error Retrieving Registration ${response.statusCode} ${response.body.toString()}");
+        return null;
+      }
+    } on SocketException catch (e) {
+      _logger.e("Caught exception when attempting to update registration with API: $e");
+      return null;
+    } catch (e) {
+      _logger.e("Unable to update registration for unknown reasons $e");
       return null;
     }
   }

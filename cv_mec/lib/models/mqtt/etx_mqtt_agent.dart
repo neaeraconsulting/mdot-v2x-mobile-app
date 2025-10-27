@@ -38,18 +38,25 @@ class EtxMqttAgent extends MqttAgent{
     if (await fileService.checkIfRegistrationExists()) {
       logger.i("Loading Registration from Cache");
       registration = await fileService.getRegistration();
-    } else {
-      logger.i("Loading Registration from Server");
-      registration = await apiService.getRegistration(token, paramController.clientType.value, paramController.clientSubtype.value);
-
-      logger.i("Created Registration");
-
-      if (registration != null) {
-        fileService.saveRegistration(registration!);
+      if(registration != null){
+        registration = await apiService.updateRegistration(token,registration!.deviceID);
       }
     }
 
-    if (registration == null) {
+    if(registration == null){
+      logger.i("Loading Registration from Server");
+      registration = await apiService.getRegistration(token, paramController.clientType.value, paramController.clientSubtype.value);
+    }
+
+    // if(registration != null){
+    //   logger.i("Verifying registration is Still Valid for Device ${registration!.deviceID}");
+    //   // Always perform a registration update to make sure credential is still valid.
+    //   registration = await apiService.updateRegistration(token, registration!.deviceID);
+    // }
+    if (registration != null) {
+      fileService.saveRegistration(registration!);
+    }
+    else{
       logger.w("Unable to retrieve registration information from partner API");
       return 2;
     }
