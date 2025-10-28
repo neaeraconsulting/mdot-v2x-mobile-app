@@ -2,8 +2,8 @@ import 'dart:io';
 import 'dart:convert';
 
 import 'package:cv_mec/controllers/settings_controller.dart';
-import 'package:cv_mec/models/imp/full_registration.dart';
-import 'package:cv_mec/models/imp/registration.dart';
+import 'package:cv_mec/models/etx/full_registration.dart';
+import 'package:cv_mec/models/etx/registration.dart';
 import 'package:get/get.dart';
 
 import 'package:http/http.dart' as http;

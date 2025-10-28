@@ -1,7 +1,7 @@
 import 'package:cv_mec/controllers/configuration_controller.dart';
 import 'package:cv_mec/controllers/settings_controller.dart';
-import 'package:cv_mec/models/imp/full_registration.dart';
-import 'package:cv_mec/models/imp/registration.dart';
+import 'package:cv_mec/models/etx/full_registration.dart';
+import 'package:cv_mec/models/etx/registration.dart';
 import 'package:cv_mec/models/mqtt/mqtt_agent.dart';
 import 'package:cv_mec/models/msg_types.dart';
 import 'package:cv_mec/models/utils.dart';

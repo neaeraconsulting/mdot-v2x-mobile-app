@@ -49,7 +49,6 @@ cp sample.env .env
 | API_ENDPOINT          | Location of the CV-MEC partner API.                               |               | Yes      | Yes |
 | USERNAME              | Username for the app to login to the partner API with             |               | Yes      | Yes |
 | PASSWORD              | Password for the app to login to the partner API with             |               | Yes      | Yes |
-| VENDOR_ID             | Vendor ID to use when the APP registers and Connects with the ETX |               | Yes      | Yes |
 | S3_ACCESS_KEY         | An AWS IAM access key for connecting to an S3 Bucket              |               | No       | No |
 | S3_SECRET_KEY         | An AWS IAM secret Key for connecting to an S3 Bucket              |               | No       | No |
 | S3_BUCKET_NAME        | The Name of the S3 Bucket to offload log files to                 |               | No       | No |

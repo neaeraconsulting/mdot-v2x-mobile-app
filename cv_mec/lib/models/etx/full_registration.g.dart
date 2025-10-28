@@ -13,7 +13,6 @@ FullRegistration _$FullRegistrationFromJson(Map<String, dynamic> json) => FullRe
       clientSubtype: json['ClientSubtype'] as String,
       clientType: json['ClientType'] as String,
       vendorID: json['VendorID'] as String,
-
     );
 
 Map<String, dynamic> _$FullRegistrationToJson(FullRegistration instance) =>

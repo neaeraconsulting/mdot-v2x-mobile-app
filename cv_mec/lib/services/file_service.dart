@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:cv_mec/models/archive_directory.dart';
-import 'package:cv_mec/models/imp/registration.dart';
+import 'package:cv_mec/models/etx/registration.dart';
 import 'package:cv_mec/models/vehicle.dart';
 import 'package:get/get.dart';
 import 'package:path_provider/path_provider.dart';

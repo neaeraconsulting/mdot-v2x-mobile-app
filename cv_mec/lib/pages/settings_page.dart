@@ -18,7 +18,6 @@ class SettingsPage extends StatelessWidget {
   TextEditingController usernameController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   TextEditingController baseUriController = TextEditingController();
-  TextEditingController vendorIDController = TextEditingController();
   TextEditingController deviceIDController = TextEditingController();
   TextEditingController gpsIPController = TextEditingController();
   TextEditingController gpsUsernameController = TextEditingController();
@@ -41,7 +40,6 @@ class SettingsPage extends StatelessWidget {
     usernameController.text = controller.username.value;
     passwordController.text = controller.password.value;
     baseUriController.text = controller.baseUri.value;
-    vendorIDController.text = controller.vendorID.value;
     deviceIDController.text = controller.deviceID.value;
     gpsIPController.text = controller.cradleGPSIP.value;
     gpsUsernameController.text = controller.cradleGPSUsername.value;
@@ -128,18 +126,6 @@ class SettingsPage extends StatelessWidget {
             if (value != controller.baseUri.value) {
               controller.baseUri.value = value;
               await controller.secureStorage.setBaseURI(value);
-            }
-          },
-        ),
-        verticalSpaceMedium,
-        TextField(
-          decoration: const InputDecoration(labelText: 'Vendor ID'),
-          controller: vendorIDController,
-          obscureText: true,
-          onChanged: (value) async {
-            if (value != controller.vendorID.value) {
-              controller.vendorID.value = value;
-              await controller.secureStorage.setVendorID(value);
             }
           },
         ),
@@ -488,9 +474,6 @@ class SettingsPage extends StatelessWidget {
       return false;
     }
     if (baseUriController.text.isEmpty) {
-      return false;
-    }
-    if (vendorIDController.text.isEmpty) {
       return false;
     }
     return true;

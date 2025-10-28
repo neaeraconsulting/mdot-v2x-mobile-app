@@ -26,7 +26,6 @@ class SettingsController extends GetxController {
   RxString username = dotenv.env['USERNAME']!.obs;
   RxString password = dotenv.env['PASSWORD']!.obs;
   RxString baseUri = dotenv.env['API_ENDPOINT']!.obs;
-  RxString vendorID = dotenv.env['VENDOR_ID']!.obs;
   RxString pc5BrokerUrl = (dotenv.env['PC5_MQTT_BROKER'] ?? "").obs;
   RxString issScmsToken = (dotenv.env['ISS_SCMS_TOKEN'] ?? "").obs;
   RxString cradleGPSUsername = (dotenv.env['GPS_USERNAME'] ?? "").obs;
@@ -68,7 +67,6 @@ class SettingsController extends GetxController {
     cradleGPSPassword.value = await secureStorage.getGPSPassword();
     cradleGPSIP.value = await secureStorage.getGPSIP();
     obuIP.value = await secureStorage.getOBUIP();
-    vendorID.value = await secureStorage.getVendorID();
     pc5BrokerUrl.value = await secureStorage.getPC5BrokerUrl();
     vzMode.value = await secureStorage.getVZMode();
     deviceID.value = await secureStorage.getDeviceID();

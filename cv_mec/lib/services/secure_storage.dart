@@ -10,7 +10,6 @@ class SecureStorage {
   static const _keyUsername = 'username';
   static const _keyPassword = 'password';
   static const _keyBaseURI = 'baseuri';
-  static const _keyVendorID = 'vendorid';
   static const _keyVzMode = "vzMode";
   static const _keyDeviceID = "deviceid";
   static const _keyNotificationsEnabled = "notificationsEnabled";
@@ -46,7 +45,6 @@ class SecureStorage {
   static final _startUsername = dotenv.env['USERNAME']!;
   static final _startPassword = dotenv.env['PASSWORD']!;
   static final _startBaseURI = dotenv.env['API_ENDPOINT']!;
-  static final _startVendorID = dotenv.env['VENDOR_ID']!;
   static final _startDeviceID = "";
 
   static final _startVzMode = false;
@@ -80,7 +78,6 @@ class SecureStorage {
   Future<String> getUsername() async => await _storage.read(key: _keyUsername) ?? _startUsername;
   Future<String> getPassword() async => await _storage.read(key: _keyPassword) ?? _startPassword;
   Future<String> getBaseURI() async => await _storage.read(key: _keyBaseURI) ?? _startBaseURI;
-  Future<String> getVendorID() async => await _storage.read(key: _keyVendorID) ?? _startVendorID;
   Future<String> getDeviceID() async => await _storage.read(key: _keyDeviceID) ?? _startDeviceID;
   Future<String> getPC5BrokerUrl() async => await _storage.read(key: _keyPC5BrokerUrl) ?? _pc5BrokerUrl;
   Future<String> getIssScmsToken() async => await _storage.read(key: _keyIssScmsToken) ?? _issScmsToken;
@@ -111,7 +108,6 @@ class SecureStorage {
   Future<void> setUsername(String username) async => await _storage.write(key: _keyUsername, value: username);
   Future<void> setPassword(String password) async => await _storage.write(key: _keyPassword, value: password);
   Future<void> setBaseURI(String baseURI) async => await _storage.write(key: _keyBaseURI, value: baseURI);
-  Future<void> setVendorID(String vendorID) async => await _storage.write(key: _keyVendorID, value: vendorID);
   Future<void> setDeviceID(String deviceID) async => await _storage.write(key: _keyDeviceID, value: deviceID);
   Future<void> setPC5BrokerUrl(String pc5BrokerUrl) async => await _storage.write(key: _keyPC5BrokerUrl, value: pc5BrokerUrl);
   Future<void> setIssScmsToken(String issScmsToken) async => await _storage.write(key: _keyIssScmsToken, value: issScmsToken);
