@@ -1,5 +1,5 @@
 //ignore: depend_on_referenced_packages
-import 'package:cv_mec/models/imp/registration.dart';
+import 'package:cv_mec/models/etx/registration.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'full_registration.g.dart';
