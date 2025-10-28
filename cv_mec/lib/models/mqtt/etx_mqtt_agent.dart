@@ -1,5 +1,6 @@
 import 'package:cv_mec/controllers/configuration_controller.dart';
 import 'package:cv_mec/controllers/settings_controller.dart';
+import 'package:cv_mec/models/imp/full_registration.dart';
 import 'package:cv_mec/models/imp/registration.dart';
 import 'package:cv_mec/models/mqtt/mqtt_agent.dart';
 import 'package:cv_mec/models/msg_types.dart';
@@ -23,7 +24,8 @@ class EtxMqttAgent extends MqttAgent{
   ConfigurationController configController = Get.find<ConfigurationController>();
   Timing timingService = Get.find<Timing>();
   ASNService asnService = Get.find<ASNService>();
-  Registration? registration;
+  
+  FullRegistration? fullRegistration;
 
   EtxMqttAgent(Function(String?, String, List<int>, DateTime, DateTime?, String) processingFunction): super("ETX", processingFunction);
 
@@ -35,33 +37,31 @@ class EtxMqttAgent extends MqttAgent{
       return 1;
     }
 
+    Registration? registration;
+
     if (await fileService.checkIfRegistrationExists()) {
       logger.i("Loading Registration from Cache");
       registration = await fileService.getRegistration();
-      if(registration != null){
-        registration = await apiService.updateRegistration(token,registration!.deviceID);
-      }
+      fullRegistration = await apiService.checkRegistration(token, registration.deviceID);
+      
     }
 
-    if(registration == null){
-      logger.i("Loading Registration from Server");
+    if(registration == null || fullRegistration == null){
+      logger.i("Loading Registration from Partner API");
       registration = await apiService.getRegistration(token, paramController.clientType.value, paramController.clientSubtype.value);
+      fullRegistration = await apiService.checkRegistration(token, registration!.deviceID);
     }
-
-    // if(registration != null){
-    //   logger.i("Verifying registration is Still Valid for Device ${registration!.deviceID}");
-    //   // Always perform a registration update to make sure credential is still valid.
-    //   registration = await apiService.updateRegistration(token, registration!.deviceID);
-    // }
-    if (registration != null) {
-      fileService.saveRegistration(registration!);
-    }
-    else{
-      logger.w("Unable to retrieve registration information from partner API");
+    
+    if(fullRegistration != null){
+      fileService.saveRegistration(registration);
+    }else{
+      logger.w("Unable to retrieve full registration information from partner API");
       return 2;
     }
 
-    logger.i("Acquired Certificates for DeviceID: ${registration!.deviceID}");
+
+
+    logger.i("Acquired Certificates for DeviceID: ${fullRegistration!.deviceID}");
 
 
     String vzString = paramController.networkType.value;
@@ -73,18 +73,14 @@ class EtxMqttAgent extends MqttAgent{
     }
 
     if(paramController.manualRegistrationMode.value || currentPosition == null){
-      connectionUrl = await apiService.getConnection(token, registration!.deviceID,
+      connectionUrl = await apiService.getConnection(token, fullRegistration!.deviceID,
         paramController.registrationLatitude.value, paramController.registrationLongitude.value, vzString);
     }else{
-      connectionUrl = await apiService.getConnection(token, registration!.deviceID,
+      connectionUrl = await apiService.getConnection(token, fullRegistration!.deviceID,
         currentPosition!.latitude, currentPosition!.longitude, vzString);
     }
-
-    print("Connecting to ETX MQTT Broker at $connectionUrl, $registration");
     
-    int result = await mqttService.connect(connectionUrl!, registration!);
-
-    print("Connecting to ETX MQTT Broker. Connection Result $result");
+    int result = await mqttService.connect(connectionUrl!, registration);
     if (result != 0) {
       return 3;
     }
@@ -137,13 +133,20 @@ class EtxMqttAgent extends MqttAgent{
       
     buffer.addAll(msg.writeToBuffer());
 
+    String clientType = paramController.clientType.value;
+    String clientSubtype = paramController.clientSubtype.value;
+    if(fullRegistration != null){
+      clientType = fullRegistration!.clientType;
+      clientSubtype = fullRegistration!.clientSubtype;
+    }
+
     String topic = "";
     switch (messageType) {
       case MsgType.BSM:
-        topic = "vzimp/1/GeoRelevance/${paramController.clientType.value}/${paramController.clientSubtype.value}/Public/${paramController.messageFormat}/BSM";
+        topic = "vzimp/1/GeoRelevance/$clientType/$clientSubtype/Public/${paramController.messageFormat}/BSM";
         break;
       case MsgType.PSM:
-        topic = "vzimp/1/GeoRelevance/${paramController.clientType.value}/${paramController.clientSubtype.value}/Public/${paramController.messageFormat}/PSM";
+        topic = "vzimp/1/GeoRelevance/$clientType/$clientSubtype/Public/${paramController.messageFormat}/PSM";
         break;
       default:
         logger.e('$agentName does not support sending ${messageType.name} messages');

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:convert';
 
 import 'package:cv_mec/controllers/settings_controller.dart';
+import 'package:cv_mec/models/imp/full_registration.dart';
 import 'package:cv_mec/models/imp/registration.dart';
 import 'package:get/get.dart';
 
@@ -43,6 +44,34 @@ class ApiService extends GetxController {
     }
   }
 
+  Future<FullRegistration?> checkRegistration(String token, String deviceID) async {
+    try {
+      _logger.i("Checking Device Registration");
+      final String uri = "${settingsController.baseUri.value}/prd/v2/registration?DeviceID=$deviceID";
+      final Map<String, String> headers = {"Content-Type": "application/json", "Authorization": "Bearer $token"};
+
+      var response = await http.get(Uri.parse(uri), headers: headers);
+
+      if (response.statusCode == 200) {
+        dynamic registrationDynamic = jsonDecode(response.body.toString());
+
+        FullRegistration registration = FullRegistration.fromJson(registrationDynamic);
+
+        return registration;
+      } else {
+        _logger.e("Error Code ${response.statusCode} ${response.body.toString()}");
+      }
+    } on SocketException catch (e) {
+      _logger.e("Caught exception when attempting to register app with API: $e");
+      return null;
+    } catch (e) {
+      _logger.e("Unable to Register app for unknown reasons $e");
+      return null;
+    }
+    return null;
+  }
+
+
   Future getRegistration(String token, String clientType, String clientSubtype) async {
     try {
       _logger.i("Registering Device");
@@ -57,9 +86,9 @@ class ApiService extends GetxController {
       var response = await http.post(Uri.parse(uri), headers: headers, body: body);
 
       if (response.statusCode == 200) {
-        dynamic registrationDyanmic = jsonDecode(response.body.toString());
+        dynamic registrationDynamic = jsonDecode(response.body.toString());
 
-        Registration registration = Registration.fromJson(registrationDyanmic);
+        Registration registration = Registration.fromJson(registrationDynamic);
 
         return registration;
       } else {
@@ -87,9 +116,9 @@ class ApiService extends GetxController {
       var response = await http.put(Uri.parse(uri), headers: headers, body: body);
 
       if (response.statusCode == 200) {
-        dynamic registrationDyanmic = jsonDecode(response.body.toString());
+        dynamic registrationDynamic = jsonDecode(response.body.toString());
 
-        Registration registration = Registration.fromJson(registrationDyanmic);
+        Registration registration = Registration.fromJson(registrationDynamic);
 
         return registration;
       } else if (response.statusCode == 404){
