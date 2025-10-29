@@ -31,25 +31,26 @@ class EtxMqttAgent extends MqttAgent{
 
   @override
   Future<int> connect() async{
-    String? token = await apiService.getToken();
-    if (token == null) {
-      logger.w("Unable to retrieve token from partner API. Please verify partner API credentials in settings menu");
-      return 1;
-    }
 
     Registration? registration;
 
     if (await fileService.checkIfRegistrationExists()) {
       logger.i("Loading Registration from Cache");
       registration = await fileService.getRegistration();
-      fullRegistration = await apiService.checkRegistration(token, registration.deviceID);
+      fullRegistration = await apiService.checkRegistration(registration.deviceID);
       
     }
 
     if(registration == null || fullRegistration == null){
       logger.i("Loading Registration from Partner API");
-      registration = await apiService.getRegistration(token, paramController.clientType.value, paramController.clientSubtype.value);
-      fullRegistration = await apiService.checkRegistration(token, registration!.deviceID);
+      registration = await apiService.getRegistration(paramController.clientType.value, paramController.clientSubtype.value);
+      if(registration != null){
+        fullRegistration = await apiService.checkRegistration(registration!.deviceID);
+      }else{
+        logger.w( "Unable to retrieve registration information from partner API");
+        return 1;
+      }
+      
     }
     
     if(fullRegistration != null){
@@ -73,10 +74,10 @@ class EtxMqttAgent extends MqttAgent{
     }
 
     if(paramController.manualRegistrationMode.value || currentPosition == null){
-      connectionUrl = await apiService.getConnection(token, fullRegistration!.deviceID,
+      connectionUrl = await apiService.getConnection(fullRegistration!.deviceID,
         paramController.registrationLatitude.value, paramController.registrationLongitude.value, vzString);
     }else{
-      connectionUrl = await apiService.getConnection(token, fullRegistration!.deviceID,
+      connectionUrl = await apiService.getConnection(fullRegistration!.deviceID,
         currentPosition!.latitude, currentPosition!.longitude, vzString);
     }
     
