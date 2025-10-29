@@ -188,7 +188,7 @@ class MapState extends State<MapPage> {
   late Image currentLightState;
   late String nextLightText = "";
 
-  bool debugMode = false;
+  bool debugMode = true;
   bool showLoadingIcon = true;
   bool showLightText = true;
   bool scmsActive = false;
@@ -223,17 +223,17 @@ class MapState extends State<MapPage> {
     currentLightState = lightStateMap[MovementPhaseState.UNAVAILABLE]!;
 
     if (debugMode) {
-      TravelerInformation plugfest1 = asnService.decodeTim(TestData.plugfestCSWTim);
-      timManager.addOrUpdate(plugfest1,TestData.plugfestCSWTim);
+      // TravelerInformation plugfest1 = asnService.decodeTim(TestData.plugfestCSWTim);
+      // timManager.addOrUpdate(plugfest1,TestData.plugfestCSWTim);
 
-      TravelerInformation plugfest2 = asnService.decodeTim(TestData.plugfestIncidentTim);
-      timManager.addOrUpdate(plugfest2,TestData.plugfestIncidentTim);
+      // TravelerInformation plugfest2 = asnService.decodeTim(TestData.plugfestIncidentTim);
+      // timManager.addOrUpdate(plugfest2,TestData.plugfestIncidentTim);
 
-      TravelerInformation plugfest3 = asnService.decodeTim(TestData.plugfestRoadSignIdTim);
-      timManager.addOrUpdate(plugfest3,TestData.plugfestRoadSignIdTim);
+      // TravelerInformation plugfest3 = asnService.decodeTim(TestData.plugfestRoadSignIdTim);
+      // timManager.addOrUpdate(plugfest3,TestData.plugfestRoadSignIdTim);
 
-      TravelerInformation plugfest4 = asnService.decodeTim(TestData.plugfestWeatherTim);
-      timManager.addOrUpdate(plugfest4,TestData.plugfestWeatherTim);
+      // TravelerInformation plugfest4 = asnService.decodeTim(TestData.plugfestWeatherTim);
+      // timManager.addOrUpdate(plugfest4,TestData.plugfestWeatherTim);
 
       TravelerInformation plugfest5 = asnService.decodeTim(TestData.plugfestWeatherPolygonTim);
       timManager.addOrUpdate(plugfest5,TestData.plugfestWeatherPolygonTim);
@@ -867,16 +867,16 @@ class MapState extends State<MapPage> {
     // if speed is less than 1 meter / second (~2.2 mph)
     if (position.speed < 1) {
       newActiveTims = timManager.getNewActiveTims(
-          position.longitude, position.latitude, position.heading, true, settingsController.demoMode.value);
+          position.longitude, position.latitude, position.heading, true, settingsController.demoMode.value || debugMode);
 
       frames = timManager.getTimsToShow(
-          position.longitude, position.latitude, position.heading, true, settingsController.demoMode.value);
+          position.longitude, position.latitude, position.heading, true, settingsController.demoMode.value || debugMode);
     } else {
       newActiveTims = timManager.getNewActiveTims(
-          position.longitude, position.latitude, position.heading, false, settingsController.demoMode.value);
+          position.longitude, position.latitude, position.heading, false, settingsController.demoMode.value || debugMode);
 
       frames = timManager.getTimsToShow(
-          position.longitude, position.latitude, position.heading, false, settingsController.demoMode.value);
+          position.longitude, position.latitude, position.heading, false, settingsController.demoMode.value || debugMode);
     }
 
     List<ItisSequence> sequences = await timManager.getItisRepresentationForDataFrames(frames);

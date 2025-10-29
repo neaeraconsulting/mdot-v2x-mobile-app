@@ -13,7 +13,9 @@ import 'package:cv_mec/models/itis/itis_converter.dart';
 import 'package:cv_mec/models/itis/itis_sequence.dart';
 import 'package:cv_mec/models/text_overlay.dart';
 import 'package:cv_mec/models/tim_definition.dart';
+import 'package:cv_mec/services/api_service.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 import 'package:logger/logger.dart';
 import 'dart:core';
 import 'package:flutter/material.dart';
@@ -29,14 +31,33 @@ class ItisDecodingService{
   final Logger logger = Logger();
   final String imageDirectory = "assets/images/tims";
   final String fontDirectory = "assets/fonts";
-  late final ImageProvider missing =AssetImage("$imageDirectory/missing.png");
+  late final ImageProvider missing = AssetImage("$imageDirectory/missing.png");
 
   Map<String, ItisSequence> graphicsMap = {};
   List<TimDefinition> dynamicTims = [];
+
+  ApiService apiService = Get.find<ApiService>();
   
   ItisDecodingService(){
-    loadTims();
+    loadTimManifest();
   }
+
+  void loadTimManifest() async {
+    String? timManifest = await apiService.getTimConfiguration();
+
+    if(timManifest != null){
+      final Map<String, dynamic> mapManifest = jsonDecode(timManifest);
+      if(mapManifest.containsKey("version")){
+        String version = mapManifest['version'];
+        logger.i("Loading TIM Manifest Version $version");
+        apiService.getTimIcons(version);
+        await loadTimsFromJson(timManifest);
+      }
+    }else{
+      await loadTimsFromFile();
+    }
+  }
+
 
   Future<ItisSequence> getSequenceForFrame(TravelerDataFrame frame) async{
     String category;
@@ -79,7 +100,7 @@ class ItisDecodingService{
         return ItisSequence(items, await createDynamicImage(def, populateValues));
       }
     }
-    logger.e("Unable to find Matching TIM definition for message $category ${ItisConverter.getItisListAsString(items)}");
+    logger.e("Unable to find Matching TIM definition for message $category ${ItisConverter.getItisListAsString(items)} ${ItisConverter.getItisListAsCodeString(items)}");
     return ItisSequence(items, missing);
   }
 
@@ -106,11 +127,16 @@ class ItisDecodingService{
     return values;
   }
 
+  Future<Map<String, ItisSequence>> loadTimsFromFile() async {
+    final String jsonString = await rootBundle.loadString('assets/tims.json');
+    return loadTimsFromJson(jsonString);
+  }
+
 
   
   // Loads all Predefined TIM messages from tims.json into the system
-  Future<Map<String, ItisSequence>> loadTims() async {
-    final String jsonString = await rootBundle.loadString('assets/tims.json');
+  Future<Map<String, ItisSequence>> loadTimsFromJson(String jsonString) async {
+    
     final Map<String, dynamic> json = jsonDecode(jsonString);
 
     Map<String,ItisSequence> codes = {};
@@ -127,7 +153,8 @@ class ItisDecodingService{
           logger.w("Key $key has already been loaded into graphics map. Duplicate entries in TIM JSON file. The first option will be used.");
         }else{
           ImageProvider image = getImage(def.graphic) ?? missing;
-          graphicsMap[key] = ItisSequence.fromText(def.codes, image); 
+          graphicsMap[key] = ItisSequence.fromText(def.codes, image);
+          print("Loading Static TIM Key $key");
         }
       }else{
         // Dynamic TIMs will be generated and cached as needed. Keep a short list of TIM message definitions to match.
@@ -212,9 +239,9 @@ class ItisDecodingService{
   }
 
   String getKeyForTimItisCodes(String category, List<Choice_Item> itisCodes){
-    String key = "${category}_";
+    String key = "${category}";
     for(Choice_Item code in itisCodes){
-      String codeString = ItisConverter.getItisMessageAsString(code);
+      String codeString = ItisConverter.getItisMessageAsCodeString(code);
       key = "${key}_${codeString}";
     }
     return key;
