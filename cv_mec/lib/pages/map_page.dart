@@ -119,7 +119,6 @@ class MapState extends State<MapPage> {
   RemoteGPSService gpsService = Get.find<RemoteGPSService>();
   GPSDService gpsdService = Get.find<GPSDService>();
   Timing timingService = Get.find<Timing>();
-  FileService fileService = Get.find<FileService>();
 
   LocationService locationService = Get.find<LocationService>();
   SettingsController settingsController = Get.find<SettingsController>();

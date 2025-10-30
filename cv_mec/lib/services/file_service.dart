@@ -10,6 +10,13 @@ class FileService extends GetxService {
   final String registrationFileName = "registration.json";
   File registrationFile = File('');
 
+  Future<bool> checkIfFileExists(String filename, {ArchiveDirectory directory = ArchiveDirectory.DOWNLOADS}) async {
+    String registrationPath = await _getFilePath(filename, directory);
+    final file = File(registrationPath);
+    return await file.exists();
+  }
+
+  @Deprecated("Use checkIfFileExists instead")
   Future<bool> checkIfRegistrationExists() async {
     String registrationPath = await _getFilePath(registrationFileName, ArchiveDirectory.DOWNLOADS);
     final file = File(registrationPath);
@@ -40,8 +47,8 @@ class FileService extends GetxService {
     return registration;
   }
 
-  Future<File> getFileForWriting(String filename) async {
-    String path = await _getFilePath(filename, ArchiveDirectory.DOWNLOADS);
+  Future<File> getFileForWriting(String filename, {ArchiveDirectory directory = ArchiveDirectory.DOWNLOADS}) async {
+    String path = await _getFilePath(filename, directory);
     File file = File(path);
     await file.create(recursive: true);
     return file;
@@ -101,7 +108,7 @@ class FileService extends GetxService {
     return path;
   }
 
-  Future<String> _getDirectory(ArchiveDirectory directory) async {
+  Future<String> getDirectory(ArchiveDirectory directory) async {
     switch (directory) {
       case ArchiveDirectory.APPLICATION_DOCUMENTS:
         return _getDocsDir();
@@ -113,7 +120,7 @@ class FileService extends GetxService {
   }
 
   Future<String> _getFilePath(String name, ArchiveDirectory directory) async {
-    String path = await _getDirectory(directory);
+    String path = await getDirectory(directory);
     return '$path/$name';
   }
 

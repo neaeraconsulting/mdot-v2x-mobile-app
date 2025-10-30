@@ -26,10 +26,12 @@ import 'package:cv_mec/services/mqtt_service.dart';
 import 'package:cv_mec/services/remote_gps.dart';
 import 'package:cv_mec/services/timing.dart';
 import 'package:iss_scms/iss_scms.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 void main() async {
   await dotenv.load(fileName: ".env");
-
+  WidgetsFlutterBinding.ensureInitialized();
+  await waitForNetwork();
   if (Platform.isAndroid || Platform.isIOS) {
     VehicleNotificationManager.requestPermissions();
   }
@@ -59,6 +61,16 @@ void main() async {
         ? NativeDeviceOrientationReader(builder: (context) => const MainApp())
         : const MainApp(),
   );
+}
+
+Future<void> waitForNetwork() async {
+  var result = await Connectivity().checkConnectivity();
+  while (result == ConnectivityResult.none) {
+    print('⏳ Waiting for network...');
+    await Future.delayed(Duration(seconds: 1));
+    result = await Connectivity().checkConnectivity();
+  }
+  print('✅ Network available!');
 }
 
 /*

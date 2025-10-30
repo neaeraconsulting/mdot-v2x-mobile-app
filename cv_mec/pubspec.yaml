@@ -62,6 +62,7 @@ dependencies:
   bluez: ^0.8.3
   iss_scms:
     path: ./packages/iss_scms
+  connectivity_plus: ^7.0.0
 
 dev_dependencies:
   flutter_test:

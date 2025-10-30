@@ -23,8 +23,13 @@ class ApiService extends GetxController {
   // }
 
   Future<bool> setupToken() async {
-    token = await getToken();
-    _logger.i("API Service Initialized with Token: ${token != null}");
+    for(int i =0; i<3; i++){
+      token = await getToken();
+      if(token != null) break;
+      _logger.i("Retrying to get API Token - Attempt ${i+1}/3");
+      await Future.delayed(Duration(seconds: 3));
+    }
+
     return token != null;
   }
 
@@ -66,8 +71,7 @@ class ApiService extends GetxController {
 
   Future<FullRegistration?> checkRegistration(String deviceID) async {
     if(token == null){
-      _logger.e("Unable to Check Registration - No API Token");
-      return null;
+      await setupToken();
     }
     try {
       _logger.i("Checking Device Registration");
@@ -98,8 +102,7 @@ class ApiService extends GetxController {
 
   Future getRegistration(String clientType, String clientSubtype) async {
     if(token == null){
-      _logger.e("Unable to Complete Registration - No API Token");
-      return null;
+      await setupToken();
     }
     try {
       _logger.i("Registering Device");
@@ -133,8 +136,7 @@ class ApiService extends GetxController {
 
   Future updateRegistration(String deviceID) async {
     if(token == null){
-      _logger.e("Unable to Update Registration - No API Token");
-      return null;
+      await setupToken();
     }
     try {
       _logger.i("Updating Device Registration");
@@ -170,8 +172,7 @@ class ApiService extends GetxController {
 
   Future getConnection(String deviceID, double lat, double long, String networkType) async {
     if(token == null){
-      _logger.e("Unable to Get ETX Connection - No API Token");
-      return null;
+      await setupToken();
     }
     try {
       _logger.i("Registering Device");
@@ -198,15 +199,13 @@ class ApiService extends GetxController {
 
   Future<String?> getTimConfiguration() async {
     if(token == null){
-      _logger.e("Unable to Get Tim Configuration - No API Token");
-      return null;
+      await setupToken();
     }
     try {
       _logger.i("Downloading TIM Manifest");
 
-      String uri = "${settingsController.baseUri.value}/api/v2/tim/configuration";
-      final Map<String, String> headers = {"Content-Type": "application/json", "Accept": "application/json"};
-
+      String uri = "${settingsController.baseUri.value}/prd/v2/tim/configuration";
+      final Map<String, String> headers = {"Content-Type": "application/json", "Authorization": "Bearer $token"};
       try {
         var response = await http.get(Uri.parse(uri), headers: headers);
         if (response.statusCode == 200) {
@@ -227,22 +226,23 @@ class ApiService extends GetxController {
 
   Future<Uint8List?> getTimIcons(String version) async {
     if(token == null){
-      _logger.e("Unable to get Tim Icons - No API Token");
-      return null;
+      await setupToken();
     }
     try {
       _logger.i("Downloading TIM Icons");
 
-      String uri = "${settingsController.baseUri.value}/api/v2/tim/icons/$version";
-      final Map<String, String> headers = {"Content-Type": "application/json", "Accept": "application/octet-stream"};
+      String uri = "${settingsController.baseUri.value}/prd/v2/tim/icons/$version";
+      final Map<String, String> headers = {"Authorization": "Bearer $token", "Accept": "application/gzip"};
 
       try {
         var response = await http.get(Uri.parse(uri), headers: headers);
         if (response.statusCode == 200) {
-          return response.bodyBytes;
-          
+          return response.bodyBytes; 
+        }else{
+          _logger.e("Error Downloading TIM Icons: ${response.statusCode} ${response.body.toString()}");
         }
       } catch (e) {
+        _logger.e("Error Downloading TIM Icons: $e");
         return null;
       }
 
