@@ -22,6 +22,7 @@ class SecureStorage {
   static const _keyGPSIP = 'gpsIP';
   static const _keyGPSType = 'gpsType';
   static const _keyOBUIP = 'obuIP';
+  static const _keyPathToFollow = 'pathToFollow';
   static const _keyManualRegistrationMode = "manualRegistrationMode";
   static const _keyRegistrationLatitude = "registrationLatitude";
   static const _keyRegistrationLongitude = "registrationLongitude";
@@ -64,6 +65,7 @@ class SecureStorage {
   static final _startGPSPassword = dotenv.env['GPS_PASSWORD'] ?? '';
   static final _startGPSIP = dotenv.env['GPS_IP'] ?? '';
   static final _startOBUIP = dotenv.env['OBU_IP'] ?? '';
+  static final _startPathToFollow = '';
 
   static final _startS3AccessKey = dotenv.env['S3_ACCESS_KEY'] ?? "";
   static final _startS3SecretKey = dotenv.env['S3_SECRET_KEY'] ?? "";
@@ -95,6 +97,7 @@ class SecureStorage {
   Future<String> getGPSPassword() async => (await _storage.read(key: _keyGPSPassword)) ?? _startGPSPassword;
   Future<String> getGPSIP() async => (await _storage.read(key: _keyGPSIP)) ?? _startGPSIP;
   Future<String> getOBUIP() async => (await _storage.read(key: _keyOBUIP)) ?? _startOBUIP;
+  Future<String> getPathToFollow() async => (await _storage.read(key: _keyPathToFollow)) ?? _startPathToFollow; 
   Future<String> getGPSType() async => (await _storage.read(key: _keyGPSType)) ?? _startGPSType;
   Future<bool> getManualRegistrationMode() async =>
       (await _storage.read(key: _keyManualRegistrationMode)) == 'true';
@@ -115,7 +118,8 @@ class SecureStorage {
   Future<void> setGPSPassword(String v) => _storage.write(key: _keyGPSPassword, value: v);
   Future<void> setGPSIP(String v) => _storage.write(key: _keyGPSIP, value: v);
   Future<void> setOBUIP(String v) => _storage.write(key: _keyOBUIP, value: v);
-  Future<void> setGPSType(GPSType gpsType) async =>
+  Future<void> setPathToFollow(String v) => _storage.write(key: _keyPathToFollow, value: v);
+  Future<void> setGPSType(GPSType gpsType) async => 
       await _storage.write(key: _keyGPSType, value: gpsType.toString().split('.').last);
   Future<void> setBroadcastRate(int broadcastRate) async => await _storage.write(key: _keyBroadcastRate, value: broadcastRate.toString());
   Future setVZMode(bool vzMode) async {

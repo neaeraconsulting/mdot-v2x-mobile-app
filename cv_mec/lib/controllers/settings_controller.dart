@@ -12,6 +12,7 @@ enum GPSType {
   obu,
   cradle,
   mobile,
+  path,
 }
 
 class SettingsController extends GetxController {
@@ -32,6 +33,7 @@ class SettingsController extends GetxController {
   RxString cradleGPSPassword = (dotenv.env['GPS_PASSWORD'] ?? "").obs;
   RxString cradleGPSIP = (dotenv.env['GPS_IP'] ?? "").obs;
   RxString obuIP = (dotenv.env['OBU_IP'] ?? "").obs;
+  RxString pathToFollow = ''.obs;
   RxString appVersion = ''.obs;
   Rx<bool> vzMode = false.obs;
   Rx<bool> notificationsEnabled = false.obs;
@@ -67,6 +69,7 @@ class SettingsController extends GetxController {
     cradleGPSPassword.value = await secureStorage.getGPSPassword();
     cradleGPSIP.value = await secureStorage.getGPSIP();
     obuIP.value = await secureStorage.getOBUIP();
+    pathToFollow.value = await secureStorage.getPathToFollow();
     pc5BrokerUrl.value = await secureStorage.getPC5BrokerUrl();
     vzMode.value = await secureStorage.getVZMode();
     deviceID.value = await secureStorage.getDeviceID();
@@ -88,9 +91,9 @@ class SettingsController extends GetxController {
     s3Region.value = await secureStorage.getS3Region();
     s3DestDir.value = await secureStorage.getS3DestDir();
 
+
+    
     gpsType.value = toGPSType(await secureStorage.getGPSType());
-
-
 
     if (gpsType.value == GPSType.mobile && Platform.isLinux) {
       gpsType.value = GPSType.cradle;
@@ -143,6 +146,8 @@ class SettingsController extends GetxController {
         return GPSType.cradle;
       case 'mobile':
         return GPSType.mobile;
+      case 'path':
+        return GPSType.path;
       default:
         return GPSType.mobile; // Default to mobile if unknown
     }

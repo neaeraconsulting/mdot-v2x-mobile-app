@@ -36,6 +36,7 @@ import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_information
 import 'package:bluetooth_classic/models/device.dart';
 import 'package:cv_mec/controllers/obd_controller.dart';
 import 'package:cv_mec/controllers/settings_controller.dart';
+import 'package:cv_mec/models/api_responses/path_response/vehicle_path.dart';
 import 'package:cv_mec/models/data_queue.dart';
 import 'package:cv_mec/models/geometry_direction.dart';
 import 'package:cv_mec/models/icon_manager.dart';
@@ -66,6 +67,7 @@ import 'package:cv_mec/models/type_definitions.dart';
 import 'package:cv_mec/models/light_change_time.dart';
 import 'package:cv_mec/models/vehicle.dart';
 import 'package:cv_mec/services/gpsd_service.dart';
+import 'package:cv_mec/services/path_service.dart';
 import 'package:cv_mec/services/remote_gps.dart';
 import 'package:cv_mec/services/asn_service.dart';
 import 'package:cv_mec/services/aws_service.dart';
@@ -118,6 +120,8 @@ class MapState extends State<MapPage> {
   
   RemoteGPSService gpsService = Get.find<RemoteGPSService>();
   GPSDService gpsdService = Get.find<GPSDService>();
+  PathService pathService = Get.find<PathService>();
+
   Timing timingService = Get.find<Timing>();
 
   LocationService locationService = Get.find<LocationService>();
@@ -187,7 +191,7 @@ class MapState extends State<MapPage> {
   late Image currentLightState;
   late String nextLightText = "";
 
-  bool debugMode = true;
+  bool debugMode = false;
   bool showLoadingIcon = true;
   bool showLightText = true;
   bool scmsActive = false;
@@ -350,8 +354,14 @@ class MapState extends State<MapPage> {
     Stream<Position> stream;
     if (debugMode) {
       stream = fakePosition(TestData.plugfestFakePosition);
-    } else if (settingsController.demoMode.value) {
-      stream = fakePosition(TestData.plugfestFakePosition);
+    } else if (settingsController.gpsType.value == GPSType.path) {
+      VehiclePath? path = pathService.getPathByName(settingsController.pathToFollow.value);
+      print("path to follow: ${settingsController.pathToFollow.value}");
+      if(path!=null){
+        stream = pathService.followPath(path);
+      }else{
+        stream = locationService.locationStream;
+      }
     } else if (settingsController.gpsType.value == GPSType.cradle) {
       stream = gpsService.positionStream(interval: const Duration(milliseconds: 500));
     } else if (settingsController.gpsType.value == GPSType.obu) {

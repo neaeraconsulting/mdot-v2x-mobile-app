@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/services/file_service.dart';
 import 'package:cv_mec/services/param_controller.dart';
+import 'package:cv_mec/services/path_service.dart';
 import 'package:cv_mec/services/vehicle_notification_manager.dart';
 import 'package:cv_mec/styles/app_colors.dart';
 import 'package:cv_mec/styles/spacing.dart';
@@ -33,6 +34,7 @@ class SettingsPage extends StatelessWidget {
 
 
   FileService fileService = Get.find<FileService>();
+  PathService pathService = Get.find<PathService>();
 
   SettingsPage({super.key});
   @override
@@ -232,6 +234,35 @@ class SettingsPage extends StatelessWidget {
                 ),
               ])
             : const SizedBox.shrink()),
+        verticalSpaceSmall,
+        Obx(() => controller.gpsType.value == GPSType.path
+            ? Obx(() => 
+              Row(children: [
+                const SizedBox(width: 14),
+                const Text("Path Selection: ", style: TextStyle(fontSize: 16)),
+                Expanded(child: Container()),
+                DropdownButton<String>(
+                  value: controller.pathToFollow.value,
+                  hint: const Text('Select an option'),
+                  dropdownColor: Theme.of(Get.context!).scaffoldBackgroundColor,
+                  borderRadius: BorderRadius.circular(8),
+                  items: pathService.getPathNames().map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    if(newValue != controller.pathToFollow.value){
+                      if(newValue != null) {
+                        controller.pathToFollow.value = newValue; 
+                        controller.secureStorage.setPathToFollow(newValue);
+                      }
+                    }
+                  }),
+              ]))
+            : const SizedBox.shrink(),
+        ),
         verticalSpaceSmall,
         TextField(
           decoration: const InputDecoration(labelText: 'Broadcast Rate'),
