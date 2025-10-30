@@ -2,6 +2,8 @@
 # To learn more about a Podspec see http://guides.cocoapods.org/syntax/podspec.html.
 # Run `pod lib lint iss_scms.podspec` to validate before publishing.
 #
+require_relative 'download_xcframework'
+
 Pod::Spec.new do |s|
   s.name             = 'iss_scms'
   s.version          = '0.0.1'
@@ -21,9 +23,19 @@ A new Flutter plugin project.
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386' }
   s.swift_version = '5.0'
 
+  lib_encoder_lib_url = 'https://iss-trafficauth.s3.us-west-2.amazonaws.com/TrafficAuthV2XClientReleases/releases/0.0.6/libEncoderLib.xcframework.zip'
+  traffic_auth_url = 'https://iss-trafficauth.s3.us-west-2.amazonaws.com/TrafficAuthV2XClientReleases/releases/0.0.6/TrafficAuthV2XClient.xcframework.zip'
+  
+  lib_encoder_lib_path = download_remote_xcframework(lib_encoder_lib_url, 'Frameworks')
+  traffic_auth_path = download_remote_xcframework(traffic_auth_url, 'Frameworks')
+
+  s.vendored_frameworks = "#{lib_encoder_lib_path}/libEncoderLib.xcframework", "#{traffic_auth_path}/TrafficAuthV2XClient.xcframework"
+  
+
   # If your plugin requires a privacy manifest, for example if it uses any
   # required reason APIs, update the PrivacyInfo.xcprivacy file to describe your
   # plugin's privacy impact, and then uncomment this line. For more information,
   # see https://developer.apple.com/documentation/bundleresources/privacy_manifest_files
   # s.resource_bundles = {'iss_scms_privacy' => ['Resources/PrivacyInfo.xcprivacy']}
 end
+
