@@ -12,8 +12,11 @@ import 'package:asn1_plugin/j2735/2024/traveler_information/generic_signage.dart
 import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_data_frame.dart';
 import 'package:asn1_plugin/j2735/2024/traveler_information/work_zone.dart';
 import 'package:cv_mec/models/archive_directory.dart';
+import 'package:cv_mec/models/itis/file_system_image_resolver.dart';
 import 'package:cv_mec/models/itis/itis_converter.dart';
+import 'package:cv_mec/models/itis/itis_image_resolver.dart';
 import 'package:cv_mec/models/itis/itis_sequence.dart';
+import 'package:cv_mec/models/itis/root_bundle_image_resolver.dart';
 import 'package:cv_mec/models/text_overlay.dart';
 import 'package:cv_mec/models/tim_definition.dart';
 import 'package:cv_mec/services/api_service.dart';
@@ -33,9 +36,7 @@ class ItisDecodingService{
   final int maxItisLargeNumber = 11613;
 
   final Logger logger = Logger();
-  String imageDirectory = "assets/images/tims";
   final String fontDirectory = "assets/fonts";
-  late final ImageProvider missing = AssetImage("assets/images/tims/missing.png");
 
   Map<String, ItisSequence> graphicsMap = {};
   List<TimDefinition> dynamicTims = [];
@@ -43,7 +44,7 @@ class ItisDecodingService{
   ApiService apiService = Get.find<ApiService>();
   FileService fileService = Get.find<FileService>();
 
-  bool loadTimsFromWeb = false;
+  ItisImageResolver imageResolver = RootBundleImageResolver();
   
   ItisDecodingService(){
     loadTimManifest();
@@ -52,25 +53,18 @@ class ItisDecodingService{
   void loadTimManifest() async {
     String? timManifest = await apiService.getTimConfiguration();
 
+    bool loadTimsSuccessful = false;
+
     if(timManifest != null){
-      logger.i("Loading TIMs from API provided manifest");
       final Map<String, dynamic> mapManifest = jsonDecode(timManifest);
       if(mapManifest.containsKey("version")){
-        loadTimsFromWeb = true;
         String version = mapManifest['version'];
         String manifestFileName = "tim_manifest_$version.json";
-        
-
         logger.i("Loading TIM Manifest Version $version");
         // await fileService.getFileForWriting(fileName);
         if(!await fileService.checkIfFileExists(manifestFileName)){
           Uint8List? timFile = await apiService.getTimIcons(version);
-          logger.i("Downloading TIM Icons from API for version ${timFile != null}");
           if(timFile != null){
-            logger.i("Saving TIMs from API to Local Cache");
-            // File zipFile = await fileService.getFileForWriting(zipFileName);
-            // await zipFile.writeAsBytes(timFile);
-            // zipFile.readA
             final tarData = GZipDecoder().decodeBytes(timFile);
             final archive = TarDecoder().decodeBytes(tarData);
             for(final file in archive){
@@ -84,19 +78,16 @@ class ItisDecodingService{
           
         }
 
-        imageDirectory = "${await fileService.getDirectory(ArchiveDirectory.APPLICATION_DOCUMENTS)}";
-        print("Loading TIMs from Local Cache at $imageDirectory");
-        print("TIM Manifest: $timManifest");
+        loadTimsSuccessful = true;
+        imageResolver = FileSystemImageResolver();
         await loadTimsFromJson(timManifest);
       }
     }
 
-    if(!loadTimsFromWeb){
+    if(!loadTimsSuccessful){
       logger.i("Loading TIMs from bundled asset file");
       await loadTimsFromFile();
     }
-
-    print("Statically Loaded ${graphicsMap.length} TIM messages. Dynamically Loaded ${dynamicTims.length} TIM definitions into Memory");
   }
 
 
@@ -120,7 +111,7 @@ class ItisDecodingService{
       items = (frame.content as ITIS_ITIScodesAndText).item;
     } else {
       logger.e("Unable to Map category for content type ${frame.content}");
-      return ItisSequence([], missing);
+      return ItisSequence([], await imageResolver.getMissing());
     }
 
     String key = getKeyForTimItisCodes(category, items);
@@ -142,7 +133,7 @@ class ItisDecodingService{
       }
     }
     logger.e("Unable to find Matching TIM definition for message $category ${ItisConverter.getItisListAsString(items)} ${ItisConverter.getItisListAsCodeString(items)}");
-    return ItisSequence(items, missing);
+    return ItisSequence(items, await imageResolver.getMissing());
   }
 
 
@@ -193,9 +184,8 @@ class ItisDecodingService{
         if(graphicsMap.containsKey(key)){
           logger.w("Key $key has already been loaded into graphics map. Duplicate entries in TIM JSON file. The first option will be used.");
         }else{
-          ImageProvider image = await getImage(def.graphic) ?? missing;
+          ImageProvider image = await imageResolver.getImage(def.graphic);
           graphicsMap[key] = ItisSequence.fromText(def.codes, image);
-          print("Loading Static TIM Key $key");
         }
       }else{
         // Dynamic TIMs will be generated and cached as needed. Keep a short list of TIM message definitions to match.
@@ -216,15 +206,8 @@ class ItisDecodingService{
 
   Future<ImageProvider<Object>> createDynamicImage(TimDefinition definition, List<String> values) async{
     try{
-      // final ByteData assetImageByteData = await rootBundle.load('$imageDirectory/${definition.graphic}');
-      // Image.Image? baseSizeImage = Image.decodeImage(assetImageByteData.buffer.asUint8List());
-      if(await fileService.checkIfFileExists("${definition.graphic}", directory: ArchiveDirectory.APPLICATION_DOCUMENTS) == false){
-        logger.e("Dynamic Image File does not exist ${definition.graphic}");
-        return missing;
-      }
-      logger.i("Attempting to Load File: ${definition.graphic}");
-
-      Image.Image? baseSizeImage = await Image.decodePngFile("${await fileService.getDirectory(ArchiveDirectory.APPLICATION_DOCUMENTS)}/${definition.graphic}");
+      
+      Image.Image? baseSizeImage = await imageResolver.getDecodedImage(definition.graphic);
       if (baseSizeImage != null) {
         for(int i =0; i< definition.overlays.length; i++){
           TextOverlay overlay = definition.overlays[i];
@@ -243,28 +226,27 @@ class ItisDecodingService{
         }
         return MemoryImage(Image.encodePng(baseSizeImage));
       }else{
-        logger.e("Unable to Load Base Image when creating dynamic Image $imageDirectory/${definition.graphic}");
-        return missing;
+        logger.e("Unable to Load Base Image when creating dynamic Image.");
+        return imageResolver.getMissing();
       }
     }on Exception catch(e){
       logger.e("Generic Exception in creating Dynamic Image $e");
-      return missing;
+      return imageResolver.getMissing();
     }
   }
 
   Future<ImageProvider> getImage(String imagePath) async {
     try{
       Image.Image? image = await Image.decodePngFile("${await fileService.getDirectory(ArchiveDirectory.APPLICATION_DOCUMENTS)}/$imagePath");
-      // ImageProvider image = AssetImage("$imageDirectory/${imagePath}");
       if(image != null){
         return MemoryImage(Image.encodePng(image));
       }else{
-        return missing;
+        return imageResolver.getMissing();
       }
       
     } on Exception catch(e){
       logger.e("Unable to Load Image from Path $imagePath");
-      return missing;
+      return imageResolver.getMissing();
     }
   }
 
