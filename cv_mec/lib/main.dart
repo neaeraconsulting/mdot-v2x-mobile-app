@@ -45,11 +45,13 @@ void main() async {
   Get.put(FileService());
   SettingsController settingsController = Get.put(SettingsController());
   await settingsController.initialize();
+  ApiService apiService = Get.put(ApiService());
+  bool valid = await apiService.setupToken(); // Wait until API Token is fetched
+  settingsController.setupSecrets();
+  
   Get.put(ConfigurationController());
   Get.put(GeometryService());
   Get.put(ASNService());
-  ApiService apiService = Get.put(ApiService());
-  bool valid = await apiService.setupToken(); // Wait until API Token is fetched
   Get.put(RemoteGPSService());
   Get.put(GPSDService());
   Get.put(OBDController());

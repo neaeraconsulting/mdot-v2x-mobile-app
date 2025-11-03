@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/models/api_responses/path_response/path_response.dart';
+import 'package:cv_mec/models/api_responses/secrets/secret_response.dart';
 import 'package:cv_mec/models/etx/full_registration.dart';
 import 'package:cv_mec/models/etx/registration.dart';
 import 'package:get/get.dart';
@@ -268,6 +269,24 @@ class ApiService extends GetxController {
       return PathResponse.fromJson(jsonDecode(response.body.toString()));
     } on SocketException catch (e) {
       _logger.e("Caught exception when attempting to retrieve paths from API: $e");
+      return null;
+    }
+  }
+
+  Future<SecretResponse?> getSecrets() async {
+    if(token == null){
+      await setupToken();
+    }
+    try {
+      _logger.i("Downloading Secrets");
+      final String uri = "${settingsController.baseUri.value}/prd/v2/secrets";
+
+      final Map<String, String> headers = {"Content-Type": "application/json", "Authorization": "Bearer $token"};
+
+      var response = await http.get(Uri.parse(uri), headers: headers);
+      return SecretResponse.fromJson(jsonDecode(response.body.toString()));
+    } on SocketException catch (e) {
+      _logger.e("Caught exception when attempting to retrieve secrets from API: $e");
       return null;
     }
   }
