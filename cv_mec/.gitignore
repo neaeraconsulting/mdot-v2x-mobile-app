@@ -12,6 +12,7 @@
 .swiftpm/
 migrate_working_dir/
 .fvm/
+Frameworks/*
 
 # IntelliJ related
 *.iml
