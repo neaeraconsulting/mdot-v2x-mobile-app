@@ -1,14 +1,15 @@
 import Flutter
 import UIKit
-// import trafficauth_v2xclient_ios
+import trafficauth_v2xclient_ios
 // import Algorithms
-import TrafficAuthV2XClient
+// import TrafficAuthV2XClient
 
 public class IssScmsPlugin: NSObject, FlutterPlugin {
   public static func register(with registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(name: "iss_scms", binaryMessenger: registrar.messenger())
     let instance = IssScmsPlugin()
     registrar.addMethodCallDelegate(instance, channel: channel)
+    LocalSigning.init(scmsEnv: ScmsEnvironment.PREPRODUCTION)
 
   }
 
