@@ -266,7 +266,13 @@ class ApiService extends GetxController {
       final Map<String, String> headers = {"Content-Type": "application/json", "Authorization": "Bearer $token"};
 
       var response = await http.get(Uri.parse(uri), headers: headers);
-      return PathResponse.fromJson(jsonDecode(response.body.toString()));
+      if (response.statusCode == 200) {
+        return PathResponse.fromJson(jsonDecode(response.body.toString()));
+      }else{
+        _logger.e("Error Code ${response.statusCode} ${response.body.toString()}");
+        return null;
+      }
+      
     } on SocketException catch (e) {
       _logger.e("Caught exception when attempting to retrieve paths from API: $e");
       return null;
@@ -284,7 +290,14 @@ class ApiService extends GetxController {
       final Map<String, String> headers = {"Content-Type": "application/json", "Authorization": "Bearer $token"};
 
       var response = await http.get(Uri.parse(uri), headers: headers);
-      return SecretResponse.fromJson(jsonDecode(response.body.toString()));
+      
+
+      if (response.statusCode == 200) {
+        return SecretResponse.fromJson(jsonDecode(response.body.toString()));
+      }else{
+        _logger.e("Error Code ${response.statusCode} ${response.body.toString()}");
+        return null;
+      }
     } on SocketException catch (e) {
       _logger.e("Caught exception when attempting to retrieve secrets from API: $e");
       return null;

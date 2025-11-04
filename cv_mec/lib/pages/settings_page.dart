@@ -37,6 +37,23 @@ class SettingsPage extends StatelessWidget {
   PathService pathService = Get.find<PathService>();
 
   SettingsPage({super.key});
+
+
+  String? getStartingPath(){
+    String startingPath = controller.pathToFollow.value;
+    List<String> pathNames = pathService.getPathNames();
+    if(startingPath.isNotEmpty && pathNames.contains(startingPath)){
+      return startingPath;
+    }
+    else if(pathNames.isNotEmpty){
+      return pathNames[0];
+    }else{
+      return null;
+    }
+
+  }
+
+
   @override
   Widget build(BuildContext context) {
     usernameController.text = controller.username.value;
@@ -242,11 +259,12 @@ class SettingsPage extends StatelessWidget {
                 const Text("Path Selection: ", style: TextStyle(fontSize: 16)),
                 Expanded(child: Container()),
                 DropdownButton<String>(
-                  value: controller.pathToFollow.value,
+                  value: getStartingPath(),
                   hint: const Text('Select an option'),
                   dropdownColor: Theme.of(Get.context!).scaffoldBackgroundColor,
                   borderRadius: BorderRadius.circular(8),
                   items: pathService.getPathNames().map((String value) {
+                    print("Path Value $value ${controller.pathToFollow.value}");
                     return DropdownMenuItem<String>(
                       value: value,
                       child: Text(value),
