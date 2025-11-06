@@ -23,8 +23,8 @@ A new Flutter plugin project.
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386' }
   s.swift_version = '5.0'
 
-  lib_encoder_lib_url = 'https://iss-trafficauth.s3.us-west-2.amazonaws.com/TrafficAuthV2XClientReleases/releases/0.0.6/libEncoderLib.xcframework.zip'
-  traffic_auth_url = 'https://iss-trafficauth.s3.us-west-2.amazonaws.com/TrafficAuthV2XClientReleases/releases/0.0.6/TrafficAuthV2XClient.xcframework.zip'
+  lib_encoder_lib_url = 'https://iss-trafficauth.s3.us-west-2.amazonaws.com/TrafficAuthV2XClientReleases/releases/0.0.7/libEncoderLib.xcframework.zip'
+  traffic_auth_url = 'https://iss-trafficauth.s3.us-west-2.amazonaws.com/TrafficAuthV2XClientReleases/releases/0.0.7/TrafficAuthV2XClient.xcframework.zip'
   
   lib_encoder_lib_path = download_remote_xcframework(lib_encoder_lib_url, 'Frameworks', 'libEncoderLib')
   traffic_auth_path = download_remote_xcframework(traffic_auth_url, 'Frameworks', 'trafficauth_v2xclient_ios')

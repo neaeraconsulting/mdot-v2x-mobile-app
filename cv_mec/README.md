@@ -131,3 +131,31 @@ This application utilizes the same ASN.1 C compiler used by the JPO-ODE and othe
 cd asn1_plugin
 docker build --target=ffi --output type=local,dest=lib,source=generated_bindings.dart --output type=local,dest=src/,source=generated-files/2024 .
 ```
+
+
+### Building on IOS
+In addition to the steps required to build the base project there are a number of additional steps necessary for building the CV-MEC application. First perform the standard package installation (same for both Android and IOS)
+```
+cd cv_mec
+flutter pub get
+```
+
+This project uses cocoapods for external package management for ios. Running `flutter pub get` only sets up the external dependencies. It doesn't fully install them. To install these complete perform the following
+```
+cd cv_mec/ios
+pod install
+```
+
+This step will download all of the dependent cocoapods and install them in the IOS project. 
+
+*Cleaning Package*
+To clean the IOS build system make sure to perform the following
+```
+cd cv_mec
+flutter clean
+cd cv_mec/ios
+pod deintegrate
+```
+
+Additionally, the IOS SCMS package stores additional dependencies locally. Delete the cached versions by removing the cv_mec/package/iss_scms/ios/Frameworks folder
+

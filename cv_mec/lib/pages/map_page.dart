@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 import 'dart:core';
-
 import 'package:asn1_plugin/j2735/2024/basic_safety_message/basic_safety_message.dart';
 import 'package:asn1_plugin/j2735/2024/basic_safety_message/bsmpart_iiextension.dart';
 import 'package:asn1_plugin/j2735/2024/basic_safety_message/special_vehicle_extensions.dart';
@@ -188,7 +187,7 @@ class MapState extends State<MapPage> {
   late Image currentLightState;
   late String nextLightText = "";
 
-  bool debugMode = false;
+  bool debugMode = true;
   bool showLoadingIcon = true;
   bool showLightText = true;
   bool scmsActive = false;
@@ -273,13 +272,13 @@ class MapState extends State<MapPage> {
             IosTextToSpeechAudioMode.voicePrompt);
       }
 
-      if(settingsController.enableIssScmsSigning.value && Platform.isAndroid){
+      if(settingsController.enableIssScmsSigning.value){
         scmsActive = await scms.activateScms(settingsController.issScmsToken.value);
         if(!scmsActive){
           showError("Unable to Activate SCMS Signing");
         }
       }else{
-        scmsActive =false;
+        scmsActive = false;
       }
 
       await createGPSStream();
@@ -509,7 +508,7 @@ class MapState extends State<MapPage> {
     String hex = ASNService.bytesToHex(bytes);
     MsgType msgType = asnService.determineHexMessageType(hex);
     ValidateStatus validity;
-    if(Platform.isAndroid){
+    if(Platform.isAndroid || Platform.isIOS){
       validity= await scms.validate(bytes);
     }else{
       validity = ValidateStatus.FAILURE;
@@ -716,6 +715,8 @@ class MapState extends State<MapPage> {
     });
   }
 
+  List<int>? lastSignedMessage = null;
+
   void sendMessage() async {
     if (currentPosition == null) {
       addToAppLog("Cannot Send BSM. Location is Null");
@@ -775,7 +776,6 @@ class MapState extends State<MapPage> {
         if(signedMessageBytes != null && signedMessageBytes.isNotEmpty){
           messageBytes = signedMessageBytes;
           signed = true;
-
         }else{
           showError("Result of Message Signing was Null or Empty");
         }
