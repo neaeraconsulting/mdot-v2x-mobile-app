@@ -39,6 +39,8 @@ class SettingsPage extends StatelessWidget {
   
 
   SettingsPage({super.key});
+
+
   @override
   Widget build(BuildContext context) {
     usernameController.text = controller.username.value;
@@ -246,7 +248,6 @@ class SettingsPage extends StatelessWidget {
                   hint: const Text('Select an option'),
                   dropdownColor: Theme.of(Get.context!).scaffoldBackgroundColor,
                   borderRadius: BorderRadius.circular(8),
-                  // items: controller.availablePaths.map((String value) {
                   items: controller.availablePaths.map((String value) {
                     return DropdownMenuItem<String>(
                       value: value,
