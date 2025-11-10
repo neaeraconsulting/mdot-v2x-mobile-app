@@ -1,5 +1,6 @@
 import 'package:cv_mec/models/api_responses/secrets/secret_response.dart';
 import 'package:cv_mec/services/api_service.dart';
+import 'package:cv_mec/services/path_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
@@ -21,7 +22,8 @@ class SettingsController extends GetxController {
   SettingsController();
   SharedPrefs sharedPrefs = SharedPrefs();
   final SecureStorage secureStorage = SecureStorage();
-  late ApiService apiService; 
+  late ApiService apiService;
+  late PathService pathService;
 
   Rx<bool> darkModeState = Get.isDarkMode.obs;
   Rx<bool> developerMode = false.obs;
@@ -45,6 +47,8 @@ class SettingsController extends GetxController {
   Rx<bool> enableIssMqtt = false.obs;
   Rx<bool> enableEtxMqtt = true.obs;
   RxInt broadcastRate = 10.obs;
+
+  RxList<String> availablePaths = <String>[].obs;
 
   //GPS Mode
   Rx<GPSType> gpsType = GPSType.mobile.obs; // Default to mobile
@@ -119,8 +123,9 @@ class SettingsController extends GetxController {
     appVersion.value = '${packageInfo.version} (${packageInfo.buildNumber})';
   }
 
-  Future<void> setupSecrets() async{
+  Future<void> setup() async{
     apiService = Get.find<ApiService>();
+    pathService = Get.find<PathService>();
     SecretResponse? secrets = await apiService.getSecrets();
     
     if (secrets != null) {
@@ -137,6 +142,15 @@ class SettingsController extends GetxController {
       s3BucketName.value = await secureStorage.getS3BucketName();
       s3Region.value = await secureStorage.getS3Region();
       s3DestDir.value = await secureStorage.getS3DestDir();
+    }
+
+    availablePaths.value = pathService.getPathNames();
+    if(!availablePaths.contains(pathToFollow.value)){
+      if(availablePaths.isEmpty){
+        pathToFollow.value = '';
+        return;
+      }
+      pathToFollow.value = availablePaths[0];
     }
     
   }

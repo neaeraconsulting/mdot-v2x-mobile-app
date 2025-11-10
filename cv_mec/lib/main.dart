@@ -39,7 +39,7 @@ void main() async {
 
 
   await clearKeychainValues();
-
+  Get.put(GeometryService());
   Get.put(LocationService());
   Get.put(Timing());
   Get.put(FileService());
@@ -47,10 +47,12 @@ void main() async {
   await settingsController.initialize();
   ApiService apiService = Get.put(ApiService());
   bool valid = await apiService.setupToken(); // Wait until API Token is fetched
-  settingsController.setupSecrets();
+  PathService pathService = Get.put(PathService());
+  await pathService.loadPaths();
+  settingsController.setup();
   
   Get.put(ConfigurationController());
-  Get.put(GeometryService());
+  
   Get.put(ASNService());
   Get.put(RemoteGPSService());
   Get.put(GPSDService());
@@ -58,8 +60,7 @@ void main() async {
   Get.put(S3Service());
   Get.put(ItisDecodingService());
   Get.put(IssScms());
-  PathService pathService = Get.put(PathService());
-  pathService.loadPaths();
+  
   runApp(
     Platform.isAndroid || Platform.isIOS
         ? NativeDeviceOrientationReader(builder: (context) => const MainApp())

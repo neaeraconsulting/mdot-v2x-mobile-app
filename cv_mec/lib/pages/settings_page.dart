@@ -34,7 +34,9 @@ class SettingsPage extends StatelessWidget {
 
 
   FileService fileService = Get.find<FileService>();
-  PathService pathService = Get.find<PathService>();
+  
+
+  
 
   SettingsPage({super.key});
   @override
@@ -52,7 +54,6 @@ class SettingsPage extends StatelessWidget {
     broadcastRateController.text = controller.broadcastRate.value.toString();
     registrationLatitudeController.text = paramController.manualLatitude.toString();
     registrationLongitudeController.text = paramController.manualLongitude.toString();
-    
 
     return Scaffold(
         appBar: AppBar(
@@ -236,17 +237,17 @@ class SettingsPage extends StatelessWidget {
             : const SizedBox.shrink()),
         verticalSpaceSmall,
         Obx(() => controller.gpsType.value == GPSType.path
-            ? Obx(() => 
-              Row(children: [
+            ? Obx(() => Row(children: [
                 const SizedBox(width: 14),
-                const Text("Path Selection: ", style: TextStyle(fontSize: 16)),
+                Text("Path Selection: ${controller.availablePaths.length}", style: TextStyle(fontSize: 16)),
                 Expanded(child: Container()),
-                DropdownButton<String>(
-                  value: controller.pathToFollow.value,
+                controller.availablePaths.isNotEmpty? DropdownButton<String>(
+                  value:  controller.pathToFollow.value,
                   hint: const Text('Select an option'),
                   dropdownColor: Theme.of(Get.context!).scaffoldBackgroundColor,
                   borderRadius: BorderRadius.circular(8),
-                  items: pathService.getPathNames().map((String value) {
+                  // items: controller.availablePaths.map((String value) {
+                  items: controller.availablePaths.map((String value) {
                     return DropdownMenuItem<String>(
                       value: value,
                       child: Text(value),
@@ -259,7 +260,8 @@ class SettingsPage extends StatelessWidget {
                         controller.secureStorage.setPathToFollow(newValue);
                       }
                     }
-                  }),
+                  }
+                  ) : Text('No paths available', style: TextStyle(color: Theme.of(Get.context!).textTheme.bodyMedium!.color!)),
               ]))
             : const SizedBox.shrink(),
         ),
@@ -417,20 +419,7 @@ class SettingsPage extends StatelessWidget {
                 controller.enableIssScmsSigning.value = value;
                 await controller.secureStorage.setIssScmsSigningEnabled(value);
               }
-            }),
-        Obx(() => controller.enableIssScmsSigning.value
-            ? TextField(
-                decoration: const InputDecoration(labelText: 'ISS SCMS API Token'),
-                controller: issScmsTokenController,
-                obscureText: true,
-                onChanged: (value) async {
-                  if (value != controller.issScmsToken.value) {
-                    controller.issScmsToken.value = value;
-                    await controller.secureStorage.setIssScmsToken(value);
-                  }
-                },
-              )
-            : const SizedBox.shrink()),               
+            }),              
         verticalSpaceMedium,
       ],
     );
