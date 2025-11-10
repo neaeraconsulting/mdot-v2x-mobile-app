@@ -12,6 +12,8 @@
 .swiftpm/
 migrate_working_dir/
 .fvm/
+/ios/build/
+/packages/iss_scms/ios/Frameworks/
 
 # IntelliJ related
 *.iml
