@@ -61,7 +61,6 @@ class ItisDecodingService{
         String version = mapManifest['version'];
         String manifestFileName = "tim_manifest_$version.json";
         logger.i("Loading TIM Manifest Version $version");
-        // await fileService.getFileForWriting(fileName);
         if(!await fileService.checkIfFileExists(manifestFileName)){
           Uint8List? timFile = await apiService.getTimIcons(version);
           if(timFile != null){

@@ -226,25 +226,12 @@ class MapState extends State<MapPage> {
     currentLightState = lightStateMap[MovementPhaseState.UNAVAILABLE]!;
 
     if (debugMode) {
-      // TravelerInformation plugfest1 = asnService.decodeTim(TestData.plugfestCSWTim);
-      // timManager.addOrUpdate(plugfest1,TestData.plugfestCSWTim);
-
-      // TravelerInformation plugfest2 = asnService.decodeTim(TestData.plugfestIncidentTim);
-      // timManager.addOrUpdate(plugfest2,TestData.plugfestIncidentTim);
-
-      // TravelerInformation plugfest3 = asnService.decodeTim(TestData.plugfestRoadSignIdTim);
-      // timManager.addOrUpdate(plugfest3,TestData.plugfestRoadSignIdTim);
-
-      // TravelerInformation plugfest4 = asnService.decodeTim(TestData.plugfestWeatherTim);
-      // timManager.addOrUpdate(plugfest4,TestData.plugfestWeatherTim);
 
       TravelerInformation plugfest5 = asnService.decodeTim(TestData.plugfestWeatherPolygonTim);
       timManager.addOrUpdate(plugfest5,TestData.plugfestWeatherPolygonTim);
 
       TravelerInformation plugfest6 = asnService.decodeTim(TestData.plugfestWorkZoneTim);
       timManager.addOrUpdate(plugfest6,TestData.plugfestWorkZoneTim);
-
-
 
     } else if (settingsController.demoMode.value) {
       TravelerInformation weatherTimDemo = asnService.decodeTim(TestData.tfhrcWeatherTIMDemo);

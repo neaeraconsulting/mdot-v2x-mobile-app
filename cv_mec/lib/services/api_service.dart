@@ -17,12 +17,6 @@ class ApiService extends GetxController {
   final Logger _logger = Logger();
   String? token;
 
-  // static Future<ApiService> create() async {
-  //   final apiService = ApiService();
-  //   apiService.token = await apiService.getToken();
-  //   // apiService._logger.i("API Service Initialized with Token: ${apiService.token != null}");
-  //   return apiService;
-  // }
 
   Future<bool> setupToken() async {
     for(int i =0; i<3; i++){
@@ -267,7 +261,7 @@ class ApiService extends GetxController {
 
       var response = await http.get(Uri.parse(uri), headers: headers);
       if (response.statusCode == 200) {
-        return PathResponse.fromJson(jsonDecode(response.body.toString()));
+      return PathResponse.fromJson(jsonDecode(response.body.toString()));
       }else{
         _logger.e("Error Code ${response.statusCode} ${response.body.toString()}");
         return null;
@@ -293,7 +287,7 @@ class ApiService extends GetxController {
       
 
       if (response.statusCode == 200) {
-        return SecretResponse.fromJson(jsonDecode(response.body.toString()));
+      return SecretResponse.fromJson(jsonDecode(response.body.toString()));
       }else{
         _logger.e("Error Code ${response.statusCode} ${response.body.toString()}");
         return null;
