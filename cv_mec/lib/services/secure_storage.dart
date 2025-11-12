@@ -10,7 +10,6 @@ class SecureStorage {
   static const _keyUsername = 'username';
   static const _keyPassword = 'password';
   static const _keyBaseURI = 'baseuri';
-  static const _keyVendorID = 'vendorid';
   static const _keyVzMode = "vzMode";
   static const _keyDeviceID = "deviceid";
   static const _keyNotificationsEnabled = "notificationsEnabled";
@@ -23,6 +22,7 @@ class SecureStorage {
   static const _keyGPSIP = 'gpsIP';
   static const _keyGPSType = 'gpsType';
   static const _keyOBUIP = 'obuIP';
+  static const _keyPathToFollow = 'pathToFollow';
   static const _keyManualRegistrationMode = "manualRegistrationMode";
   static const _keyRegistrationLatitude = "registrationLatitude";
   static const _keyRegistrationLongitude = "registrationLongitude";
@@ -46,7 +46,6 @@ class SecureStorage {
   static final _startUsername = dotenv.env['USERNAME']!;
   static final _startPassword = dotenv.env['PASSWORD']!;
   static final _startBaseURI = dotenv.env['API_ENDPOINT']!;
-  static final _startVendorID = dotenv.env['VENDOR_ID']!;
   static final _startDeviceID = "";
 
   static final _startVzMode = false;
@@ -66,6 +65,7 @@ class SecureStorage {
   static final _startGPSPassword = dotenv.env['GPS_PASSWORD'] ?? '';
   static final _startGPSIP = dotenv.env['GPS_IP'] ?? '';
   static final _startOBUIP = dotenv.env['OBU_IP'] ?? '';
+  static final _startPathToFollow = '';
 
   static final _startS3AccessKey = dotenv.env['S3_ACCESS_KEY'] ?? "";
   static final _startS3SecretKey = dotenv.env['S3_SECRET_KEY'] ?? "";
@@ -80,7 +80,6 @@ class SecureStorage {
   Future<String> getUsername() async => await _storage.read(key: _keyUsername) ?? _startUsername;
   Future<String> getPassword() async => await _storage.read(key: _keyPassword) ?? _startPassword;
   Future<String> getBaseURI() async => await _storage.read(key: _keyBaseURI) ?? _startBaseURI;
-  Future<String> getVendorID() async => await _storage.read(key: _keyVendorID) ?? _startVendorID;
   Future<String> getDeviceID() async => await _storage.read(key: _keyDeviceID) ?? _startDeviceID;
   Future<String> getPC5BrokerUrl() async => await _storage.read(key: _keyPC5BrokerUrl) ?? _pc5BrokerUrl;
   Future<String> getIssScmsToken() async => await _storage.read(key: _keyIssScmsToken) ?? _issScmsToken;
@@ -98,6 +97,7 @@ class SecureStorage {
   Future<String> getGPSPassword() async => (await _storage.read(key: _keyGPSPassword)) ?? _startGPSPassword;
   Future<String> getGPSIP() async => (await _storage.read(key: _keyGPSIP)) ?? _startGPSIP;
   Future<String> getOBUIP() async => (await _storage.read(key: _keyOBUIP)) ?? _startOBUIP;
+  Future<String> getPathToFollow() async => (await _storage.read(key: _keyPathToFollow)) ?? _startPathToFollow; 
   Future<String> getGPSType() async => (await _storage.read(key: _keyGPSType)) ?? _startGPSType;
   Future<bool> getManualRegistrationMode() async =>
       (await _storage.read(key: _keyManualRegistrationMode)) == 'true';
@@ -111,7 +111,6 @@ class SecureStorage {
   Future<void> setUsername(String username) async => await _storage.write(key: _keyUsername, value: username);
   Future<void> setPassword(String password) async => await _storage.write(key: _keyPassword, value: password);
   Future<void> setBaseURI(String baseURI) async => await _storage.write(key: _keyBaseURI, value: baseURI);
-  Future<void> setVendorID(String vendorID) async => await _storage.write(key: _keyVendorID, value: vendorID);
   Future<void> setDeviceID(String deviceID) async => await _storage.write(key: _keyDeviceID, value: deviceID);
   Future<void> setPC5BrokerUrl(String pc5BrokerUrl) async => await _storage.write(key: _keyPC5BrokerUrl, value: pc5BrokerUrl);
   Future<void> setIssScmsToken(String issScmsToken) async => await _storage.write(key: _keyIssScmsToken, value: issScmsToken);
@@ -119,7 +118,8 @@ class SecureStorage {
   Future<void> setGPSPassword(String v) => _storage.write(key: _keyGPSPassword, value: v);
   Future<void> setGPSIP(String v) => _storage.write(key: _keyGPSIP, value: v);
   Future<void> setOBUIP(String v) => _storage.write(key: _keyOBUIP, value: v);
-  Future<void> setGPSType(GPSType gpsType) async =>
+  Future<void> setPathToFollow(String v) => _storage.write(key: _keyPathToFollow, value: v);
+  Future<void> setGPSType(GPSType gpsType) async => 
       await _storage.write(key: _keyGPSType, value: gpsType.toString().split('.').last);
   Future<void> setBroadcastRate(int broadcastRate) async => await _storage.write(key: _keyBroadcastRate, value: broadcastRate.toString());
   Future setVZMode(bool vzMode) async {

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cv_mec/pages/load.dart';
 import 'package:cv_mec/services/gpsd_service.dart';
 import 'package:cv_mec/services/itis_decoding_service.dart';
+import 'package:cv_mec/services/path_service.dart';
 import 'package:cv_mec/services/vehicle_notification_manager.dart';
 import 'package:cv_mec/styles/theme_setting.dart';
 import 'package:flutter/material.dart';
@@ -26,38 +27,55 @@ import 'package:cv_mec/services/mqtt_service.dart';
 import 'package:cv_mec/services/remote_gps.dart';
 import 'package:cv_mec/services/timing.dart';
 import 'package:iss_scms/iss_scms.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 void main() async {
   await dotenv.load(fileName: ".env");
-
+  WidgetsFlutterBinding.ensureInitialized();
+  await waitForNetwork();
   if (Platform.isAndroid || Platform.isIOS) {
     VehicleNotificationManager.requestPermissions();
   }
 
 
   await clearKeychainValues();
-
+  Get.put(GeometryService());
   Get.put(LocationService());
   Get.put(Timing());
   Get.put(FileService());
-  SettingsController settingsController =Get.put(SettingsController());
+  SettingsController settingsController = Get.put(SettingsController());
   await settingsController.initialize();
+  ApiService apiService = Get.put(ApiService());
+  bool valid = await apiService.setupToken(); // Wait until API Token is fetched
+  PathService pathService = Get.put(PathService());
+  await pathService.loadPaths();
+  settingsController.setup();
+  
   Get.put(ConfigurationController());
-  Get.put(GeometryService());
+  
   Get.put(ASNService());
-  Get.put(ApiService());
   Get.put(RemoteGPSService());
   Get.put(GPSDService());
   Get.put(OBDController());
   Get.put(S3Service());
   Get.put(ItisDecodingService());
   Get.put(IssScms());
-
+  
   runApp(
     Platform.isAndroid || Platform.isIOS
         ? NativeDeviceOrientationReader(builder: (context) => const MainApp())
         : const MainApp(),
   );
+}
+
+Future<void> waitForNetwork() async {
+  var result = await Connectivity().checkConnectivity();
+  while (result == ConnectivityResult.none) {
+    print('⏳ Waiting for network...');
+    await Future.delayed(Duration(seconds: 1));
+    result = await Connectivity().checkConnectivity();
+  }
+  print('✅ Network available!');
 }
 
 /*

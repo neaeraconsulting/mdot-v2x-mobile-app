@@ -8,6 +8,8 @@ PODS:
   - connection_network_type (0.0.1):
     - Flutter
     - ReachabilitySwift
+  - connectivity_plus (0.0.1):
+    - Flutter
   - device_info_plus (0.0.1):
     - Flutter
   - Flutter (1.0.0)
@@ -45,6 +47,7 @@ DEPENDENCIES:
   - asn1_plugin (from `.symlinks/plugins/asn1_plugin/ios`)
   - audioplayers_darwin (from `.symlinks/plugins/audioplayers_darwin/ios`)
   - connection_network_type (from `.symlinks/plugins/connection_network_type/ios`)
+  - connectivity_plus (from `.symlinks/plugins/connectivity_plus/ios`)
   - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
   - Flutter (from `Flutter`)
   - flutter_kronos_plus (from `.symlinks/plugins/flutter_kronos_plus/ios`)
@@ -73,6 +76,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/audioplayers_darwin/ios"
   connection_network_type:
     :path: ".symlinks/plugins/connection_network_type/ios"
+  connectivity_plus:
+    :path: ".symlinks/plugins/connectivity_plus/ios"
   device_info_plus:
     :path: ".symlinks/plugins/device_info_plus/ios"
   Flutter:

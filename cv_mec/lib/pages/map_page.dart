@@ -35,6 +35,7 @@ import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_information
 import 'package:bluetooth_classic/models/device.dart';
 import 'package:cv_mec/controllers/obd_controller.dart';
 import 'package:cv_mec/controllers/settings_controller.dart';
+import 'package:cv_mec/models/api_responses/path_response/vehicle_path.dart';
 import 'package:cv_mec/models/data_queue.dart';
 import 'package:cv_mec/models/geometry_direction.dart';
 import 'package:cv_mec/models/icon_manager.dart';
@@ -65,6 +66,7 @@ import 'package:cv_mec/models/type_definitions.dart';
 import 'package:cv_mec/models/light_change_time.dart';
 import 'package:cv_mec/models/vehicle.dart';
 import 'package:cv_mec/services/gpsd_service.dart';
+import 'package:cv_mec/services/path_service.dart';
 import 'package:cv_mec/services/remote_gps.dart';
 import 'package:cv_mec/services/asn_service.dart';
 import 'package:cv_mec/services/aws_service.dart';
@@ -117,8 +119,9 @@ class MapState extends State<MapPage> {
   
   RemoteGPSService gpsService = Get.find<RemoteGPSService>();
   GPSDService gpsdService = Get.find<GPSDService>();
+  PathService pathService = Get.find<PathService>();
+
   Timing timingService = Get.find<Timing>();
-  FileService fileService = Get.find<FileService>();
 
   LocationService locationService = Get.find<LocationService>();
   SettingsController settingsController = Get.find<SettingsController>();
@@ -187,7 +190,7 @@ class MapState extends State<MapPage> {
   late Image currentLightState;
   late String nextLightText = "";
 
-  bool debugMode = true;
+  bool debugMode = false;
   bool showLoadingIcon = true;
   bool showLightText = true;
   bool scmsActive = false;
@@ -222,25 +225,12 @@ class MapState extends State<MapPage> {
     currentLightState = lightStateMap[MovementPhaseState.UNAVAILABLE]!;
 
     if (debugMode) {
-      TravelerInformation plugfest1 = asnService.decodeTim(TestData.plugfestCSWTim);
-      timManager.addOrUpdate(plugfest1,TestData.plugfestCSWTim);
-
-      TravelerInformation plugfest2 = asnService.decodeTim(TestData.plugfestIncidentTim);
-      timManager.addOrUpdate(plugfest2,TestData.plugfestIncidentTim);
-
-      TravelerInformation plugfest3 = asnService.decodeTim(TestData.plugfestRoadSignIdTim);
-      timManager.addOrUpdate(plugfest3,TestData.plugfestRoadSignIdTim);
-
-      TravelerInformation plugfest4 = asnService.decodeTim(TestData.plugfestWeatherTim);
-      timManager.addOrUpdate(plugfest4,TestData.plugfestWeatherTim);
 
       TravelerInformation plugfest5 = asnService.decodeTim(TestData.plugfestWeatherPolygonTim);
       timManager.addOrUpdate(plugfest5,TestData.plugfestWeatherPolygonTim);
 
       TravelerInformation plugfest6 = asnService.decodeTim(TestData.plugfestWorkZoneTim);
       timManager.addOrUpdate(plugfest6,TestData.plugfestWorkZoneTim);
-
-
 
     } else if (settingsController.demoMode.value) {
       TravelerInformation weatherTimDemo = asnService.decodeTim(TestData.tfhrcWeatherTIMDemo);
@@ -350,8 +340,14 @@ class MapState extends State<MapPage> {
     Stream<Position> stream;
     if (debugMode) {
       stream = fakePosition(TestData.plugfestFakePosition);
-    } else if (settingsController.demoMode.value) {
-      stream = fakePosition(TestData.plugfestFakePosition);
+    } else if (settingsController.gpsType.value == GPSType.path) {
+      VehiclePath? path = pathService.getPathByName(settingsController.pathToFollow.value);
+      print("path to follow: ${settingsController.pathToFollow.value}");
+      if(path!=null){
+        stream = pathService.followPath(path);
+      }else{
+        stream = locationService.locationStream;
+      }
     } else if (settingsController.gpsType.value == GPSType.cradle) {
       stream = gpsService.positionStream(interval: const Duration(milliseconds: 500));
     } else if (settingsController.gpsType.value == GPSType.obu) {
@@ -867,16 +863,16 @@ class MapState extends State<MapPage> {
     // if speed is less than 1 meter / second (~2.2 mph)
     if (position.speed < 1) {
       newActiveTims = timManager.getNewActiveTims(
-          position.longitude, position.latitude, position.heading, true, settingsController.demoMode.value);
+          position.longitude, position.latitude, position.heading, true, settingsController.demoMode.value || debugMode);
 
       frames = timManager.getTimsToShow(
-          position.longitude, position.latitude, position.heading, true, settingsController.demoMode.value);
+          position.longitude, position.latitude, position.heading, true, settingsController.demoMode.value || debugMode);
     } else {
       newActiveTims = timManager.getNewActiveTims(
-          position.longitude, position.latitude, position.heading, false, settingsController.demoMode.value);
+          position.longitude, position.latitude, position.heading, false, settingsController.demoMode.value || debugMode);
 
       frames = timManager.getTimsToShow(
-          position.longitude, position.latitude, position.heading, false, settingsController.demoMode.value);
+          position.longitude, position.latitude, position.heading, false, settingsController.demoMode.value || debugMode);
     }
 
     List<ItisSequence> sequences = await timManager.getItisRepresentationForDataFrames(frames);

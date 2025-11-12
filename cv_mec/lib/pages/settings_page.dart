@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/services/file_service.dart';
 import 'package:cv_mec/services/param_controller.dart';
+import 'package:cv_mec/services/path_service.dart';
 import 'package:cv_mec/services/vehicle_notification_manager.dart';
 import 'package:cv_mec/styles/app_colors.dart';
 import 'package:cv_mec/styles/spacing.dart';
@@ -18,7 +19,6 @@ class SettingsPage extends StatelessWidget {
   TextEditingController usernameController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   TextEditingController baseUriController = TextEditingController();
-  TextEditingController vendorIDController = TextEditingController();
   TextEditingController deviceIDController = TextEditingController();
   TextEditingController gpsIPController = TextEditingController();
   TextEditingController gpsUsernameController = TextEditingController();
@@ -34,14 +34,18 @@ class SettingsPage extends StatelessWidget {
 
 
   FileService fileService = Get.find<FileService>();
+  
+
+  
 
   SettingsPage({super.key});
+
+
   @override
   Widget build(BuildContext context) {
     usernameController.text = controller.username.value;
     passwordController.text = controller.password.value;
     baseUriController.text = controller.baseUri.value;
-    vendorIDController.text = controller.vendorID.value;
     deviceIDController.text = controller.deviceID.value;
     gpsIPController.text = controller.cradleGPSIP.value;
     gpsUsernameController.text = controller.cradleGPSUsername.value;
@@ -52,7 +56,6 @@ class SettingsPage extends StatelessWidget {
     broadcastRateController.text = controller.broadcastRate.value.toString();
     registrationLatitudeController.text = paramController.manualLatitude.toString();
     registrationLongitudeController.text = paramController.manualLongitude.toString();
-    
 
     return Scaffold(
         appBar: AppBar(
@@ -128,18 +131,6 @@ class SettingsPage extends StatelessWidget {
             if (value != controller.baseUri.value) {
               controller.baseUri.value = value;
               await controller.secureStorage.setBaseURI(value);
-            }
-          },
-        ),
-        verticalSpaceMedium,
-        TextField(
-          decoration: const InputDecoration(labelText: 'Vendor ID'),
-          controller: vendorIDController,
-          obscureText: true,
-          onChanged: (value) async {
-            if (value != controller.vendorID.value) {
-              controller.vendorID.value = value;
-              await controller.secureStorage.setVendorID(value);
             }
           },
         ),
@@ -246,6 +237,35 @@ class SettingsPage extends StatelessWidget {
                 ),
               ])
             : const SizedBox.shrink()),
+        verticalSpaceSmall,
+        Obx(() => controller.gpsType.value == GPSType.path
+            ? Obx(() => Row(children: [
+                const SizedBox(width: 14),
+                Text("Path Selection: ${controller.availablePaths.length}", style: TextStyle(fontSize: 16)),
+                Expanded(child: Container()),
+                controller.availablePaths.isNotEmpty? DropdownButton<String>(
+                  value:  controller.pathToFollow.value,
+                  hint: const Text('Select an option'),
+                  dropdownColor: Theme.of(Get.context!).scaffoldBackgroundColor,
+                  borderRadius: BorderRadius.circular(8),
+                  items: controller.availablePaths.map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    if(newValue != controller.pathToFollow.value){
+                      if(newValue != null) {
+                        controller.pathToFollow.value = newValue; 
+                        controller.secureStorage.setPathToFollow(newValue);
+                      }
+                    }
+                  }
+                  ) : Text('No paths available', style: TextStyle(color: Theme.of(Get.context!).textTheme.bodyMedium!.color!)),
+              ]))
+            : const SizedBox.shrink(),
+        ),
         verticalSpaceSmall,
         TextField(
           decoration: const InputDecoration(labelText: 'Broadcast Rate'),
@@ -400,20 +420,7 @@ class SettingsPage extends StatelessWidget {
                 controller.enableIssScmsSigning.value = value;
                 await controller.secureStorage.setIssScmsSigningEnabled(value);
               }
-            }),
-        Obx(() => controller.enableIssScmsSigning.value
-            ? TextField(
-                decoration: const InputDecoration(labelText: 'ISS SCMS API Token'),
-                controller: issScmsTokenController,
-                obscureText: true,
-                onChanged: (value) async {
-                  if (value != controller.issScmsToken.value) {
-                    controller.issScmsToken.value = value;
-                    await controller.secureStorage.setIssScmsToken(value);
-                  }
-                },
-              )
-            : const SizedBox.shrink()),               
+            }),              
         verticalSpaceMedium,
       ],
     );
@@ -488,9 +495,6 @@ class SettingsPage extends StatelessWidget {
       return false;
     }
     if (baseUriController.text.isEmpty) {
-      return false;
-    }
-    if (vendorIDController.text.isEmpty) {
       return false;
     }
     return true;
