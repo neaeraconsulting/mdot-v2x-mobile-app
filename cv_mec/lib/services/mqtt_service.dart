@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:cv_mec/models/imp/registration.dart';
+import 'package:cv_mec/models/etx/registration.dart';
 import 'package:cv_mec/services/timing.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';

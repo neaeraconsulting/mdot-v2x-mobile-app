@@ -1,8 +1,12 @@
 import 'dart:io';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:cv_mec/controllers/settings_controller.dart';
-import 'package:cv_mec/models/imp/registration.dart';
+import 'package:cv_mec/models/api_responses/path_response/path_response.dart';
+import 'package:cv_mec/models/api_responses/secrets/secret_response.dart';
+import 'package:cv_mec/models/etx/full_registration.dart';
+import 'package:cv_mec/models/etx/registration.dart';
 import 'package:get/get.dart';
 
 import 'package:http/http.dart' as http;
@@ -11,8 +15,21 @@ import 'package:logger/logger.dart';
 class ApiService extends GetxController {
   SettingsController settingsController = Get.find<SettingsController>();
   final Logger _logger = Logger();
+  String? token;
 
-  Future getToken() async {
+
+  Future<bool> setupToken() async {
+    for(int i =0; i<3; i++){
+      token = await getToken();
+      if(token != null) break;
+      _logger.i("Retrying to get API Token - Attempt ${i+1}/3");
+      await Future.delayed(Duration(seconds: 3));
+    }
+
+    return token != null;
+  }
+
+  Future<String?> getToken() async {
     try {
       _logger.i("generating token from api");
 
@@ -30,9 +47,14 @@ class ApiService extends GetxController {
           Map<String, dynamic> responseObject = jsonDecode(response.body.toString());
           if (responseObject.containsKey("access_token")) {
             return responseObject["access_token"];
+          }else{
+            _logger.e("Token not found in response ${response.body.toString()}");
           }
+        }else{
+          _logger.e("Error Generating Token: ${response.statusCode} ${response.body.toString()}");
         }
       } catch (e) {
+        _logger.e("Error Generating Token: $e");
         return null;
       }
 
@@ -43,7 +65,41 @@ class ApiService extends GetxController {
     }
   }
 
-  Future getRegistration(String token, String clientType, String clientSubtype) async {
+  Future<FullRegistration?> checkRegistration(String deviceID) async {
+    if(token == null){
+      await setupToken();
+    }
+    try {
+      _logger.i("Checking Device Registration");
+      final String uri = "${settingsController.baseUri.value}/prd/v2/registration?DeviceID=$deviceID";
+      final Map<String, String> headers = {"Content-Type": "application/json", "Authorization": "Bearer $token"};
+
+      var response = await http.get(Uri.parse(uri), headers: headers);
+
+      if (response.statusCode == 200) {
+        dynamic registrationDynamic = jsonDecode(response.body.toString());
+
+        FullRegistration registration = FullRegistration.fromJson(registrationDynamic);
+
+        return registration;
+      } else {
+        _logger.e("Error Code ${response.statusCode} ${response.body.toString()}");
+      }
+    } on SocketException catch (e) {
+      _logger.e("Caught exception when attempting to register app with API: $e");
+      return null;
+    } catch (e) {
+      _logger.e("Unable to Register app for unknown reasons $e");
+      return null;
+    }
+    return null;
+  }
+
+
+  Future getRegistration(String clientType, String clientSubtype) async {
+    if(token == null){
+      await setupToken();
+    }
     try {
       _logger.i("Registering Device");
       final String uri = "${settingsController.baseUri.value}/prd/v2/registration";
@@ -57,9 +113,9 @@ class ApiService extends GetxController {
       var response = await http.post(Uri.parse(uri), headers: headers, body: body);
 
       if (response.statusCode == 200) {
-        dynamic registrationDyanmic = jsonDecode(response.body.toString());
+        dynamic registrationDynamic = jsonDecode(response.body.toString());
 
-        Registration registration = Registration.fromJson(registrationDyanmic);
+        Registration registration = Registration.fromJson(registrationDynamic);
 
         return registration;
       } else {
@@ -69,12 +125,51 @@ class ApiService extends GetxController {
       _logger.e("Caught exception when attempting to register app with API: $e");
       return null;
     } catch (e) {
-      _logger.e("Unable to Register app for unknown reasons");
+      _logger.e("Unable to Register app for unknown reasons $e");
       return null;
     }
   }
 
-  Future getConnection(String token, String deviceID, double lat, double long, String networkType) async {
+  Future updateRegistration(String deviceID) async {
+    if(token == null){
+      await setupToken();
+    }
+    try {
+      _logger.i("Updating Device Registration");
+      final String uri = "${settingsController.baseUri.value}/prd/v2/registration";
+      final Map<String, String> headers = {"Content-Type": "application/json", "Authorization": "Bearer $token"};
+
+      final String body = jsonEncode({
+        "DeviceID": deviceID
+      });
+
+      var response = await http.put(Uri.parse(uri), headers: headers, body: body);
+
+      if (response.statusCode == 200) {
+        dynamic registrationDynamic = jsonDecode(response.body.toString());
+
+        Registration registration = Registration.fromJson(registrationDynamic);
+
+        return registration;
+      } else if (response.statusCode == 404){
+        return null;
+      }else {
+        _logger.e("Error Retrieving Registration ${response.statusCode} ${response.body.toString()}");
+        return null;
+      }
+    } on SocketException catch (e) {
+      _logger.e("Caught exception when attempting to update registration with API: $e");
+      return null;
+    } catch (e) {
+      _logger.e("Unable to update registration for unknown reasons $e");
+      return null;
+    }
+  }
+
+  Future getConnection(String deviceID, double lat, double long, String networkType) async {
+    if(token == null){
+      await setupToken();
+    }
     try {
       _logger.i("Registering Device");
       final String uri = "${settingsController.baseUri.value}/prd/v2/connection";
@@ -94,6 +189,111 @@ class ApiService extends GetxController {
       return "";
     } on SocketException catch (e) {
       _logger.e("Caught exception when attempting to register app with API: $e");
+      return null;
+    }
+  }
+
+  Future<String?> getTimConfiguration() async {
+    if(token == null){
+      await setupToken();
+    }
+    try {
+      _logger.i("Downloading TIM Manifest");
+
+      String uri = "${settingsController.baseUri.value}/prd/v2/tim/configuration";
+      final Map<String, String> headers = {"Content-Type": "application/json", "Authorization": "Bearer $token"};
+      try {
+        var response = await http.get(Uri.parse(uri), headers: headers);
+        if (response.statusCode == 200) {
+          return response.body.toString();
+        }else{
+          _logger.e("Error Downloading TIM Manifest: ${response.statusCode} ${response.body.toString()}");
+        }
+      } catch (e) {
+        return null;
+      }
+
+      return null;
+    } on SocketException catch (e) {
+      _logger.e("Caught exception when attempting to register app with API: $e");
+      return null;
+    }    
+  }
+
+  Future<Uint8List?> getTimIcons(String version) async {
+    if(token == null){
+      await setupToken();
+    }
+    try {
+      _logger.i("Downloading TIM Icons");
+
+      String uri = "${settingsController.baseUri.value}/prd/v2/tim/icons/$version";
+      final Map<String, String> headers = {"Authorization": "Bearer $token", "Accept": "application/gzip"};
+
+      try {
+        var response = await http.get(Uri.parse(uri), headers: headers);
+        if (response.statusCode == 200) {
+          return response.bodyBytes; 
+        }else{
+          _logger.e("Error Downloading TIM Icons: ${response.statusCode} ${response.body.toString()}");
+        }
+      } catch (e) {
+        _logger.e("Error Downloading TIM Icons: $e");
+        return null;
+      }
+
+      return null;
+    } on SocketException catch (e) {
+      _logger.e("Caught exception when attempting to register app with API: $e");
+      return null;
+    }    
+  }
+
+  Future<PathResponse?> getPaths() async {
+    if(token == null){
+      await setupToken();
+    }
+    try {
+      _logger.i("Registering Device");
+      final String uri = "${settingsController.baseUri.value}/prd/v2/paths";
+
+      final Map<String, String> headers = {"Content-Type": "application/json", "Authorization": "Bearer $token"};
+
+      var response = await http.get(Uri.parse(uri), headers: headers);
+      if (response.statusCode == 200) {
+      return PathResponse.fromJson(jsonDecode(response.body.toString()));
+      }else{
+        _logger.e("Error Code ${response.statusCode} ${response.body.toString()}");
+        return null;
+      }
+      
+    } on SocketException catch (e) {
+      _logger.e("Caught exception when attempting to retrieve paths from API: $e");
+      return null;
+    }
+  }
+
+  Future<SecretResponse?> getSecrets() async {
+    if(token == null){
+      await setupToken();
+    }
+    try {
+      _logger.i("Downloading Secrets");
+      final String uri = "${settingsController.baseUri.value}/prd/v2/secrets";
+
+      final Map<String, String> headers = {"Content-Type": "application/json", "Authorization": "Bearer $token"};
+
+      var response = await http.get(Uri.parse(uri), headers: headers);
+      
+
+      if (response.statusCode == 200) {
+      return SecretResponse.fromJson(jsonDecode(response.body.toString()));
+      }else{
+        _logger.e("Error Code ${response.statusCode} ${response.body.toString()}");
+        return null;
+      }
+    } on SocketException catch (e) {
+      _logger.e("Caught exception when attempting to retrieve secrets from API: $e");
       return null;
     }
   }

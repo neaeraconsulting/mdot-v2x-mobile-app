@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/models/data_queue.dart';
-import 'package:cv_mec/models/imp/registration.dart';
+import 'package:cv_mec/models/etx/registration.dart';
 import 'package:cv_mec/pages/settings_page.dart';
 import 'package:get/get.dart';
 

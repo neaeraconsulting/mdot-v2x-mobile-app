@@ -1,19 +1,15 @@
 PODS:
+  - app_settings (5.1.1):
+    - Flutter
   - asn1_plugin (0.0.1):
     - Flutter
-  - aws3_bucket (0.0.1):
-    - AWSCognito
-    - AWSCore
-    - AWSS3
+  - audioplayers_darwin (0.0.1):
     - Flutter
-  - AWSCognito (2.19.1):
-    - AWSCore (= 2.19.1)
-  - AWSCore (2.19.1)
-  - AWSS3 (2.19.1):
-    - AWSCore (= 2.19.1)
   - connection_network_type (0.0.1):
     - Flutter
     - ReachabilitySwift
+  - connectivity_plus (0.0.1):
+    - Flutter
   - device_info_plus (0.0.1):
     - Flutter
   - Flutter (1.0.0)
@@ -26,6 +22,9 @@ PODS:
     - Flutter
   - geolocator_apple (1.2.0):
     - Flutter
+    - FlutterMacOS
+  - iss_scms (0.0.1):
+    - Flutter
   - Kronos (4.2.2)
   - native_device_orientation (0.0.1):
     - Flutter
@@ -36,7 +35,7 @@ PODS:
     - FlutterMacOS
   - permission_handler_apple (9.3.0):
     - Flutter
-  - ReachabilitySwift (5.2.3)
+  - ReachabilitySwift (5.2.4)
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -44,15 +43,18 @@ PODS:
     - Flutter
 
 DEPENDENCIES:
+  - app_settings (from `.symlinks/plugins/app_settings/ios`)
   - asn1_plugin (from `.symlinks/plugins/asn1_plugin/ios`)
-  - aws3_bucket (from `.symlinks/plugins/aws3_bucket/ios`)
+  - audioplayers_darwin (from `.symlinks/plugins/audioplayers_darwin/ios`)
   - connection_network_type (from `.symlinks/plugins/connection_network_type/ios`)
+  - connectivity_plus (from `.symlinks/plugins/connectivity_plus/ios`)
   - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
   - Flutter (from `Flutter`)
   - flutter_kronos_plus (from `.symlinks/plugins/flutter_kronos_plus/ios`)
   - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
   - flutter_tts (from `.symlinks/plugins/flutter_tts/ios`)
-  - geolocator_apple (from `.symlinks/plugins/geolocator_apple/ios`)
+  - geolocator_apple (from `.symlinks/plugins/geolocator_apple/darwin`)
+  - iss_scms (from `.symlinks/plugins/iss_scms/ios`)
   - native_device_orientation (from `.symlinks/plugins/native_device_orientation/ios`)
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
@@ -62,19 +64,20 @@ DEPENDENCIES:
 
 SPEC REPOS:
   trunk:
-    - AWSCognito
-    - AWSCore
-    - AWSS3
     - Kronos
     - ReachabilitySwift
 
 EXTERNAL SOURCES:
+  app_settings:
+    :path: ".symlinks/plugins/app_settings/ios"
   asn1_plugin:
     :path: ".symlinks/plugins/asn1_plugin/ios"
-  aws3_bucket:
-    :path: ".symlinks/plugins/aws3_bucket/ios"
+  audioplayers_darwin:
+    :path: ".symlinks/plugins/audioplayers_darwin/ios"
   connection_network_type:
     :path: ".symlinks/plugins/connection_network_type/ios"
+  connectivity_plus:
+    :path: ".symlinks/plugins/connectivity_plus/ios"
   device_info_plus:
     :path: ".symlinks/plugins/device_info_plus/ios"
   Flutter:
@@ -86,7 +89,9 @@ EXTERNAL SOURCES:
   flutter_tts:
     :path: ".symlinks/plugins/flutter_tts/ios"
   geolocator_apple:
-    :path: ".symlinks/plugins/geolocator_apple/ios"
+    :path: ".symlinks/plugins/geolocator_apple/darwin"
+  iss_scms:
+    :path: ".symlinks/plugins/iss_scms/ios"
   native_device_orientation:
     :path: ".symlinks/plugins/native_device_orientation/ios"
   package_info_plus:
@@ -101,27 +106,26 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/wakelock_plus/ios"
 
 SPEC CHECKSUMS:
-  asn1_plugin: 33377a30ab44f417407961ebd512f05bbc9a18b7
-  aws3_bucket: 929479088910efe7d1c67f4be27298f4e2bc2442
-  AWSCognito: f50de600804941d083af37a7568905f31a774727
-  AWSCore: 55c154ae27efc5c98bdc30a0eeea5a35d10a2ab5
-  AWSS3: 2272253b098d07803af8dd20ce6ce7302bcffb47
-  connection_network_type: 1578442d17a27d74e6e93c49211457e0e05a4190
-  device_info_plus: 21fcca2080fbcd348be798aa36c3e5ed849eefbe
-  Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
-  flutter_kronos_plus: e147a938842feae5252df6ee5e3976c711913fbe
-  flutter_secure_storage: 1ed9476fba7e7a782b22888f956cce43e2c62f13
-  flutter_tts: b88dbc8655d3dc961bc4a796e4e16a4cc1795833
-  geolocator_apple: 1560c3c875af2a412242c7a923e15d0d401966ff
+  app_settings: 58017cd26b604ae98c3e65acbdd8ba173703cc82
+  asn1_plugin: 1423faca64bc67ca13335f3ff3b4d8bcbd557c46
+  audioplayers_darwin: 877d9a4d06331c5c374595e46e16453ac7eafa40
+  connection_network_type: 160e62717f4cfc913811aa4e4ccf7f4e60497936
+  device_info_plus: bf2e3232933866d73fe290f2942f2156cdd10342
+  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  flutter_kronos_plus: d58be24e8d7f34f73f4550188921c1b254a5e2dc
+  flutter_secure_storage: d33dac7ae2ea08509be337e775f6b59f1ff45f12
+  flutter_tts: 0f492aab6accf87059b72354fcb4ba934304771d
+  geolocator_apple: 66b711889fd333205763b83c9dcf0a57a28c7afd
+  iss_scms: 2cc0cc7c3c8be250081e32d1f47a8eb855828c21
   Kronos: dfa27819541f9f1bf6834d5bfefa792f499001bb
-  native_device_orientation: e3580675687d5034770da198f6839ebf2122ef94
-  package_info_plus: af8e2ca6888548050f16fa2f1938db7b5a5df499
-  path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
-  permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
-  ReachabilitySwift: 7f151ff156cea1481a8411701195ac6a984f4979
-  shared_preferences_foundation: 9e1978ff2562383bd5676f64ec4e9aa8fa06a6f7
-  wakelock_plus: 04623e3f525556020ebd4034310f20fe7fda8b49
+  native_device_orientation: 348b10c346a60ebbc62fb235a4fdb5d1b61a8f55
+  package_info_plus: c0502532a26c7662a62a356cebe2692ec5fe4ec4
+  path_provider_foundation: 0b743cbb62d8e47eab856f09262bb8c1ddcfe6ba
+  permission_handler_apple: 9878588469a2b0d0fc1e048d9f43605f92e6cec2
+  ReachabilitySwift: 32793e867593cfc1177f5d16491e3a197d2fccda
+  shared_preferences_foundation: 5086985c1d43c5ba4d5e69a4e8083a389e2909e6
+  wakelock_plus: 76957ab028e12bfa4e66813c99e46637f367fc7e
 
-PODFILE CHECKSUM: dddfc67e623a2a338709fe99a06af3dfd5487372
+PODFILE CHECKSUM: 9fb16a1266cd1b40b0777c06bc8d525096a06d9e
 
 COCOAPODS: 1.16.2

@@ -25,6 +25,25 @@ class ItisConverter {
     return outputString;
   }
 
+  static String getItisMessageAsCodeString(Choice_Item item) {
+    if (item is ITIScodes) {
+      int code = (item as ITIScodes).itisCode;
+      return code.toString();
+    } else if (item is ITIStext) {
+      return "${(item as ITIStext).itisText} ";
+    }
+    return " ";
+  }
+
+  static String getItisListAsCodeString(List<Choice_Item> items) {
+    String outputString = "";
+    for (Choice_Item item in items) {
+      outputString += getItisMessageAsCodeString(item) + " ";
+    }
+
+    return outputString;
+  }
+
   static Map<int, String> codeLookup = {
     1: "traffic Conditions",
     2: "accidents And Incidents",

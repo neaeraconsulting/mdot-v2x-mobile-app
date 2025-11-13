@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:archive/archive.dart';
 import 'package:asn1_plugin/j2735/2024/choice/choice_content.dart';
 import 'package:asn1_plugin/j2735/2024/choice/choice_item.dart';
 import 'package:asn1_plugin/j2735/2024/common/speed_limit.dart';
@@ -9,11 +11,18 @@ import 'package:asn1_plugin/j2735/2024/traveler_information/exit_service.dart';
 import 'package:asn1_plugin/j2735/2024/traveler_information/generic_signage.dart';
 import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_data_frame.dart';
 import 'package:asn1_plugin/j2735/2024/traveler_information/work_zone.dart';
+import 'package:cv_mec/models/archive_directory.dart';
+import 'package:cv_mec/models/itis/file_system_image_resolver.dart';
 import 'package:cv_mec/models/itis/itis_converter.dart';
+import 'package:cv_mec/models/itis/itis_image_resolver.dart';
 import 'package:cv_mec/models/itis/itis_sequence.dart';
+import 'package:cv_mec/models/itis/root_bundle_image_resolver.dart';
 import 'package:cv_mec/models/text_overlay.dart';
 import 'package:cv_mec/models/tim_definition.dart';
+import 'package:cv_mec/services/api_service.dart';
+import 'package:cv_mec/services/file_service.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 import 'package:logger/logger.dart';
 import 'dart:core';
 import 'package:flutter/material.dart';
@@ -27,16 +36,59 @@ class ItisDecodingService{
   final int maxItisLargeNumber = 11613;
 
   final Logger logger = Logger();
-  final String imageDirectory = "assets/images/tims";
   final String fontDirectory = "assets/fonts";
-  late final ImageProvider missing =AssetImage("$imageDirectory/missing.png");
 
   Map<String, ItisSequence> graphicsMap = {};
   List<TimDefinition> dynamicTims = [];
+
+  ApiService apiService = Get.find<ApiService>();
+  FileService fileService = Get.find<FileService>();
+
+  ItisImageResolver imageResolver = RootBundleImageResolver();
   
   ItisDecodingService(){
-    loadTims();
+    loadTimManifest();
   }
+
+  void loadTimManifest() async {
+    String? timManifest = await apiService.getTimConfiguration();
+
+    bool loadTimsSuccessful = false;
+
+    if(timManifest != null){
+      final Map<String, dynamic> mapManifest = jsonDecode(timManifest);
+      if(mapManifest.containsKey("version")){
+        String version = mapManifest['version'];
+        String manifestFileName = "tim_manifest_$version.json";
+        logger.i("Loading TIM Manifest Version $version");
+        if(!await fileService.checkIfFileExists(manifestFileName)){
+          Uint8List? timFile = await apiService.getTimIcons(version);
+          if(timFile != null){
+            final tarData = GZipDecoder().decodeBytes(timFile);
+            final archive = TarDecoder().decodeBytes(tarData);
+            for(final file in archive){
+              File outFile = await fileService.getFileForWriting("${file.name}", directory: ArchiveDirectory.APPLICATION_DOCUMENTS);
+              await outFile.create(recursive: true);
+              await outFile.writeAsBytes(file.content as List<int>);
+            }
+          }
+          File manifestFile = await fileService.getFileForWriting(manifestFileName, directory: ArchiveDirectory.APPLICATION_DOCUMENTS);
+          await manifestFile.writeAsString(timManifest);
+          
+        }
+
+        loadTimsSuccessful = true;
+        imageResolver = FileSystemImageResolver();
+        await loadTimsFromJson(timManifest);
+      }
+    }
+
+    if(!loadTimsSuccessful){
+      logger.i("Loading TIMs from bundled asset file");
+      await loadTimsFromFile();
+    }
+  }
+
 
   Future<ItisSequence> getSequenceForFrame(TravelerDataFrame frame) async{
     String category;
@@ -58,7 +110,7 @@ class ItisDecodingService{
       items = (frame.content as ITIS_ITIScodesAndText).item;
     } else {
       logger.e("Unable to Map category for content type ${frame.content}");
-      return ItisSequence([], missing);
+      return ItisSequence([], await imageResolver.getMissing());
     }
 
     String key = getKeyForTimItisCodes(category, items);
@@ -79,8 +131,8 @@ class ItisDecodingService{
         return ItisSequence(items, await createDynamicImage(def, populateValues));
       }
     }
-    logger.e("Unable to find Matching TIM definition for message $category ${ItisConverter.getItisListAsString(items)}");
-    return ItisSequence(items, missing);
+    logger.e("Unable to find Matching TIM definition for message $category ${ItisConverter.getItisListAsString(items)} ${ItisConverter.getItisListAsCodeString(items)}");
+    return ItisSequence(items, await imageResolver.getMissing());
   }
 
 
@@ -106,11 +158,16 @@ class ItisDecodingService{
     return values;
   }
 
+  Future<Map<String, ItisSequence>> loadTimsFromFile() async {
+    final String jsonString = await rootBundle.loadString('assets/tims.json');
+    return loadTimsFromJson(jsonString);
+  }
+
 
   
   // Loads all Predefined TIM messages from tims.json into the system
-  Future<Map<String, ItisSequence>> loadTims() async {
-    final String jsonString = await rootBundle.loadString('assets/tims.json');
+  Future<Map<String, ItisSequence>> loadTimsFromJson(String jsonString) async {
+    
     final Map<String, dynamic> json = jsonDecode(jsonString);
 
     Map<String,ItisSequence> codes = {};
@@ -126,8 +183,8 @@ class ItisDecodingService{
         if(graphicsMap.containsKey(key)){
           logger.w("Key $key has already been loaded into graphics map. Duplicate entries in TIM JSON file. The first option will be used.");
         }else{
-          ImageProvider image = getImage(def.graphic) ?? missing;
-          graphicsMap[key] = ItisSequence.fromText(def.codes, image); 
+          ImageProvider image = await imageResolver.getImage(def.graphic);
+          graphicsMap[key] = ItisSequence.fromText(def.codes, image);
         }
       }else{
         // Dynamic TIMs will be generated and cached as needed. Keep a short list of TIM message definitions to match.
@@ -148,8 +205,8 @@ class ItisDecodingService{
 
   Future<ImageProvider<Object>> createDynamicImage(TimDefinition definition, List<String> values) async{
     try{
-      final ByteData assetImageByteData = await rootBundle.load('$imageDirectory/${definition.graphic}');
-      Image.Image? baseSizeImage = Image.decodeImage(assetImageByteData.buffer.asUint8List());
+      
+      Image.Image? baseSizeImage = await imageResolver.getDecodedImage(definition.graphic);
       if (baseSizeImage != null) {
         for(int i =0; i< definition.overlays.length; i++){
           TextOverlay overlay = definition.overlays[i];
@@ -168,22 +225,27 @@ class ItisDecodingService{
         }
         return MemoryImage(Image.encodePng(baseSizeImage));
       }else{
-        logger.e("Unable to Load Base Image when creating dynamic Image $imageDirectory/${definition.graphic}");
-        return missing;
+        logger.e("Unable to Load Base Image when creating dynamic Image.");
+        return imageResolver.getMissing();
       }
     }on Exception catch(e){
       logger.e("Generic Exception in creating Dynamic Image $e");
-      return missing;
+      return imageResolver.getMissing();
     }
   }
 
-  ImageProvider? getImage(String imagePath){
+  Future<ImageProvider> getImage(String imagePath) async {
     try{
-      ImageProvider image = AssetImage("$imageDirectory/${imagePath}");
-      return image;
+      Image.Image? image = await Image.decodePngFile("${await fileService.getDirectory(ArchiveDirectory.APPLICATION_DOCUMENTS)}/$imagePath");
+      if(image != null){
+        return MemoryImage(Image.encodePng(image));
+      }else{
+        return imageResolver.getMissing();
+      }
+      
     } on Exception catch(e){
       logger.e("Unable to Load Image from Path $imagePath");
-      return null;
+      return imageResolver.getMissing();
     }
   }
 
@@ -212,9 +274,9 @@ class ItisDecodingService{
   }
 
   String getKeyForTimItisCodes(String category, List<Choice_Item> itisCodes){
-    String key = "${category}_";
+    String key = "${category}";
     for(Choice_Item code in itisCodes){
-      String codeString = ItisConverter.getItisMessageAsString(code);
+      String codeString = ItisConverter.getItisMessageAsCodeString(code);
       key = "${key}_${codeString}";
     }
     return key;
