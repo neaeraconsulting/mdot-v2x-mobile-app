@@ -11,8 +11,8 @@ Tapping this button at anytime (regardless of color) will trigger a reconnection
 
 If the button is orange or red, first try tapping the button to restart available connections. If this doesn’t fix the issue verify the phone has internet access and verify your broker configurations in the settings menu.
 
-[MQTT Brokers Button Bicycle](docs/images/Map_Buttons_User_Guide_Page/MQTT_Brokers_Button_Bicycle.png)
-[MQTT Brokers Button Vehicle](docs/images/Map_Buttons_User_Guide_Page/MQTT_Brokers_Button_Vehicle.png)
+[MQTT Brokers Button Bicycle](../images/Map_Buttons_User_Guide_Page/MQTT_Brokers_Button_Bicycle.png)
+[MQTT Brokers Button Vehicle](../images/Map_Buttons_User_Guide_Page/MQTT_Brokers_Button_Vehicle.png)
 
 The circle button in the middle on the top left of the screen (car icon) will recenter the screen to the pedestrian/vehicle icon. If the user pans away from the vehicle, the icon will turn blue.
 
