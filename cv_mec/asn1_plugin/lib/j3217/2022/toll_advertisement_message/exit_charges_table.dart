@@ -21,13 +21,14 @@
  *============================================================================*/
 
 import 'package:asn1_plugin/generated_bindings.dart' as C;
+import 'package:asn1_plugin/j3217/2022/choice/choice_network_charge_table.dart';
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/charges_table.dart';
 import 'dart:ffi';
 
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/toll_point_id.dart';
 
 
-class ExitChargesTable{
+class ExitChargesTable extends Choice_NetworkChargeTable{
     TollPointID? entryInfo = null; 
     late ChargesTable chargesTable; 
     ExitChargesTable.fromC(C.ExitChargesTable c_obj){

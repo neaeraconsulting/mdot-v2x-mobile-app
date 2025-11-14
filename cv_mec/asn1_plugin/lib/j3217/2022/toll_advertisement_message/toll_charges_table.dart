@@ -21,9 +21,10 @@
  *============================================================================*/
 
 import 'package:asn1_plugin/generated_bindings.dart' as C;
+import 'package:asn1_plugin/j3217/2022/choice/choice_toll_type_charge.dart';
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/charges_table.dart';
-import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/closed_network_charges_table.dart';
-import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/lane_charges_table.dart';
+import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/per_closed_network_charges_table.dart';
+import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/per_lane_charges_table.dart';
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/time_charges_table.dart';
 
 
@@ -33,13 +34,19 @@ class TollChargesTable{
         tollTypeCharge = TollTypeChargeChoice.fromC(c_obj.tollTypeCharge);
     }
 }
+
 class TollTypeChargeChoice{
-  ChargesTable? pointCharges; 
-  List<LaneChargesTable>? perLaneCharges; 
-  List<ClosedNetworkChargesTable>? closedNetworkCharges; 
-  TimeChargesTable? timeBasedCharges; 
-  TollTypeChargeChoice.fromC(C.TollChargesTable__tollTypeCharge c_obj) {
-    
+  late Choice_TollTypeCharge tollTypeCharge;
+  TollTypeChargeChoice.fromC(C.TollChargesTable__tollTypeCharge c_tollTypeCharge) {
+    if (c_tollTypeCharge.present == C.TollChargesTable__tollTypeCharge_PR.TollChargesTable__tollTypeCharge_PR_pointCharges) {
+      tollTypeCharge = ChargesTable.fromC(c_tollTypeCharge.choice.pointCharges);
+    } else if (c_tollTypeCharge.present == C.TollChargesTable__tollTypeCharge_PR.TollChargesTable__tollTypeCharge_PR_perLaneCharges) {
+      tollTypeCharge = PerLaneChargesTable.fromC(c_tollTypeCharge.choice.perLaneCharges);
+    } else if (c_tollTypeCharge.present == C.TollChargesTable__tollTypeCharge_PR.TollChargesTable__tollTypeCharge_PR_closedNetworkCharges) {
+      tollTypeCharge = PerClosedNetworkChargesTable.fromC(c_tollTypeCharge.choice.closedNetworkCharges);
+    } else if (c_tollTypeCharge.present == C.TollChargesTable__tollTypeCharge_PR.TollChargesTable__tollTypeCharge_PR_timeBasedCharges) {
+      tollTypeCharge = TimeChargesTable.fromC(c_tollTypeCharge.choice.timeBasedCharges);
+    }
   }
 }
 

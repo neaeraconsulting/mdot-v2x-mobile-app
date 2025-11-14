@@ -22,9 +22,10 @@
 
 import 'package:asn1_plugin/generated_bindings.dart' as C;
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/charges_table.dart';
+import 'package:asn1_plugin/j3217/2022/choice/choice_toll_type_charge.dart';
 
 
-class TimeChargesTable{
+class TimeChargesTable extends Choice_TollTypeCharge{
     late MaxTimeInteger maxTime; 
     late ChargesTable chargesTable; 
     TimeChargesTable.fromC(C.TimeChargesTable c_obj){

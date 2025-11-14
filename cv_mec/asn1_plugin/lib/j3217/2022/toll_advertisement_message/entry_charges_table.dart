@@ -21,11 +21,12 @@
  *============================================================================*/
 
 import 'package:asn1_plugin/generated_bindings.dart' as C;
+import 'package:asn1_plugin/j3217/2022/choice/choice_network_charge_table.dart';
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/charges_table.dart';
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/exit_info.dart';
 
 
-class EntryChargesTable{
+class EntryChargesTable extends Choice_NetworkChargeTable{
     late ExitInfo exitInfo; 
     late ChargesTable chargesTable; 
     EntryChargesTable.fromC(C.EntryChargesTable c_obj){

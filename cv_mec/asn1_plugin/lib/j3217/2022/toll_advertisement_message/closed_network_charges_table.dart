@@ -21,15 +21,26 @@
  *============================================================================*/
 
 import 'package:asn1_plugin/generated_bindings.dart' as C;
+import 'package:asn1_plugin/j3217/2022/choice/choice_network_charge_table.dart';
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/entry_charges_table.dart';
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/exit_charges_table.dart';
 
 
 class ClosedNetworkChargesTable{
-    late EntryChargesTable entryChargesTable; 
-    late ExitChargesTable exitChargesTable; 
-    ClosedNetworkChargesTable.fromC(C.ClosedNetworkChargesTable c_obj){
-        entryChargesTable = EntryChargesTable.fromC(c_obj.choice.entryChargesTable);
-        exitChargesTable = ExitChargesTable.fromC(c_obj.choice.exitChargesTable);
+  late ClosedNetworkChargesTableChoice closedNetworkChargesTable;
+  
+  ClosedNetworkChargesTable.fromC(C.ClosedNetworkChargesTable c_obj){
+    closedNetworkChargesTable = ClosedNetworkChargesTableChoice.fromC(c_obj);
+  }
+}
+
+class ClosedNetworkChargesTableChoice{ 
+  late Choice_NetworkChargeTable closedNetworkChargesTableChoice;
+  ClosedNetworkChargesTableChoice.fromC(C.ClosedNetworkChargesTable c_closedNetworkChargesTable) {
+    if (c_closedNetworkChargesTable.present == C.ClosedNetworkChargesTable_PR.ClosedNetworkChargesTable_PR_entryChargesTable) {
+      closedNetworkChargesTableChoice = EntryChargesTable.fromC(c_closedNetworkChargesTable.choice.entryChargesTable);
+    } else if (c_closedNetworkChargesTable.present == C.ClosedNetworkChargesTable_PR.ClosedNetworkChargesTable_PR_exitChargesTable) {
+      closedNetworkChargesTableChoice = ExitChargesTable.fromC(c_closedNetworkChargesTable.choice.exitChargesTable);
     }
+  }
 }

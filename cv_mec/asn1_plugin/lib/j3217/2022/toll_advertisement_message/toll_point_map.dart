@@ -40,8 +40,8 @@ class TollPointMap{
       referencePoint = Position3D.fromC(c_obj.referencePoint);
       speedLimit = RegulatorySpeedLimit.fromC(c_obj.speedLimit);
       laneWidth = LaneWidth(c_obj.laneWidth);
-      approachLanesMap = TollPointMap__approachLanesMap.fromC(c_obj.approachLanesMap).approachLanesMap;
-      tollZoneLanesMap = TollPointMap__tollZoneLanesMap.fromC(c_obj.tollZoneLanesMap).tollZoneLanesMap;
+      approachLanesMap = ApproachLanesMap.fromC(c_obj.approachLanesMap).approachLanesMap;
+      tollZoneLanesMap = TollZoneLanesMap.fromC(c_obj.tollZoneLanesMap).tollZoneLanesMap;
   }
 }
 class RevisionNumInteger{
@@ -49,9 +49,9 @@ class RevisionNumInteger{
   RevisionNumInteger(int value): revisionNumInteger = value;
 }
 
-class TollPointMap__approachLanesMap {
+class ApproachLanesMap {
   late List<GenericLane> approachLanesMap;
-  TollPointMap__approachLanesMap.fromC(C.TollPointMap__approachLanesMap c_approachLanesMap) : super() {
+  ApproachLanesMap.fromC(C.TollPointMap__approachLanesMap c_approachLanesMap) : super() {
     approachLanesMap = [];
     for (int i = 0; i < c_approachLanesMap.list.count; i++) {
       approachLanesMap.add(GenericLane.fromC(c_approachLanesMap.list.array[i].ref));
@@ -59,9 +59,9 @@ class TollPointMap__approachLanesMap {
   }
 }
 
-class TollPointMap__tollZoneLanesMap {
+class TollZoneLanesMap {
   late List<GenericLane> tollZoneLanesMap;
-  TollPointMap__tollZoneLanesMap.fromC(C.TollPointMap__tollZoneLanesMap c_tollZoneLanesMap) : super() {
+  TollZoneLanesMap.fromC(C.TollPointMap__tollZoneLanesMap c_tollZoneLanesMap) : super() {
     tollZoneLanesMap = [];
     for (int i = 0; i < c_tollZoneLanesMap.list.count; i++) {
       tollZoneLanesMap.add(GenericLane.fromC(c_tollZoneLanesMap.list.array[i].ref));
