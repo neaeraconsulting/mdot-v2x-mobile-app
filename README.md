@@ -1,5 +1,10 @@
-# v2x-mec-mobile-app
-This is the main repository for all code related to the Connected Vehicle Mobile Edge Compute (CV-MEC) mobile application. For a full list of features available in the CV-MEC application please see the 
+# v2x-mobile-app
+This is the main repository for all code related to the Connected Vehicle Mobile Edge Compute (CV-MEC) mobile application. 
+
+![CV-MEC Logo](cv_mec/assets/images/cvmec_logo.png)
+
+
+For a full list of features available in the CV-MEC application please see the 
 - [supported feature list](docs/system_design/Feature_List.md)
 - [changelog](docs/change_log.md)
 
