@@ -30,58 +30,171 @@ import 'package:ffi/ffi.dart';
 
 
 class TollChargerInfo{
-    late int tollChargerId;
+    late String tollChargerId;
     late TollPointID tollPointId; 
     DescriptiveName? descriptiveName; 
 
     TollChargerInfo.fromC(C.TollChargerInfo c_obj){
-        tollChargerId = _oidBufferToInt(c_obj.tollChargerId);
+        tollChargerId = _oidBufferToString(c_obj.tollChargerId);
         tollPointId = TollPointID(c_obj.tollPointId);
         if(c_obj.descriptiveName.address != 0){
             descriptiveName = DescriptiveName.fromOctetString(c_obj.descriptiveName.ref);
         }
     }
 
-    C.TollChargerInfo toC(Pointer<C.TollChargerInfo> pointer) {
+    void toC(Pointer<C.TollChargerInfo> pointer) {
       final c_info = pointer.ref;
-      c_info.tollChargerId = intToAsnPrimitiveType(tollChargerId); 
+      
+      _fillTollChargerId(tollChargerId, pointer);
       c_info.tollPointId = tollPointId.tollPointID;
+
+      // Clean up existing descriptiveName allocation first
+      if (c_info.descriptiveName != nullptr) {
+        calloc.free(c_info.descriptiveName);
+        c_info.descriptiveName = nullptr;
+      }
+      
       if(descriptiveName != null){
-        //c_info.descriptiveName = descriptiveName!.toC(calloc.allocate<C.OCTET_STRING>(sizeOf<C.OCTET_STRING>()));
+        final descriptiveNamePtr = calloc<C.OCTET_STRING>();
+        descriptiveName!.toC(descriptiveNamePtr);
+        c_info.descriptiveName = descriptiveNamePtr;
+      } else {
+        c_info.descriptiveName = nullptr;
       }
-      return c_info;
     }
 
-    int _oidBufferToInt(ASN__PRIMITIVE_TYPE_s oid){
-        // Assuming the OID represents an integer in its buffer
-        // Convert the buffer to an integer
-        int result = 0;
-        for(int i = 0; i < oid.size; i++){
-            result = (result << 8) | oid.buf.elementAt(i).value;
+    String _oidBufferToString(ASN__PRIMITIVE_TYPE_s oid) {
+      if (oid.size == 0 || oid.buf == nullptr) {
+        return "1.2.3"; // Default OID
+      }
+      
+      try {
+        List<int> bytes = [];
+        for (int i = 0; i < oid.size; i++) {
+          bytes.add(oid.buf[i]);
         }
-        return result;
-    }
-
-    ASN__PRIMITIVE_TYPE_s intToAsnPrimitiveType(int value) {
-      // Convert int to big-endian byte array
-      List<int> bytes = [];
-      int temp = value;
-      do {
-        bytes.insert(0, temp & 0xFF);
-        temp >>= 8;
-      } while (temp > 0);
-
-      // Allocate the struct and buffer
-      final ptr = calloc<ASN__PRIMITIVE_TYPE_s>();
-      final buf = calloc.allocate<Uint8>(bytes.length);
-
-      for (int i = 0; i < bytes.length; i++) {
-        buf[i] = bytes[i];
+        
+        return _decodeOid(bytes);
+      } catch (e) {
+        print("Error decoding OID: $e");
+        return "1.2.3"; // Fallback
       }
-
-      ptr.ref.buf = buf;
-      ptr.ref.size = bytes.length;
-
-      return ptr.ref;
     }
+
+    String _decodeOid(List<int> bytes) {
+      if (bytes.isEmpty) return "1.2.3";
+      
+      List<int> nodes = [];
+      
+      // Decode first byte: (first * 40) + second
+      int firstByte = bytes[0];
+      int first = firstByte ~/ 40;
+      int second = firstByte % 40;
+      nodes.addAll([first, second]);
+      
+      // Decode remaining bytes using variable-length decoding
+      int i = 1;
+      while (i < bytes.length) {
+        int value = 0;
+        int currentByte;
+        do {
+          if (i >= bytes.length) break;
+          currentByte = bytes[i++];
+          value = (value << 7) | (currentByte & 0x7F);
+        } while ((currentByte & 0x80) != 0);
+        nodes.add(value);
+      }
+      
+      return nodes.join('.');
+    }
+
+    void _fillTollChargerId(String oidString, Pointer<C.TollChargerInfo> tollChargerInfoPtr) {
+      final tollChargerIdField = tollChargerInfoPtr.ref.tollChargerId;
+      
+      // Free existing buffer if present
+      if (tollChargerIdField.buf != nullptr) {
+        calloc.free(tollChargerIdField.buf);
+        tollChargerIdField.buf = nullptr;
+        tollChargerIdField.size = 0;
+      }
+      
+      // Encode OID
+      List<String> nodeStrings = oidString.split('.');
+      if (nodeStrings.length < 2) {
+        return; // Leave empty on invalid OID
+      }
+      
+      List<int> nodes = nodeStrings.map(int.parse).toList();
+      List<int> encodedBytes = [];
+      
+      int firstByte = (nodes[0] * 40) + nodes[1];
+      encodedBytes.add(firstByte);
+      
+      for (int i = 2; i < nodes.length; i++) {
+        int value = nodes[i];
+        List<int> tempBytes = [];
+        
+        do {
+          tempBytes.insert(0, value & 0x7F);
+          value >>= 7;
+        } while (value > 0);
+        
+        for (int j = 0; j < tempBytes.length - 1; j++) {
+          tempBytes[j] |= 0x80;
+        }
+        
+        encodedBytes.addAll(tempBytes);
+      }
+      
+      // Fill the struct field directly
+      tollChargerInfoPtr.ref.tollChargerId.size = encodedBytes.length;
+      tollChargerInfoPtr.ref.tollChargerId.buf = calloc<Uint8>(encodedBytes.length);
+      
+      for (int i = 0; i < encodedBytes.length; i++) {
+        tollChargerInfoPtr.ref.tollChargerId.buf[i] = encodedBytes[i];
+      }
+    }
+
+    void stringToAsnPrimitiveType(String oidString, Pointer<ASN__PRIMITIVE_TYPE_s> target) {
+      List<String> nodeStrings = oidString.split('.');
+      if (nodeStrings.length < 2) {
+        throw ArgumentError("Invalid OID string: $oidString");
+      }
+      
+      List<int> nodes = nodeStrings.map(int.parse).toList();
+      
+      // Free existing buffer if present
+      if (target.ref.buf != nullptr) {
+        calloc.free(target.ref.buf);
+      }
+      
+      // Encode OID bytes (your existing logic is correct)
+      List<int> encodedBytes = [];
+      int firstByte = (nodes[0] * 40) + nodes[1];
+      encodedBytes.add(firstByte);
+      
+      for (int i = 2; i < nodes.length; i++) {
+        int value = nodes[i];
+        List<int> tempBytes = [];
+        
+        do {
+          tempBytes.insert(0, value & 0x7F);
+          value >>= 7;
+        } while (value > 0);
+        
+        for (int j = 0; j < tempBytes.length - 1; j++) {
+          tempBytes[j] |= 0x80;
+        }
+        
+        encodedBytes.addAll(tempBytes);
+      }
+      
+      // Fill the target struct
+      target.ref.size = encodedBytes.length;
+      target.ref.buf = calloc<Uint8>(encodedBytes.length);
+      
+      for (int i = 0; i < encodedBytes.length; i++) {
+        target.ref.buf[i] = encodedBytes[i];
+      }
+    }   
 }

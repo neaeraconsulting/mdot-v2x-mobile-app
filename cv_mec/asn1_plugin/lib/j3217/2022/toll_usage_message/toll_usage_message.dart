@@ -50,31 +50,63 @@ class TollUsageMessage{
         encryptedTumData = EncryptedTumData.fromOctetString(c_obj.encryptedTumData);
     }
 
-    C.TollUsageMessage toC(Pointer<C.TollUsageMessage> pointer) {
-      print("Big Gorilla 1.1");
+    void toC(Pointer<C.TollUsageMessage> pointer) {
       final c_tum = pointer.ref;
-      print("Big Gorilla 1.2");
-      c_tum.tollPointInfo = tollPointInfo.toC(calloc.allocate<C.TollChargerInfo>(sizeOf<C.TollChargerInfo>()));
-      print("Big Gorilla 1.3");
-      c_tum.tempID = tempID.toC(calloc.allocate<C.OCTET_STRING>(sizeOf<C.OCTET_STRING>()));
-      print("Big Gorilla 1.4");
-      c_tum.tumSequenceNum = 0;
-      print("Big Gorilla 1.5");
-      c_tum.tamSequenceNum = 0;
-      print("Big Gorilla 1.6");
+      
+      _cleanupExistingAllocations(c_tum);
+      
+      // Zero-initialize the entire struct first
+      pointer.cast<Uint8>().asTypedList(sizeOf<C.TollUsageMessage>()).fillRange(0, sizeOf<C.TollUsageMessage>(), 0);
+      
+      final tollPointInfoPtr = calloc<C.TollChargerInfo>();
+      // Zero-initialize nested struct
+      tollPointInfoPtr.cast<Uint8>().asTypedList(sizeOf<C.TollChargerInfo>()).fillRange(0, sizeOf<C.TollChargerInfo>(), 0);
+      tollPointInfo.toC(tollPointInfoPtr);
+      c_tum.tollPointInfo = tollPointInfoPtr.ref;
+
+      final tempIdPtr = calloc<C.OCTET_STRING>();
+      tempIdPtr.cast<Uint8>().asTypedList(sizeOf<C.OCTET_STRING>()).fillRange(0, sizeOf<C.OCTET_STRING>(), 0);
+      tempID.toC(tempIdPtr);
+      c_tum.tempID = tempIdPtr.ref;
+
+      c_tum.tumSequenceNum = tumSequenceNum.msgCount;
+      c_tum.tamSequenceNum = tamSequenceNum.msgCount;
+
       if(tumHash != null){
-        //Cookie - ToDo
+        final tumHashPtr = calloc<C.OCTET_STRING>();
+        tumHashPtr.cast<Uint8>().asTypedList(sizeOf<C.OCTET_STRING>()).fillRange(0, sizeOf<C.OCTET_STRING>(), 0);
+        tumHash!.toC(tumHashPtr);
+        c_tum.tumHash = tumHashPtr;
+      } else {
+        c_tum.tumHash = nullptr;
       }
-      print("Big Gorilla 1.7");
-      c_tum.encryptedTumData = encryptedTumData.toC(calloc.allocate<C.OCTET_STRING>(sizeOf<C.OCTET_STRING>()));
-      print("Big Gorilla 1.8");
-      return c_tum;
+
+      final encryptedDataPtr = calloc<C.OCTET_STRING>();
+      encryptedDataPtr.cast<Uint8>().asTypedList(sizeOf<C.OCTET_STRING>()).fillRange(0, sizeOf<C.OCTET_STRING>(), 0);
+      encryptedTumData.toC(encryptedDataPtr);
+      c_tum.encryptedTumData = encryptedDataPtr.ref;
     }
 
-    //pass in memory that I want it to allocate
-    //ToC method
-    //pass in a pointer to the c.tum as well
-    //might need to return a list of all memory pointers
-    //look to generated bindings - send through ai to get c memory allocation
+    void _cleanupExistingAllocations(C.TollUsageMessage c_tum) {
+      // Clean up tumHash if it was previously allocated
+      if (c_tum.tumHash != nullptr) {
+        calloc.free(c_tum.tumHash);
+        c_tum.tumHash = nullptr;
+      }
+      
+      // Note: tollPointInfo, tempID, and encryptedTumData are struct values,
+      // so we can't directly free them, but their internal buffers should be
+      // cleaned up by their respective toC methods
+    }
 
+    void backFromC(C.TollUsageMessage c_obj) {
+      tollPointInfo = TollChargerInfo.fromC(c_obj.tollPointInfo);
+      tempID = TemporaryID.fromOctetString(c_obj.tempID);
+      tumSequenceNum = MsgCount(c_obj.tumSequenceNum);
+      tamSequenceNum = MsgCount(c_obj.tamSequenceNum);
+      if(c_obj.tumHash.address != 0){
+          tumHash = TumHash.fromOctetString(c_obj.tumHash.ref);
+      }
+      encryptedTumData = EncryptedTumData.fromOctetString(c_obj.encryptedTumData);
+    }
 }

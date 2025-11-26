@@ -24,7 +24,8 @@ class ASNService extends GetxController {
   final String timTemplate =
       "001F8090701431EB7AF1627185E2EDEE8A0F775D9B0301C263D16BD9677A37DFFFF93F422AD3001EA007F96937E1CF5AD1BDFA54EADF62C17316CB99385CE1AC000000004C7A2D7B2CEF46FB271186000422C1D5AEE008397FB1606A3D428A95ADF610590FCFC581E03208917849C3E58AD5DE10C054E6F04042AF59835016A3043480BFDF229E83A714334001002009EEEBB36000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
 
-  final int encodeBufferSize = 1024;
+  //final int encodeBufferSize = 1024;
+  final int encodeBufferSize = 65536;
 
   final String MAP_START_FLAG = "0012";
   final String SPAT_START_FLAG = "0013";
@@ -34,7 +35,7 @@ class ASNService extends GetxController {
   final String PSM_START_FLAG = "0020";
   final String SRM_START_FLAG = "001D";
   final String SDSM_START_FLAG = "0029";
-  final String TAM_START_FLAG = "0025";  //COOKIE - where do we get this value?
+  final String TAM_START_FLAG = "0025";  
   final String TUM_START_FLAG = "0026";
 
   late final List<String> checkStartFlags;
@@ -60,7 +61,7 @@ class ASNService extends GetxController {
       SPAT_START_FLAG,
       PSM_START_FLAG,
       SDSM_START_FLAG,
-      TAM_START_FLAG,  //COOKIE
+      TAM_START_FLAG, 
       TUM_START_FLAG,
     ];
 
@@ -73,7 +74,7 @@ class ASNService extends GetxController {
       PSM_START_FLAG: MsgType.PSM,
       SRM_START_FLAG: MsgType.SRM,
       SDSM_START_FLAG: MsgType.SDSM,
-      TAM_START_FLAG: MsgType.TAM,  //COOKIE
+      TAM_START_FLAG: MsgType.TAM,  
       TUM_START_FLAG: MsgType.TUM,
     };
   }
@@ -180,7 +181,6 @@ class ASNService extends GetxController {
   }
 
   TollAdvertisementMessage parseTam(Pointer<Pointer<Void>> message) {
-    //COOKIE
     Pointer<C.MessageFrame> messageFrameValuePtr = message.value.cast<C.MessageFrame>();
     C.MessageFrame messageFrame = messageFrameValuePtr.ref;
     C.TollAdvertisementMessage cTam = messageFrame.value.choice.TollAdvertisementMessage;
@@ -189,7 +189,6 @@ class ASNService extends GetxController {
   }
 
   TollUsageMessage parseTum(Pointer<Pointer<Void>> message) {
-    //COOKIE
     Pointer<C.MessageFrame> messageFrameValuePtr = message.value.cast<C.MessageFrame>();
     C.MessageFrame messageFrame = messageFrameValuePtr.ref;
     C.TollUsageMessage cTum = messageFrame.value.choice.TollUsageMessage;
@@ -258,7 +257,6 @@ class ASNService extends GetxController {
   }
 
   TollAdvertisementMessage decodeTam(String asn1) {
-    //COOKIE
     Pointer<Pointer<Void>> decoded = decode(asn1);
 
     TollAdvertisementMessage tam = parseTam(decoded);
@@ -269,7 +267,6 @@ class ASNService extends GetxController {
   }
 
   TollUsageMessage decodeTum(String asn1) {
-    //COOKIE
     Pointer<Pointer<Void>> decoded = decode(asn1);
 
     TollUsageMessage tum = parseTum(decoded);
@@ -284,7 +281,6 @@ class ASNService extends GetxController {
   }
 
   Pointer<Pointer<Void>> decode(String hexInput) {
-    print("Cookie DECODE: ${hexInput}");
 
     Pointer<C.MessageFrame> structPtr = calloc<C.MessageFrame>();
 
@@ -292,7 +288,6 @@ class ASNService extends GetxController {
     ptrToPtr.value = structPtr.cast<Void>();
 
     try {
-      print("Cookie DECODE: Decoding Message ${hexInput}");
       Pointer<C.asn_codec_ctx_s> optCodecCtxPtr = calloc<C.asn_codec_ctx_s>();
       optCodecCtxPtr.ref.max_stack_size = 0;
 
@@ -314,9 +309,7 @@ class ASNService extends GetxController {
       C.asn_dec_rval_s rval = _bindings.uper_decode(optCodecCtxPtr, typeDescriptorPtr, ptrToPtr, bufferPtr, size, 0, 0);
 
       if (rval.code != 0) {
-        print("Cookie chocolate Decode failed with code: ${rval.code}");
-        print("Cookie chocolate Consumed bytes: ${rval.consumed}");
-        _logger.w("Cookie DECODE: Failed to Decode Message ${hexInput}");
+        _logger.w("Failed to Decode Message ${hexInput}");
       }
 
       calloc.free(optCodecCtxPtr);
@@ -324,22 +317,23 @@ class ASNService extends GetxController {
       calloc.free(dataPtr);
     } catch (e) {
       // No specified type, handles all
-      _logger.w('Cookie Unknown Failure during decoding: $e, $hexInput');
+      _logger.e("Exception during decode: $e");
     }
 
     return ptrToPtr;
   }
 
-  String encode(Pointer<Pointer<Void>> structPtr) {
+
+  String encode(Pointer<Pointer<Void>> structPtr, {int encodeBufferSize = 1024}) {
+    encodeBufferSize = this.encodeBufferSize;
+
     // Setup Required Parameter Pointers
     Pointer<C.asn_codec_ctx_s> optCodecCtxPtr = calloc<C.asn_codec_ctx_s>();
     optCodecCtxPtr.ref.max_stack_size = 0;
 
     Pointer<C.asn_TYPE_descriptor_s> typeDescriptorPtr = calloc<C.asn_TYPE_descriptor_s>();
     typeDescriptorPtr.ref = _bindings.asn_DEF_MessageFrame;
-
     Pointer<Uint8> buffer = calloc<Uint8>(encodeBufferSize);
-
     // Encode Data To Buffer
     C.asn_enc_rval_t rval = _bindings.asn_encode_to_buffer(
         optCodecCtxPtr,
@@ -348,7 +342,9 @@ class ASNService extends GetxController {
         structPtr.value,
         buffer.cast<Void>(),
         encodeBufferSize);
-
+    if (rval.encoded < 0) {
+      return "";
+    }
     // Convert Encoded Data to Hexadecimal Bytes
     Uint8List encodedBinary = buffer.asTypedList(rval.encoded);
     String hexData = bytesToHex(encodedBinary);

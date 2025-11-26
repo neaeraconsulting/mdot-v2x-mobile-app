@@ -17,11 +17,6 @@ import 'package:uuid/uuid.dart';
 class TamManager {
   Map<int, TollAdvertisementMessage> storedTams = <int, TollAdvertisementMessage>{};
 
-  void addOrUpdate(TollAdvertisementMessage tam) {
-    final key = tam.tollAdvInfo?.tollChargerInfo.tollChargerId ?? 0; //TODO: Cookie, fix keying mechanism
-    storedTams[key] = tam;
-  }
-
   List<MappableTam> getActiveTamGeometry() {
     List<MappableTam> activeTams = [];
     for (int key in storedTams.keys) {
@@ -30,6 +25,7 @@ class TamManager {
     }
     activeTams.add(MappableTam.sample());
     TollAdvertisementMessage sample = getSampleTam();
+    
     activeTams.add(MappableTam.fromTam(sample));
     return activeTams;
   }

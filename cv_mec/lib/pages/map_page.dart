@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 import 'dart:core';
+import 'package:asn1_plugin/generated_bindings.dart' as C;
 import 'package:asn1_plugin/j2735/2024/basic_safety_message/basic_safety_message.dart';
 import 'package:asn1_plugin/j2735/2024/basic_safety_message/bsmpart_iiextension.dart';
 import 'package:asn1_plugin/j2735/2024/basic_safety_message/special_vehicle_extensions.dart';
@@ -53,7 +54,6 @@ import 'package:cv_mec/models/message_builders/tum_builder.dart';
 import 'package:cv_mec/models/message_managers/map_manager.dart';
 import 'package:cv_mec/models/message_managers/received_message_manager.dart';
 import 'package:cv_mec/models/message_managers/tam_manager.dart';
-import 'package:cv_mec/models/message_managers/tum_manager.dart';
 import 'package:cv_mec/models/mqtt/etx_mqtt_agent.dart';
 import 'package:cv_mec/models/mqtt/iss_mqtt_agent.dart';
 import 'package:cv_mec/models/mqtt/mqtt_agent_manager.dart';
@@ -139,7 +139,7 @@ class MapState extends State<MapPage> {
   MapManager mapManager = MapManager();
   SpatManager spatManager = SpatManager();
   ReceivedMessageManager messageManager = ReceivedMessageManager();
-  TamManager tamManager = TamManager(); //Cookie
+  TamManager tamManager = TamManager(); 
 
   SecureStorage secureStorage = SecureStorage();
 
@@ -217,9 +217,14 @@ class MapState extends State<MapPage> {
 
     _mapController = MapController();
     timingService.startAllUpdates();
-
     bsmBuilder = BsmMessageBuilder();
     psmBuilder = PsmMessageBuilder();
+
+    // Testing TUM's
+    TumBuilder tumBuilder = TumBuilder();
+    TollUsageMessage tum = tumBuilder.getSampleTum();
+    C.TollUsageMessage cTum = tumBuilder.buildCTum(tum);
+    tumBuilder.encodeTum(cTum);
 
     if (mounted) {
       setState(() {
@@ -303,12 +308,6 @@ class MapState extends State<MapPage> {
     
 
     obdController.checkRootStatus();
-
-    //Cookie
-    TumManager tumManager = TumManager();
-    TollUsageMessage tum = tumManager.getSampleTum();
-    TumBuilder tumBuilder = TumBuilder();
-    String cTum = tumBuilder.buildCTum(tum);
   }
 
   // Helper function to disconnect and reconnect all mqtt agents
@@ -671,7 +670,7 @@ class MapState extends State<MapPage> {
     addToReceiveLog(broker, topic, "SDSM", recTime, sendTime, sdsm.sDSMTimeStamp.getAsDateTime(), trimmedHex, source, validity);
   }
 
-  //TODO: Implement TAM Processing COOKIE
+  //TODO: Implement TAM Processing
   void processNewTAM(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
     print("TAM Processing Not Implemented");
 
@@ -687,10 +686,9 @@ class MapState extends State<MapPage> {
     //updateGraphics();
 
     //addToReceiveLog(broker, topic, "TAM", recTime, sendTime, LeidosDateExtraction.extractDateFromMap(map), trimmedHex, source, validity);
-    //COOKIE
   }
 
-  //TODO: Implement TUM Processing COOKIE
+  //TODO: Implement TUM Processing 
   void processNewTUM(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
     print("TAM Processing Not Implemented");
 
@@ -706,7 +704,6 @@ class MapState extends State<MapPage> {
     //updateGraphics();
 
     //addToReceiveLog(broker, topic, "TAM", recTime, sendTime, LeidosDateExtraction.extractDateFromMap(map), trimmedHex, source, validity);
-    //COOKIE
   }
 
   void addToReceiveLog(String? broker, String topic, String msgType, DateTime recTime, DateTime? sendTime, DateTime? generationTime,
@@ -1346,10 +1343,7 @@ class MapState extends State<MapPage> {
         }
       }
 
-      print("Cookie - Went here");
-      // Cookie - Add TAM markers here
       List<MappableTam> mappableTams = tamManager.getActiveTamGeometry();
-      print("Cookie - Got TAM Geometry: ${mappableTams.length} items");
       for (MappableTam mappableTam in mappableTams) {
         for (List<LatLng> lanePoints in mappableTam.polylinePoints) {
           Polyline<PolyLineHitValue> hitPoly = Polyline(

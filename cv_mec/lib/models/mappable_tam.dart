@@ -51,7 +51,6 @@ class MappableTam {
       }
     }
     _addSampleTamPolylinePoints();
-    print("Cookie Initialized TAM with ${polylinePoints.length} polylines.");
   }
 
   void _addSampleTamPolylinePoints() {

@@ -25,28 +25,51 @@ import 'dart:typed_data';
 
 import 'package:asn1_plugin/generated_bindings.dart' as C;
 import 'dart:ffi';
+import 'package:ffi/ffi.dart';
 
 
 class TumHash{
   String? tumHash;
 
   TumHash.fromOctetString(C.OCTET_STRING string){
+    
+    if (string.buf == nullptr || string.size == 0) {
+      tumHash = "";
+      return;
+    }
+    
     final Uint8List byteList = string.buf.asTypedList(string.size);
-    //tumHash = utf8.decode(byteList);
-    //Cookie
+    
     tumHash = byteList.map((b) => b.toRadixString(16).padLeft(2, '0')).join('');
   }
 
-  C.OCTET_STRING toC(Pointer<C.OCTET_STRING> pointer) {
-    final c_tumHash = pointer.ref;
-    final bytes = <int>[];
-    for (int i = 0; i < tumHash!.length; i += 2) {
-      bytes.add(int.parse(tumHash!.substring(i, i + 2), radix: 16));
+  void toC(Pointer<C.TumHash_t> pointer) {
+      final c_tumHash = pointer.ref;
+      
+      // Free previous buffer if needed
+      if (c_tumHash.buf != nullptr && c_tumHash.size > 0) {
+        calloc.free(c_tumHash.buf);
+        c_tumHash.buf = nullptr;
+        c_tumHash.size = 0;
+      }
+      
+      if (tumHash == null || tumHash!.isEmpty) {
+        c_tumHash.buf = nullptr;
+        c_tumHash.size = 0;
+      }
+      
+      // Convert hex string to bytes
+      final bytes = <int>[];
+      for (int i = 0; i < tumHash!.length; i += 2) {
+        bytes.add(int.parse(tumHash!.substring(i, i + 2), radix: 16));
+      }
+      
+      // Allocate new buffer
+      c_tumHash.buf = calloc.allocate<Uint8>(bytes.length);
+      for (int i = 0; i < bytes.length; i++) {
+        c_tumHash.buf[i] = bytes[i];
+      }
+      c_tumHash.size = bytes.length;
     }
-    for (int i = 0; i < bytes.length; i++) {
-      c_tumHash.buf[i] = bytes[i];
-    }
-    c_tumHash.size = bytes.length;
-    return c_tumHash;
-  }
+
 }
