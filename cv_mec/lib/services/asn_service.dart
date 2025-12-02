@@ -332,7 +332,7 @@ class ASNService extends GetxController {
     optCodecCtxPtr.ref.max_stack_size = 0;
 
     Pointer<C.asn_TYPE_descriptor_s> typeDescriptorPtr = calloc<C.asn_TYPE_descriptor_s>();
-    typeDescriptorPtr.ref = _bindings.asn_DEF_MessageFrame;
+    typeDescriptorPtr.ref = _bindings.asn_DEF_MessageFrame; //<- change this to toll usage data for doing the tum data
     Pointer<Uint8> buffer = calloc<Uint8>(encodeBufferSize);
     // Encode Data To Buffer
     C.asn_enc_rval_t rval = _bindings.asn_encode_to_buffer(

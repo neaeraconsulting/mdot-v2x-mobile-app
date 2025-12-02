@@ -8,10 +8,12 @@ class NodeLL {
   NodeAttributeSetLL? attributes;
 
   NodeLL.fromC(C.NodeLL nodeLL) {
-    delta = NodeOffsetPointLL.fromC(nodeLL.delta);
+    // delta = NodeOffsetPointLL.fromC(nodeLL.delta);
 
-    if (nodeLL.attributes.address != 0) {
-      attributes = NodeAttributeSetLL.fromC(nodeLL.attributes.ref);
-    }
+    // if (nodeLL.attributes.address != 0) {
+    //   attributes = NodeAttributeSetLL.fromC(nodeLL.attributes.ref);
+    // }
   }
 }
+
+//COOKIE - Here

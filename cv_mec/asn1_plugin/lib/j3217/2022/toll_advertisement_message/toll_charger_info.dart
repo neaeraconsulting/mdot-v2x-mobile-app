@@ -21,7 +21,6 @@
  *============================================================================*/
 
 import 'package:asn1_plugin/generated_bindings.dart' as C;
-import 'package:asn1_plugin/generated_bindings.dart';
 import 'package:asn1_plugin/j2735/2024/common/descriptive_name.dart';
 import 'dart:ffi';
 
@@ -63,7 +62,7 @@ class TollChargerInfo{
       }
     }
 
-    String _oidBufferToString(ASN__PRIMITIVE_TYPE_s oid) {
+    String _oidBufferToString(C.ASN__PRIMITIVE_TYPE_s oid) {
       if (oid.size == 0 || oid.buf == nullptr) {
         return "1.2.3"; // Default OID
       }
@@ -155,7 +154,7 @@ class TollChargerInfo{
       }
     }
 
-    void stringToAsnPrimitiveType(String oidString, Pointer<ASN__PRIMITIVE_TYPE_s> target) {
+    void stringToAsnPrimitiveType(String oidString, Pointer<C.ASN__PRIMITIVE_TYPE_s> target) {
       List<String> nodeStrings = oidString.split('.');
       if (nodeStrings.length < 2) {
         throw ArgumentError("Invalid OID string: $oidString");

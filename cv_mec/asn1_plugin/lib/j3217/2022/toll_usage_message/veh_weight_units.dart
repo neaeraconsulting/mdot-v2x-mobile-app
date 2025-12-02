@@ -1,0 +1,5 @@
+
+enum VehWeightUnits {
+    pounds,
+    kilograms
+}

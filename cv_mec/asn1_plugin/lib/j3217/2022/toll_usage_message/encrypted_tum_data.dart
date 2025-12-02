@@ -24,6 +24,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:asn1_plugin/generated_bindings.dart' as C;
+import 'package:asn1_plugin/j3217/2022/toll_usage_message/tum_data.dart';
 import 'dart:ffi';
 
 import 'package:ffi/ffi.dart';
@@ -31,11 +32,13 @@ import 'package:ffi/ffi.dart';
 
 class EncryptedTumData{
   late String encryptedTumData;
+  late TumData? tumData;
 
   EncryptedTumData.fromOctetString(C.OCTET_STRING string){
     final Uint8List byteList = string.buf.asTypedList(string.size);
     //encryptedTumData = utf8.decode(byteList);
     encryptedTumData = byteList.map((b) => b.toRadixString(16).padLeft(2, '0')).join('');
+    // ToDo: Add initialization of tumData if needed
   }
 
   void toC(Pointer<C.OCTET_STRING> pointer) {
