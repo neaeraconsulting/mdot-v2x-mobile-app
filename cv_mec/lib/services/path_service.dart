@@ -91,7 +91,6 @@ class PathService{
           speed: speed,
           speedAccuracy: 0);
 
-      print("Delaying $delay");
       await Future.delayed(delay);
       count++;
     }
