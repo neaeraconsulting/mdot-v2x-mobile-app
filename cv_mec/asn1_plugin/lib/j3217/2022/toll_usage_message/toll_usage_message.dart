@@ -109,4 +109,13 @@ class TollUsageMessage{
       }
       encryptedTumData = EncryptedTumData.fromOctetString(c_obj.encryptedTumData);
     }
+
+    TollUsageMessage ({
+      required this.tollPointInfo,
+      required this.tempID,
+      required this.tumSequenceNum,
+      required this.tamSequenceNum,
+      this.tumHash,
+      required this.encryptedTumData
+    });
 }

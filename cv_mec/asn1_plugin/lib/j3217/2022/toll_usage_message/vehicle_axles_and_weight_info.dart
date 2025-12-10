@@ -28,8 +28,8 @@ import 'package:asn1_plugin/j3217/2022/toll_usage_message/veh_weight_units.dart'
 
 class VehicleAxlesAndWeightInfo {
     late int vehNumAxles; 
-    late List<int> vehWeightPerAxle; 
-    late int vehTotalWeight; 
+    List<int>? vehWeightPerAxle; 
+    int? vehTotalWeight; 
     late VehWeightUnits vehWeightUnits; 
     VehicleAxlesAndWeightInfo.fromC(C.VehicleAxlesAndWeightInfo c_obj){
         vehNumAxles = c_obj.vehNumAxles;
@@ -37,6 +37,8 @@ class VehicleAxlesAndWeightInfo {
         vehTotalWeight = c_obj.vehTotalWeight;
         vehWeightUnits = VehWeightUnits.values[c_obj.vehWeightUnits];
     }
+
+    VehicleAxlesAndWeightInfo(this.vehNumAxles, this.vehWeightPerAxle, this.vehTotalWeight, this.vehWeightUnits);
 
     List<int> getVehWeightPerAxleList(C.VehicleAxlesAndWeightInfo__vehWeightPerAxle c_list){
         List<int> list = [];

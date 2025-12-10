@@ -13,7 +13,7 @@ class ConfigurationController extends GetxController {
   //Vehicle Configurations
   RxList<Vehicle> vehicleConfigs = <Vehicle>[].obs;
 
-  Rx<Vehicle> selectedVehicle = Vehicle.detailed("Default", VehicleType.PASSENGER_VEHICLE, "Blue", 187, 70, null).obs;
+  Rx<Vehicle> selectedVehicle = Vehicle.detailed("Default", VehicleType.PASSENGER_VEHICLE, "Blue", 187, 70, null, "CA", "123ABC").obs;
   RxInt vehicleBeingEditedIndex = (-1).obs;
   FileService fileService = Get.find<FileService>();
 
@@ -64,7 +64,7 @@ class ConfigurationController extends GetxController {
   }
 
   void setVehicleToDefault() {
-    selectedVehicle.value = Vehicle.detailed("Default", VehicleType.PASSENGER_VEHICLE, "Blue", 187, 70, null);
+    selectedVehicle.value = Vehicle.detailed("Default", VehicleType.PASSENGER_VEHICLE, "Blue", 187, 70, null, "CA", "123ABC");
     vehicleBeingEditedIndex.value = -1;
   }
 

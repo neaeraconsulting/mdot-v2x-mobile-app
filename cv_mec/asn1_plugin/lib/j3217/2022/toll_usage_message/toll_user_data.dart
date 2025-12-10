@@ -31,10 +31,11 @@ import 'package:asn1_plugin/j3217/2022/toll_usage_message/loc_and_time_stamps.da
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/vehicle_axles_and_weight_info.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/vehicle_description.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/vehicle_id.dart'; 
+import 'package:ffi/ffi.dart';
 
 
 class TollUserData {
-    late DDateTime timeStamp; 
+    late DDateTime timestamp; 
     late String tspId; 
     late VehicleId vehicleId; 
     VehicleTypes? vehType; 
@@ -47,7 +48,7 @@ class TollUserData {
     LastTollPointInfos? lastTollPoints = null; 
     PaymentFee? charge = null; 
     TollUserData.fromC(C.TollUserData c_obj){
-        timeStamp = DDateTime.fromC(c_obj.timeStamp);
+        timestamp = DDateTime.fromC(c_obj.timeStamp);
         tspId = _oidBufferToString(c_obj.tspId);
         vehicleId = VehicleId.fromC(c_obj.vehicleId);
         if(c_obj.vehType.address != 0){
@@ -87,6 +88,236 @@ class TollUserData {
         }
 
     }
+
+    C.TollUserData toC(Pointer<C.TollUserData> pointer) {
+      print("bluey a1");
+      final c_tollUserData = pointer.ref;
+      
+      // Clean up existing allocations first
+      _cleanupExistingAllocations(c_tollUserData);
+      print("bluey a2");
+      
+      final timestampPtr = calloc<C.DDateTime>();
+      print("bluey a3");
+      timestampPtr.cast<Uint8>().asTypedList(sizeOf<C.DDateTime>()).fillRange(0, sizeOf<C.DDateTime>(), 0);
+      print("bluey a4");
+      timestamp.toC(timestampPtr);
+      print("bluey a5");
+      c_tollUserData.timeStamp = timestampPtr.ref;
+      print("bluey a6");
+
+      _fillTspId(tspId, pointer);
+      print("bluey a7");
+      final vehicleIdPtr = calloc<C.TumVehicleId>();
+      print("bluey a8");
+      vehicleIdPtr.cast<Uint8>().asTypedList(sizeOf<C.TumVehicleId>()).fillRange(0, sizeOf<C.TumVehicleId>(), 0);
+      vehicleId.toC(vehicleIdPtr);
+      c_tollUserData.vehicleId = vehicleIdPtr.ref;
+      print("bluey a9");
+
+      // CORRECTED: VehicleTypes enum conversion
+      if(vehType != null){
+        final vehTypePtr = calloc<Int32>();
+        vehTypePtr.value = (vehType!.index) + 1;
+        c_tollUserData.vehType = vehTypePtr.cast<C.VehicleTypes_t>(); // Use VehicleTypes_t
+      } else {
+        c_tollUserData.vehType = nullptr;
+      }
+
+      if(vehicleDescription != null){
+        final vehicleDescriptionPtr = calloc<C.VehicleDescription>();
+        vehicleDescriptionPtr.cast<Uint8>().asTypedList(sizeOf<C.VehicleDescription>()).fillRange(0, sizeOf<C.VehicleDescription>(), 0);
+        vehicleDescription!.toC(vehicleDescriptionPtr);
+        c_tollUserData.vehicleDescription = vehicleDescriptionPtr;
+      } else {
+        c_tollUserData.vehicleDescription = nullptr;
+      }
+
+      // Handle numOccupants (similar pattern)
+      if(numOccupants != null){
+        final numOccupantsPtr = calloc<Int32>();  // Use Int32 instead
+        numOccupantsPtr.value = numOccupants!;
+        c_tollUserData.numOccupants = numOccupantsPtr.cast<Long>();
+      } else {
+        c_tollUserData.numOccupants = nullptr;
+      }
+
+      // Handle entryTollPointId
+      if(entryTollPointId != null){
+        final entryTollPointIdPtr = calloc<Int32>();  // Use Int32 instead
+        entryTollPointIdPtr.value = entryTollPointId!.tollPointID;
+        c_tollUserData.entryTollPointId = entryTollPointIdPtr.cast<C.TollPointID_t>();
+      } else {
+        c_tollUserData.entryTollPointId = nullptr;
+      }
+
+      // Handle other optional fields...
+      if(entryTimeStamp != null){
+        final entryTimeStampPtr = calloc<C.DDateTime>();
+        entryTimeStamp!.toC(entryTimeStampPtr);
+        c_tollUserData.entryTimeStamp = entryTimeStampPtr;
+      } else {
+        c_tollUserData.entryTimeStamp = nullptr;
+      }
+
+      if(locAndTimeStamps != null){
+        final locAndTimeStampsPtr = calloc<C.LocAndTimeStamps>();
+        locAndTimeStamps!.toC(locAndTimeStampsPtr);
+        c_tollUserData.locAndTimeStamps = locAndTimeStampsPtr;
+      } else {
+        c_tollUserData.locAndTimeStamps = nullptr;
+      }
+
+      if(lastTollPoints != null){
+        final lastTollPointsPtr = calloc<C.LastTollPointInfos>();
+        lastTollPoints!.toC(lastTollPointsPtr);
+        c_tollUserData.lastTollPoints = lastTollPointsPtr;
+      } else {
+        c_tollUserData.lastTollPoints = nullptr;
+      }
+
+      if(charge != null){
+        final chargePtr = calloc<C.PaymentFee>();
+        charge!.toC(chargePtr);
+        c_tollUserData.charge = chargePtr;
+      } else {
+        c_tollUserData.charge = nullptr;
+      }
+
+      return c_tollUserData;
+    }
+
+    void _fillTspId(String tspId, Pointer<C.TollUserData> pointer) {
+      final c_tollUserData = pointer.ref;
+      
+      // Clean up existing allocation
+      if (c_tollUserData.tspId.buf != nullptr) {
+        calloc.free(c_tollUserData.tspId.buf);
+        c_tollUserData.tspId.buf = nullptr;
+        c_tollUserData.tspId.size = 0;
+      }
+      
+      // Encode the OID string to bytes
+      List<int> oidBytes = _encodeOid(tspId);
+      
+      if (oidBytes.isNotEmpty) {
+        c_tollUserData.tspId.buf = calloc<Uint8>(oidBytes.length);
+        c_tollUserData.tspId.size = oidBytes.length;
+        
+        for (int i = 0; i < oidBytes.length; i++) {
+          c_tollUserData.tspId.buf[i] = oidBytes[i];
+        }
+      } else {
+        c_tollUserData.tspId.buf = nullptr;
+        c_tollUserData.tspId.size = 0;
+      }
+    }
+
+    List<int> _encodeOid(String oidString) {
+      List<String> parts = oidString.split('.');
+      if (parts.length < 2) return [];
+      
+      List<int> bytes = [];
+      
+      // First byte: (first * 40) + second
+      int first = int.tryParse(parts[0]) ?? 0;
+      int second = int.tryParse(parts[1]) ?? 0;
+      bytes.add(first * 40 + second);
+      
+      // Encode remaining parts using variable-length encoding
+      for (int i = 2; i < parts.length; i++) {
+        int value = int.tryParse(parts[i]) ?? 0;
+        List<int> encoded = _encodeVariableLength(value);
+        bytes.addAll(encoded);
+      }
+      
+      return bytes;
+    }
+
+    List<int> _encodeVariableLength(int value) {
+      if (value == 0) return [0];
+      
+      List<int> bytes = [];
+      while (value > 0) {
+        bytes.insert(0, value & 0x7F);
+        value >>= 7;
+      }
+      
+      // Set continuation bit on all bytes except the last
+      for (int i = 0; i < bytes.length - 1; i++) {
+        bytes[i] |= 0x80;
+      }
+      
+      return bytes;
+    }
+
+    void _cleanupExistingAllocations(C.TollUserData c_tollUserData) {
+      // Clean up tspId
+      if (c_tollUserData.tspId.buf != nullptr) {
+        calloc.free(c_tollUserData.tspId.buf);
+        c_tollUserData.tspId.buf = nullptr;
+        c_tollUserData.tspId.size = 0;
+      }
+      
+      // Clean up pointer fields
+      if (c_tollUserData.vehType != nullptr) {
+        calloc.free(c_tollUserData.vehType);
+        c_tollUserData.vehType = nullptr;
+      }
+      
+      if (c_tollUserData.vehicleDescription != nullptr) {
+        calloc.free(c_tollUserData.vehicleDescription);
+        c_tollUserData.vehicleDescription = nullptr;
+      }
+      
+      if (c_tollUserData.numOccupants != nullptr) {
+        calloc.free(c_tollUserData.numOccupants);
+        c_tollUserData.numOccupants = nullptr;
+      }
+      
+      if (c_tollUserData.entryTollPointId != nullptr) {
+        calloc.free(c_tollUserData.entryTollPointId);
+        c_tollUserData.entryTollPointId = nullptr;
+      }
+      
+      // Add cleanup for other optional pointer fields...
+    }
+
+    // void toC(Pointer<C.TollChargerInfo> pointer) {
+    //   final c_info = pointer.ref;
+      
+    //   _fillTollChargerId(tollChargerId, pointer);
+    //   c_info.tollPointId = tollPointId.tollPointID;
+
+    //   // Clean up existing descriptiveName allocation first
+    //   if (c_info.descriptiveName != nullptr) {
+    //     calloc.free(c_info.descriptiveName);
+    //     c_info.descriptiveName = nullptr;
+    //   }
+      
+    //   if(descriptiveName != null){
+    //     final descriptiveNamePtr = calloc<C.OCTET_STRING>();
+    //     descriptiveName!.toC(descriptiveNamePtr);
+    //     c_info.descriptiveName = descriptiveNamePtr;
+    //   } else {
+    //     c_info.descriptiveName = nullptr;
+    //   }
+    // }
+
+    TollUserData({
+      required this.timestamp,
+      required this.tspId,
+      required this.vehicleId,
+      this.vehType,
+      this.vehicleDescription,
+      this.vehAxlesAndWeight,
+      this.numOccupants,
+      this.entryTollPointId,
+      this.entryTimeStamp,
+      this.locAndTimeStamps,
+      this.lastTollPoints,
+      this.charge
+    });
 
     String _oidBufferToString(C.ASN__PRIMITIVE_TYPE_s oid) {
       if (oid.size == 0 || oid.buf == nullptr) {

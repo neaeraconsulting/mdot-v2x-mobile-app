@@ -24,7 +24,7 @@ import 'package:asn1_plugin/generated_bindings.dart' as C;
 import 'package:asn1_plugin/j2735/2024/common/d_date_time.dart';
 import 'dart:ffi';
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/toll_charger_info.dart'; 
-
+import 'package:ffi/ffi.dart';
 
 class LastTollPointInfo {
     late TollChargerInfo tollChargerInfo; 
@@ -32,5 +32,22 @@ class LastTollPointInfo {
     LastTollPointInfo.fromC(C.LastTollPointInfo c_obj){
         tollChargerInfo = TollChargerInfo.fromC(c_obj.tollChargerInfo);
         timeStamp = DDateTime.fromC(c_obj.timeStamp);
+    }
+
+    void toC(Pointer<C.LastTollPointInfo> pointer) {
+      final c_info = pointer.ref;
+      
+      // Zero-initialize the entire struct first
+      pointer.cast<Uint8>().asTypedList(sizeOf<C.LastTollPointInfo>()).fillRange(0, sizeOf<C.LastTollPointInfo>(), 0);
+
+      // Handle tollChargerInfo
+      final tollChargerInfoPtr = calloc<C.TollChargerInfo>();
+      tollChargerInfo.toC(tollChargerInfoPtr);
+      c_info.tollChargerInfo = tollChargerInfoPtr.ref;
+
+      // Handle timeStamp
+      final timeStampPtr = calloc<C.DDateTime>();
+      timeStamp.toC(timeStampPtr);
+      c_info.timeStamp = timeStampPtr.ref;
     }
 }

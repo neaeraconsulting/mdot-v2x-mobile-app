@@ -42,7 +42,7 @@ class PathService{
   }
 
   Stream<Position> followPath(VehiclePath vehiclePath) {
-    Duration delay = Duration(seconds: 1);
+    Duration delay = Duration(milliseconds: 100);
     return Stream<Position>.periodic(delay, (count) {
 
 

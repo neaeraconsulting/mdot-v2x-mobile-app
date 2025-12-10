@@ -356,6 +356,50 @@ class ASNService extends GetxController {
     return hexData;
   }
 
+  String encodeTumData(Pointer<Pointer<Void>> structPtr, {int encodeBufferSize = 1024}) {
+    encodeBufferSize = this.encodeBufferSize;
+
+    // Setup Required Parameter Pointers
+    Pointer<C.asn_codec_ctx_s> optCodecCtxPtr = calloc<C.asn_codec_ctx_s>();
+    optCodecCtxPtr.ref.max_stack_size = 0;
+
+    Pointer<C.asn_TYPE_descriptor_s> typeDescriptorPtr = calloc<C.asn_TYPE_descriptor_s>();
+    typeDescriptorPtr.ref = _bindings.asn_DEF_TollUserData; //<- change this to toll user data for doing the tum data
+    Pointer<Uint8> buffer = calloc<Uint8>(encodeBufferSize);
+
+    print("bluey Encoding TumData...");
+    print("bluey Buffer size: $encodeBufferSize");
+    // Encode Data To Buffer
+    C.asn_enc_rval_t rval = _bindings.asn_encode_to_buffer(
+        optCodecCtxPtr,
+        C.asn_transfer_syntax.ATS_UNALIGNED_BASIC_PER,
+        typeDescriptorPtr,
+        structPtr.value,
+        buffer.cast<Void>(),
+        encodeBufferSize);
+
+    print("bluey Encoding result: ${rval.encoded}");
+    
+    if (rval.encoded < 0) {
+      print("bluey encodeTumData failed");
+      return "";
+    }
+
+    print("bluey 22.1");
+    // Convert Encoded Data to Hexadecimal Bytes
+    Uint8List encodedBinary = buffer.asTypedList(rval.encoded);
+    print("bluey 22.2");
+    String hexData = bytesToHex(encodedBinary);
+    print("bluey 22.3");
+
+    // Cleanup Pointer Allocations
+    calloc.free(optCodecCtxPtr);
+    calloc.free(typeDescriptorPtr);
+    calloc.free(buffer);
+    print("bluey 22.4");
+    return hexData;
+  }
+
   // Hex to Bytes function makes sure to properly join characters when joining. This is different from UTF8.encode() which treats each character as an ascii code.
   // For example Hex to Bytes converts F0 to 11110000
   // UTF.encode() converts F0 to 0100011000110000

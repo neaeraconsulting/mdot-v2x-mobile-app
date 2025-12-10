@@ -8,13 +8,16 @@ import 'package:asn1_plugin/j2735/2024/basic_safety_message/bsmpart_iiextension.
 import 'package:asn1_plugin/j2735/2024/basic_safety_message/special_vehicle_extensions.dart';
 import 'package:asn1_plugin/j2735/2024/basic_safety_message/supplemental_vehicle_extensions.dart';
 import 'package:asn1_plugin/j2735/2024/common/basic_vehicle_class.dart';
+import 'package:asn1_plugin/j2735/2024/common/d_date_time.dart';
 import 'package:asn1_plugin/j2735/2024/common/d_day.dart';
 import 'package:asn1_plugin/j2735/2024/common/d_hour.dart';
 import 'package:asn1_plugin/j2735/2024/common/d_minute.dart';
 import 'package:asn1_plugin/j2735/2024/common/d_month.dart';
 import 'package:asn1_plugin/j2735/2024/common/d_second.dart';
 import 'package:asn1_plugin/j2735/2024/common/d_year.dart';
+import 'package:asn1_plugin/j2735/2024/common/latitude.dart';
 import 'package:asn1_plugin/j2735/2024/common/lightbar_in_use.dart';
+import 'package:asn1_plugin/j2735/2024/common/longitude.dart';
 import 'package:asn1_plugin/j2735/2024/common/minute_of_the_year.dart';
 import 'package:asn1_plugin/j2735/2024/common/msg_count.dart';
 import 'package:asn1_plugin/j2735/2024/common/node_set_xy.dart';
@@ -34,6 +37,7 @@ import 'package:asn1_plugin/j2735/2024/spat/time_mark.dart';
 import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_data_frame.dart';
 import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_information.dart';
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/toll_advertisement_message.dart';
+import 'package:asn1_plugin/j3217/2022/toll_usage_message/loc_and_time_stamp.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/toll_usage_message.dart';
 import 'package:bluetooth_classic/models/device.dart';
 import 'package:cv_mec/controllers/obd_controller.dart';
@@ -151,6 +155,7 @@ class MapState extends State<MapPage> {
   Timer? sendMessageTimer;
   late BsmMessageBuilder bsmBuilder;
   late PsmMessageBuilder psmBuilder;
+  late TumBuilder tumBuilder;
 
   Timer? uploadTimer;
 
@@ -209,19 +214,25 @@ class MapState extends State<MapPage> {
 
   DateTime lastRedrawTime = DateTime.now();
 
+  // List<LatLng> historicalVehiclePath = [];
+  List<LocAndTimeStamp> historicalVehiclePath = [];
+  List<int> vehicleId = [];
+
   @override
   void initState() {
     super.initState();
 
     deviceID = uuid.v4();
 
+    vehicleId = randomizeId();
+
     _mapController = MapController();
     timingService.startAllUpdates();
-    bsmBuilder = BsmMessageBuilder();
+    bsmBuilder = BsmMessageBuilder(vehicleId);
     psmBuilder = PsmMessageBuilder();
 
-    // Testing TUM's
-    TumBuilder tumBuilder = TumBuilder();
+    // Testing TUM's dinosaur
+    tumBuilder = TumBuilder();
     TollUsageMessage tum = tumBuilder.getSampleTum();
     C.TollUsageMessage cTum = tumBuilder.buildCTum(tum);
     tumBuilder.encodeTum(cTum);
@@ -308,6 +319,15 @@ class MapState extends State<MapPage> {
     
 
     obdController.checkRootStatus();
+  }
+
+  List<int> randomizeId() {
+    Random random = Random();
+    List<int> randomNumbers = List.generate(4, (_) => random.nextInt(255));
+    // Uint8List dataBuffer = bsm.coreData.id.buf.asTypedList(randomNumbers.length);
+    // bsm.coreData.id.size = 4;
+    // dataBuffer.setAll(0, randomNumbers);
+    return randomNumbers;
   }
 
   // Helper function to disconnect and reconnect all mqtt agents
@@ -859,6 +879,16 @@ class MapState extends State<MapPage> {
     prevKronos = kronos;
     prevLocal = now;
 
+    LocAndTimeStamp locAndTime = LocAndTimeStamp(
+      latitude: Latitude((position.latitude * 1E7).toInt()),
+      longitude: Longitude((position.longitude * 1E7).toInt()),
+      timeStamp: DDateTime.fromDateTime(kronos),
+    );
+    historicalVehiclePath.add(locAndTime); //DINOSAUR
+    if (historicalVehiclePath.length > 50) {
+      historicalVehiclePath.removeAt(0);
+    }
+
     updateGraphics();
     updateTimeToChange();
 
@@ -1160,6 +1190,60 @@ class MapState extends State<MapPage> {
         messageManager.shown.remove(key);
       }
     }
+
+    List<MappableTam> mappableTams = tamManager.getActiveTamGeometry();
+    for (MappableTam mappableTam in mappableTams) {
+      for (LatLng coord in mappableTam.markerPoints) {
+        markerList.add(Marker(
+          width: 40.0,
+          height: 40.0,
+          point: coord,
+          rotate: true,
+          child: GestureDetector(
+            onTap: () {
+              print("bluey tapped");
+              //String vehicleID = ASNService.bytesToHex(bsm.coreData.id.temporaryID);
+              if (mappableTam.tam == null) {
+                print("bluey null");
+              } else {
+                tumBuilder.generateTumFromTam(mappableTam.tam!, historicalVehiclePath, vehicleId); //TODO: Check !
+              }
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.green,
+                  width: 2,
+                ),
+              ), 
+              child: const Icon(
+                Icons.attach_money,
+                color: Colors.green,
+                size: 32,
+              ),
+            ),
+          ),
+        ));
+      }
+      for (LatLng coord in mappableTam.approachMarkerPoints) {
+        markerList.add(Marker(
+          width: 40.0,
+          height: 40.0,
+          point: coord,
+          rotate: false,
+          child: Transform.rotate(
+            angle: mappableTam.approachMarkerRotation * pi / 180, 
+            child: const Icon(
+              Icons.arrow_back_ios_new,
+              color: Colors.white,
+              size: 40,
+            )
+          ),
+        ));
+      }
+    }
     
     return markerList;
   }
@@ -1345,14 +1429,25 @@ class MapState extends State<MapPage> {
 
       List<MappableTam> mappableTams = tamManager.getActiveTamGeometry();
       for (MappableTam mappableTam in mappableTams) {
-        for (List<LatLng> lanePoints in mappableTam.polylinePoints) {
+        for (List<LatLng> lanePoints in mappableTam.tollZonePolylinePoints) {
           Polyline<PolyLineHitValue> hitPoly = Polyline(
             points: lanePoints,
-            borderColor: Colors.purple,
-            color: Colors.purple,
+            color: Colors.white,
+            strokeWidth: 2,
+            pattern: StrokePattern.dashed(segments: [10, 10]),
+            hitValue: (name: "TAM Toll Zone"),
+          );
+          polylines.add(hitPoly);
+        }
+        for (List<LatLng> lanePoints in mappableTam.approachPolylinePoints) {
+          Polyline<PolyLineHitValue> hitPoly = Polyline(
+            points: lanePoints,
+            borderColor: Colors.green,
+            color: Colors.green,
             borderStrokeWidth: 5,
             strokeWidth: 5,
-            hitValue: (name: "TAM Toll Point"),
+            strokeCap: StrokeCap.square,
+            hitValue: (name: "TAM Approach Zone"),
           );
           polylines.add(hitPoly);
         }
@@ -1381,6 +1476,22 @@ class MapState extends State<MapPage> {
         );
 
         polygons.add(hitPoly);
+      }
+    }
+
+    List<MappableTam> mappableTams = tamManager.getActiveTamGeometry();
+    for (MappableTam mappableTam in mappableTams) {
+      for (List<Polygon> polygonPoints in mappableTam.tollZonePolygons) {
+        for (Polygon polygon in polygonPoints) {
+          Polygon<HitValue> hitPoly = Polygon(
+            points: polygon.points,
+            borderColor: Colors.white,
+            //color: Colors.blue.withValues(alpha: 0.5),
+            borderStrokeWidth: 5,
+            hitValue: null,
+          );
+          polygons.add(hitPoly);
+        }
       }
     }
 

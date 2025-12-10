@@ -33,7 +33,7 @@ class VehTypeCharges {
     late PaymentFee charges; 
     SpecialCharges? specialCharges; 
     VehTypeCharges.fromC(C.VehTypeCharges c_obj){
-      vehType = VehicleTypes.values[c_obj.vehType];
+      vehType = VehicleTypes.values[c_obj.vehType - 1];
       charges = PaymentFee.fromC(c_obj.charges);
       if(c_obj.specialCharges.address != 0){
           specialCharges = SpecialCharges.fromC(c_obj.specialCharges.ref);

@@ -41,6 +41,8 @@ class EncryptedTumData{
     // ToDo: Add initialization of tumData if needed
   }
 
+  EncryptedTumData(this.encryptedTumData);
+
   void toC(Pointer<C.OCTET_STRING> pointer) {
     final c_encryptedTumData = pointer.ref;
 

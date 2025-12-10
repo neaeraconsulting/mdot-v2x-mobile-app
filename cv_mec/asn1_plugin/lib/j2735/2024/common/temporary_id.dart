@@ -10,6 +10,10 @@ class TemporaryID{
     temporaryID = string.buf.asTypedList(string.size);
   }
 
+  TemporaryID(List<int> id){
+    temporaryID = id;
+  }
+
 
   void toOctetString(OCTET_STRING string){
     for (int i = 0; i < temporaryID.length; i++) {

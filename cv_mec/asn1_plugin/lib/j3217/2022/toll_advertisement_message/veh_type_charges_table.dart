@@ -25,6 +25,7 @@ import 'package:asn1_plugin/j3217/2022/choice/choice_charges_table.dart';
 import 'dart:ffi';
 
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/veh_type_charges.dart';
+import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/vehicle_types.dart';
 
 
 class VehTypeChargesTable extends Choice_ChargesTable{
@@ -34,5 +35,14 @@ class VehTypeChargesTable extends Choice_ChargesTable{
     for (int i = 0; i < vehTypeCharges.list.count; i++) {
       vehTypeChargesTable.add(VehTypeCharges.fromC(vehTypeCharges.list.array[i].ref));
     }
+  }
+
+  VehTypeCharges getChargeForVehicleType(VehicleTypes vehicleType) {
+    for (var charge in vehTypeChargesTable) {
+      if (charge.vehType == vehicleType) {
+        return charge;
+      }
+    }
+    throw Exception('No charge found for vehicle type: $vehicleType');
   }
 }

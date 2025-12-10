@@ -25,6 +25,7 @@ import 'package:asn1_plugin/j3217/2022/toll_usage_message/toll_service_provider_
 import 'dart:ffi';
 
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/toll_user_data.dart';
+import 'package:ffi/ffi.dart';
 
 
 class TumData {
@@ -35,6 +36,123 @@ class TumData {
         if(c_obj.tollServiceProviderData.address != 0){
             tollServiceProviderData = TollServiceProviderData(c_obj.tollServiceProviderData.ref);
         }
-
     }
+
+    // void toC(Pointer<C.TumData> pointer) {
+    //   final c_tumData = pointer.ref;
+
+    //   //Zero-initialize the entire struct first
+    //   pointer.cast<Uint8>().asTypedList(sizeOf<C.TumData>()).fillRange(0, sizeOf<C.TumData>(), 0);
+
+    //   final tollUserDataPtr = calloc<C.TollUserData>();
+    //   //Zero-initialize nested struct
+    //   tollUserDataPtr.cast<Uint8>().asTypedList(sizeOf<C.TollUserData>()).fillRange(0, sizeOf<C.TollUserData>(), 0);
+    //   tollUserData.toC(tollUserDataPtr);
+    //   c_tumData.tollUserData = tollUserDataPtr.ref;
+
+    //   if(tollServiceProviderData != null){
+    //     final tollServiceProviderDataPtr = calloc<C.OCTET_STRING>();
+    //     tollServiceProviderDataPtr.cast<Uint8>().asTypedList(sizeOf<C.OCTET_STRING>()).fillRange(0, sizeOf<C.OCTET_STRING>(), 0);
+    //     tollServiceProviderData!.toC(tollServiceProviderDataPtr);
+    //     c_tumData.tollServiceProviderData = tollServiceProviderDataPtr;
+    //   } else {
+    //     c_tumData.tollServiceProviderData = nullptr;
+    //   }
+    // }
+
+    void toC(Pointer<C.TumData> pointer) {
+      final c_tumData = pointer.ref;
+
+      // Clean up existing allocations first
+      _cleanupExistingAllocations(c_tumData);
+
+      // Zero-initialize the entire struct first
+      pointer.cast<Uint8>().asTypedList(sizeOf<C.TumData>()).fillRange(0, sizeOf<C.TumData>(), 0);
+
+      // // Handle tollUserData - allocate and assign pointer
+      final tollUserDataPtr = calloc<C.TollUserData>();
+      //print("bluey ${sizeOf<C.TollUserData>()}");
+      tollUserDataPtr.cast<Uint8>().asTypedList(sizeOf<C.TollUserData>()).fillRange(0, sizeOf<C.TollUserData>(), 0);
+      print("bluey Dart 1: ${tollUserData.vehicleId.vehicleIdentity}");
+      tollUserData.toC(tollUserDataPtr);
+      c_tumData.tollUserData = tollUserDataPtr.ref;  // This is correct for struct value
+      print("bluey C 2: ${c_tumData.tollUserData.vehicleId.vehicleIdentity.ref.size}");
+      // final tumDataAddress = pointer.address;
+      // final tollUserDataPtr = Pointer<C.TollUserData>.fromAddress(tumDataAddress);
+      // tollUserData.toC(tollUserDataPtr);
+
+      // Handle tollServiceProviderData - allocate and assign pointer
+      if(tollServiceProviderData != null){
+        final tollServiceProviderDataPtr = calloc<C.OCTET_STRING>();
+        tollServiceProviderDataPtr.cast<Uint8>().asTypedList(sizeOf<C.OCTET_STRING>()).fillRange(0, sizeOf<C.OCTET_STRING>(), 0);
+        tollServiceProviderData!.toC(tollServiceProviderDataPtr);
+        c_tumData.tollServiceProviderData = tollServiceProviderDataPtr;  // This assigns the pointer
+      } else {
+        c_tumData.tollServiceProviderData = nullptr;
+      }
+    }
+
+    // Add cleanup method to prevent memory leaks
+    void _cleanupExistingAllocations(C.TumData c_tumData) {
+      // Note: tollUserData appears to be a struct value (not pointer), 
+      // so we don't free it directly, but we need to clean up its internal allocations
+      // This would need to be handled by TollUserData's cleanup method
+      
+      // Clean up tollServiceProviderData
+      if (c_tumData.tollServiceProviderData != nullptr) {
+        // Clean up the OCTET_STRING buffer if it exists
+        if (c_tumData.tollServiceProviderData.ref.buf != nullptr) {
+          calloc.free(c_tumData.tollServiceProviderData.ref.buf);
+        }
+        calloc.free(c_tumData.tollServiceProviderData);
+        c_tumData.tollServiceProviderData = nullptr;
+      }
+    }
+
+    // Add cleanup method for external use
+    void cleanup(Pointer<C.TumData> pointer) {
+      _cleanupExistingAllocations(pointer.ref);
+    }
+
+    // void toC(Pointer<C.TollUsageMessage> pointer) {
+    //   final c_tum = pointer.ref;
+      
+    //   _cleanupExistingAllocations(c_tum);
+      
+    //   // Zero-initialize the entire struct first
+    //   pointer.cast<Uint8>().asTypedList(sizeOf<C.TollUsageMessage>()).fillRange(0, sizeOf<C.TollUsageMessage>(), 0);
+      
+    //   final tollPointInfoPtr = calloc<C.TollChargerInfo>();
+    //   // Zero-initialize nested struct
+    //   tollPointInfoPtr.cast<Uint8>().asTypedList(sizeOf<C.TollChargerInfo>()).fillRange(0, sizeOf<C.TollChargerInfo>(), 0);
+    //   tollPointInfo.toC(tollPointInfoPtr);
+    //   c_tum.tollPointInfo = tollPointInfoPtr.ref;
+
+    //   final tempIdPtr = calloc<C.OCTET_STRING>();
+    //   tempIdPtr.cast<Uint8>().asTypedList(sizeOf<C.OCTET_STRING>()).fillRange(0, sizeOf<C.OCTET_STRING>(), 0);
+    //   tempID.toC(tempIdPtr);
+    //   c_tum.tempID = tempIdPtr.ref;
+
+    //   c_tum.tumSequenceNum = tumSequenceNum.msgCount;
+    //   c_tum.tamSequenceNum = tamSequenceNum.msgCount;
+
+    //   if(tumHash != null){
+    //     final tumHashPtr = calloc<C.OCTET_STRING>();
+    //     tumHashPtr.cast<Uint8>().asTypedList(sizeOf<C.OCTET_STRING>()).fillRange(0, sizeOf<C.OCTET_STRING>(), 0);
+    //     tumHash!.toC(tumHashPtr);
+    //     c_tum.tumHash = tumHashPtr;
+    //   } else {
+    //     c_tum.tumHash = nullptr;
+    //   }
+
+    //   final encryptedDataPtr = calloc<C.OCTET_STRING>();
+    //   encryptedDataPtr.cast<Uint8>().asTypedList(sizeOf<C.OCTET_STRING>()).fillRange(0, sizeOf<C.OCTET_STRING>(), 0);
+    //   encryptedTumData.toC(encryptedDataPtr);
+    //   c_tum.encryptedTumData = encryptedDataPtr.ref;
+    // }
+
+    TumData ({
+      required this.tollUserData,
+      this.tollServiceProviderData
+    });
 }

@@ -27,6 +27,7 @@ import 'package:asn1_plugin/j2735/2024/common/lane_id.dart';
 import 'package:asn1_plugin/j2735/2024/common/latitude.dart';
 import 'package:asn1_plugin/j2735/2024/common/longitude.dart';
 import 'dart:ffi';
+import 'package:ffi/ffi.dart';
 
 
 class LocAndTimeStamp {
@@ -46,6 +47,48 @@ class LocAndTimeStamp {
         if(c_obj.currentLane.address != 0){
             currentLane = LaneID(c_obj.currentLane.value);
         }
+    }
 
+    void toC(Pointer<C.LocAndTimeStamp> pointer) {
+      final c_locAndTimeStamp = pointer.ref;
+      
+      c_locAndTimeStamp.latitude = latitude.latitude;
+      c_locAndTimeStamp.longitude = longitude.longitude;
+
+      // Handle optional elevation
+      if (elevation != null) {
+        final elevationPtr = calloc<Int32>();
+        elevationPtr.value = elevation!.elevation;
+        c_locAndTimeStamp.elevation = elevationPtr.cast<Long>();
+      } else {
+        c_locAndTimeStamp.elevation = nullptr;
+      }
+
+      // Handle timeStamp
+      final timeStampPtr = calloc<C.DDateTime>();
+      timeStamp.toC(timeStampPtr);
+      c_locAndTimeStamp.timeStamp = timeStampPtr.ref;
+
+      // Handle optional currentLane
+      if (currentLane != null) {
+        final currentLanePtr = calloc<Int32>();
+        currentLanePtr.value = currentLane!.laneID;
+        c_locAndTimeStamp.currentLane = currentLanePtr.cast<Long>();
+      } else {
+        c_locAndTimeStamp.currentLane = nullptr;
+      }
+
+    }
+
+    LocAndTimeStamp({required Latitude latitude, required Longitude longitude, int? elevation, required DDateTime timeStamp, int? currentLane}){
+        this.latitude = latitude;
+        this.longitude = longitude;
+        if(elevation != null){
+            this.elevation = Elevation(elevation);
+        }
+        this.timeStamp = timeStamp;
+        if(currentLane != null){
+            this.currentLane = LaneID(currentLane);
+        }
     }
 }

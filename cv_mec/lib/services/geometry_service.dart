@@ -531,4 +531,9 @@ class GeometryService {
 
     return geometryFactory.createPolygonFromCoords(latLngCoordinates);
   }
+
+  double calculateBearingBetweenLatLng(LatLng start, LatLng end) {
+    num bearing = geodesy.bearingBetweenTwoGeoPoints(start, end);
+    return bearing.toDouble();
+  }
 }

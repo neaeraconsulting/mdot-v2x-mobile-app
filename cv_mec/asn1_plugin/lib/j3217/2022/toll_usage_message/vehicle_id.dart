@@ -23,6 +23,7 @@
 import 'dart:ffi';
 import 'package:asn1_plugin/generated_bindings.dart' as C;
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/user_id.dart';
+import 'package:ffi/ffi.dart';
 
 
 class VehicleId {
@@ -54,6 +55,186 @@ class VehicleId {
 
     }
 
+    void toC(Pointer<C.TumVehicleId> pointer) {
+      final c_vehicleId = pointer.ref;
+      print("bluey a8.1: $vehicleIdentity");
+      // Clean up existing allocations first
+      _cleanupExistingAllocations(c_vehicleId);
+      
+      // Zero-initialize the struct
+      pointer.cast<Uint8>().asTypedList(sizeOf<C.TumVehicleId>()).fillRange(0, sizeOf<C.TumVehicleId>(), 0);
+      
+      // Handle vehicleIdentity (OCTET_STRING)
+      if (vehicleIdentity != null) {
+        print("bluey vehicleIdentity is not null: '$vehicleIdentity'");
+        final vehicleIdentityPtr = calloc<C.OCTET_STRING>();
+        vehicleIdentityPtr.cast<Uint8>().asTypedList(sizeOf<C.OCTET_STRING>()).fillRange(0, sizeOf<C.OCTET_STRING>(), 0);
+        
+        // Convert hex string to bytes
+        //List<int> bytes = _hexStringToBytes(vehicleIdentity!);
+        final bytes = <int>[];
+        for (int i = 0; i < vehicleIdentity!.length; i += 2) {
+          bytes.add(int.parse(vehicleIdentity!.substring(i, i + 2), radix: 16));
+        }
+        print("bluey Hex bytes length: ${bytes.length}");  // Debug: Check conversion
+        print("bluey Hex bytes: $bytes");
+        if (bytes.isNotEmpty) {
+          vehicleIdentityPtr.ref.buf = calloc<Uint8>(bytes.length);
+          vehicleIdentityPtr.ref.size = bytes.length;
+          
+          for (int i = 0; i < bytes.length; i++) {
+            vehicleIdentityPtr.ref.buf[i] = bytes[i];
+          }
+        } else {
+          vehicleIdentityPtr.ref.buf = nullptr;
+          vehicleIdentityPtr.ref.size = 0;
+        }
+        
+        c_vehicleId.vehicleIdentity = vehicleIdentityPtr;
+
+        print("bluey C VehicleId: ${c_vehicleId.vehicleIdentity.ref.size}");
+      } else {
+        c_vehicleId.vehicleIdentity = nullptr;
+      }
+      
+      // Handle licPlateState (IA5String_t)
+      if (licPlateState != null) {
+        final licPlateStatePtr = calloc<C.IA5String_t>();
+        licPlateStatePtr.cast<Uint8>().asTypedList(sizeOf<C.IA5String_t>()).fillRange(0, sizeOf<C.IA5String_t>(), 0);
+        _stringToIA5String(licPlateState!, licPlateStatePtr);
+        c_vehicleId.licPlateState = licPlateStatePtr;
+      } else {
+        c_vehicleId.licPlateState = nullptr;
+      }
+      
+      // Handle licPlateNumVeh (IA5String_t)
+      if (licPlateNumVeh != null) {
+        final licPlateNumVehPtr = calloc<C.IA5String_t>();
+        licPlateNumVehPtr.cast<Uint8>().asTypedList(sizeOf<C.IA5String_t>()).fillRange(0, sizeOf<C.IA5String_t>(), 0);
+        _stringToIA5String(licPlateNumVeh!, licPlateNumVehPtr);
+        c_vehicleId.licPlateNumVeh = licPlateNumVehPtr;
+      } else {
+        c_vehicleId.licPlateNumVeh = nullptr;
+      }
+      
+      // Handle licPlateNumTrailer (IA5String_t)
+      if (licPlateNumTrailer != null) {
+        final licPlateNumTrailerPtr = calloc<C.IA5String_t>();
+        licPlateNumTrailerPtr.cast<Uint8>().asTypedList(sizeOf<C.IA5String_t>()).fillRange(0, sizeOf<C.IA5String_t>(), 0);
+        _stringToIA5String(licPlateNumTrailer!, licPlateNumTrailerPtr);
+        c_vehicleId.licPlateNumTrailer = licPlateNumTrailerPtr;
+      } else {
+        c_vehicleId.licPlateNumTrailer = nullptr;
+      }
+      
+      // Handle userId
+      if (userId != null) {
+        final userIdPtr = calloc<C.UserId>();
+        userIdPtr.cast<Uint8>().asTypedList(sizeOf<C.UserId>()).fillRange(0, sizeOf<C.UserId>(), 0);
+        userId!.toC(userIdPtr);
+        c_vehicleId.userId = userIdPtr;
+      } else {
+        c_vehicleId.userId = nullptr;
+      }
+    }
+
+    // Helper method to convert hex string to bytes
+    List<int> _hexStringToBytes(String hexString) {
+      print("bluey Converting hex string to bytes: '$hexString'");
+      List<int> bytes = [];
+      // Remove any spaces or separators
+      String cleanHex = hexString.replaceAll(RegExp(r'[^0-9a-fA-F]'), '');
+      
+      // Ensure even number of characters
+      if (cleanHex.length % 2 != 0) {
+        cleanHex = '0' + cleanHex;
+      }
+      
+      for (int i = 0; i < cleanHex.length; i += 2) {
+        String hexByte = cleanHex.substring(i, i + 2);
+        int byte = int.parse(hexByte, radix: 16);
+        bytes.add(byte);
+      }
+      
+      return bytes;
+    }
+
+    // Helper method to convert string to IA5String_t
+    void _stringToIA5String(String str, Pointer<C.IA5String_t> ia5Ptr) {
+      List<int> bytes = str.codeUnits;
+      
+      if (bytes.isNotEmpty) {
+        ia5Ptr.ref.buf = calloc<Uint8>(bytes.length);
+        ia5Ptr.ref.size = bytes.length;
+        
+        for (int i = 0; i < bytes.length; i++) {
+          ia5Ptr.ref.buf[i] = bytes[i];
+        }
+      } else {
+        ia5Ptr.ref.buf = nullptr;
+        ia5Ptr.ref.size = 0;
+      }
+    }
+
+      // Helper method to clean up existing allocations
+      void _cleanupExistingAllocations(C.TumVehicleId c_vehicleId) {
+        // Clean up vehicleIdentity
+        if (c_vehicleId.vehicleIdentity != nullptr) {
+          if (c_vehicleId.vehicleIdentity.ref.buf != nullptr) {
+            calloc.free(c_vehicleId.vehicleIdentity.ref.buf);
+            c_vehicleId.vehicleIdentity.ref.buf = nullptr;
+            c_vehicleId.vehicleIdentity.ref.size = 0;
+          }
+          calloc.free(c_vehicleId.vehicleIdentity);
+          c_vehicleId.vehicleIdentity = nullptr;
+        }
+        
+        // Clean up licPlateState
+        if (c_vehicleId.licPlateState != nullptr) {
+          if (c_vehicleId.licPlateState.ref.buf != nullptr) {
+            calloc.free(c_vehicleId.licPlateState.ref.buf);
+            c_vehicleId.licPlateState.ref.buf = nullptr;
+            c_vehicleId.licPlateState.ref.size = 0;
+          }
+          calloc.free(c_vehicleId.licPlateState);
+          c_vehicleId.licPlateState = nullptr;
+        }
+        
+        // Clean up licPlateNumVeh
+        if (c_vehicleId.licPlateNumVeh != nullptr) {
+          if (c_vehicleId.licPlateNumVeh.ref.buf != nullptr) {
+            calloc.free(c_vehicleId.licPlateNumVeh.ref.buf);
+            c_vehicleId.licPlateNumVeh.ref.buf = nullptr;
+            c_vehicleId.licPlateNumVeh.ref.size = 0;
+          }
+          calloc.free(c_vehicleId.licPlateNumVeh);
+          c_vehicleId.licPlateNumVeh = nullptr;
+        }
+        
+        // Clean up licPlateNumTrailer
+        if (c_vehicleId.licPlateNumTrailer != nullptr) {
+          if (c_vehicleId.licPlateNumTrailer.ref.buf != nullptr) {
+            calloc.free(c_vehicleId.licPlateNumTrailer.ref.buf);
+            c_vehicleId.licPlateNumTrailer.ref.buf = nullptr;
+            c_vehicleId.licPlateNumTrailer.ref.size = 0;
+          }
+          calloc.free(c_vehicleId.licPlateNumTrailer);
+          c_vehicleId.licPlateNumTrailer = nullptr;
+        }
+        
+        // Clean up userId
+        if (c_vehicleId.userId != nullptr) {
+          calloc.free(c_vehicleId.userId);
+          c_vehicleId.userId = nullptr;
+        }
+      }
+    
+    VehicleId.fromDetails(String vehicleIdentity, String licPlateState, String licPlateNumVeh){
+        this.vehicleIdentity = vehicleIdentity;
+        this.licPlateState = licPlateState;
+        this.licPlateNumVeh = licPlateNumVeh;
+    }
+
     String? convertIA5ToString(Pointer<C.IA5String_t> ia5Ptr) {  // Changed IA5STRING_t to IA5String_t
       if (ia5Ptr.address != 0) {
           C.IA5String_t ia5 = ia5Ptr.ref;  // Changed IA5STRING_t to IA5String_t
@@ -63,7 +244,8 @@ class VehicleId {
           }
       }
     return null;
-}
+  }
+
 }
 
 

@@ -12,6 +12,8 @@ class Vehicle {
   late int length;
   late int width;
   late String? obdIIBluetoothAddress;
+  late String? licensePlateState;
+  late String? licensePlateNumber;
 
   Vehicle() {
     name = "";
@@ -19,9 +21,11 @@ class Vehicle {
     color = "";
     length = 0;
     width = 0;
+    licensePlateState = "CO"; //TODO : remove from default
+    licensePlateNumber = "ABC-123"; //TODO : remove from default
   }
 
-  Vehicle.detailed(this.name, this.classification, this.color, this.length, this.width, this.obdIIBluetoothAddress);
+  Vehicle.detailed(this.name, this.classification, this.color, this.length, this.width, this.obdIIBluetoothAddress, this.licensePlateState, this.licensePlateNumber);
 
   factory Vehicle.fromJson(Map<String, dynamic> json) => _$VehicleFromJson(json);
 

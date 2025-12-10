@@ -22,6 +22,7 @@
 
 import 'package:asn1_plugin/generated_bindings.dart' as C;
 import 'package:asn1_plugin/j3217/2022/choice/choice_charges_table.dart';
+import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/total_weight_charges.dart';
 import 'dart:ffi';
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/weight_charges.dart'; 
 
@@ -33,5 +34,19 @@ class WeightChargesTable extends Choice_ChargesTable{
     for (int i = 0; i < weightCharges.list.count; i++) {
         weightChargesTable.add(WeightCharges.fromC(weightCharges.list.array[i].ref));
     }
+  }
+
+  WeightCharges getChargeForWeight(int weight) {
+    for (var charge in weightChargesTable) {
+      if (charge.weightCharge is TotalWeightCharges) {
+        TotalWeightCharges totalWeightCharge = charge.weightCharge as TotalWeightCharges;
+        if (weight <= totalWeightCharge.weightLimit.weightLimitInteger) {
+          return charge;
+        }
+      }
+
+      //TODO: handle perAxleWeightCharges case
+    }
+    throw Exception('No charge found for weight: $weight');
   }
 }

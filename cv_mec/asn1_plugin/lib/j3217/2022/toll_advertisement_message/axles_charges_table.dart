@@ -35,4 +35,13 @@ class AxlesChargesTable extends Choice_ChargesTable{
       axlesChargesTable.add(AxlesCharges.fromC(axlesCharges.list.array[i].ref));
     }
   }
+
+  AxlesCharges getChargeForAxles(int axles) {
+    for (var charge in axlesChargesTable) {
+      if (axles <= charge.axlesLimit.axleslimitInteger) {
+        return charge;
+      }
+    }
+    throw Exception('No charge found for axles: $axles');
+  }
 }

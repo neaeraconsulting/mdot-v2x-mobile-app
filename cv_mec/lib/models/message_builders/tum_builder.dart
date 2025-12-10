@@ -1,15 +1,55 @@
 import 'dart:ffi';
 import 'dart:math';
+import 'dart:typed_data';
+import 'package:asn1_plugin/j2735/2024/common/d_date_time.dart';
+import 'package:asn1_plugin/j2735/2024/common/msg_count.dart';
+import 'package:asn1_plugin/j2735/2024/common/node_list_xy.dart';
+import 'package:asn1_plugin/j2735/2024/common/node_set_xy.dart';
+import 'package:asn1_plugin/j2735/2024/common/temporary_id.dart';
+import 'package:asn1_plugin/j3217/2022/payment_fee.dart';
+import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/axles_charges.dart';
+import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/axles_charges_table.dart';
+import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/charges_table.dart';
+import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/lane_charges_table.dart';
+import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/per_closed_network_charges_table.dart';
+import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/per_lane_charges_table.dart';
+import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/time_charges_table.dart';
+import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/toll_advertisement_message.dart';
+import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/toll_charger_info.dart';
+import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/toll_charges_table.dart';
+import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/toll_point_map.dart';
+import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/total_weight_charges.dart';
+import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/veh_type_charges.dart';
+import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/veh_type_charges_table.dart';
+import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/vehicle_types.dart';
+import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/weight_charges.dart';
+import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/weight_charges_table.dart';
+import 'package:asn1_plugin/j3217/2022/toll_usage_message/encrypted_tum_data.dart';
+import 'package:asn1_plugin/j3217/2022/toll_usage_message/loc_and_time_stamp.dart';
+import 'package:asn1_plugin/j3217/2022/toll_usage_message/loc_and_time_stamps.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/toll_usage_message.dart';
+import 'package:asn1_plugin/j3217/2022/toll_usage_message/toll_user_data.dart';
+import 'package:asn1_plugin/j3217/2022/toll_usage_message/tum_data.dart';
+import 'package:asn1_plugin/j3217/2022/toll_usage_message/veh_weight_units.dart';
+import 'package:asn1_plugin/j3217/2022/toll_usage_message/vehicle_axles_and_weight_info.dart';
+import 'package:asn1_plugin/j3217/2022/toll_usage_message/vehicle_id.dart';
+import 'package:cv_mec/controllers/configuration_controller.dart';
+import 'package:cv_mec/models/vehicle.dart';
+import 'package:cv_mec/services/geometry_service.dart';
+import 'package:cv_mec/services/vehicle_mapping_service.dart';
 import 'package:ffi/ffi.dart';
 import 'package:asn1_plugin/generated_bindings.dart' as C;
 import 'package:cv_mec/services/asn_service.dart';
 import 'package:get/get.dart';
+import 'package:http/http.dart';
+import 'package:latlong2/latlong.dart';
 
 class TumBuilder{
 
   ASNService asnService = Get.find<ASNService>();
+  Random random = Random();
   TumBuilder();
+  ConfigurationController configController = Get.find<ConfigurationController>();
 
   C.TollUsageMessage buildCTum(TollUsageMessage tum) {
     final tumPtr = calloc<C.TollUsageMessage>();
@@ -27,6 +67,18 @@ class TumBuilder{
     Pointer<Pointer<Void>> tumPtrPtr = tollUsageMessageToPtrPtr(cTum);
     int requiredBufferSize = calculateRequiredBufferSize(cTum);
     String encodedTum = asnService.encode(tumPtrPtr, encodeBufferSize: requiredBufferSize);
+    print("bluey 25: Encoded TUM: $encodedTum");
+    // What happens with the encodedTum
+  }
+
+  String encodeTumData(C.TumData cTumData) {
+    print("bluey 21");
+    Pointer<Pointer<Void>> tumPtrPtr = tumDataToPtrPtr(cTumData);
+    int requiredBufferSize = 4096; //TODO: calculateRequiredBufferSize(cTumData);
+    print("bluey 22");
+    String encodedTumData = asnService.encodeTumData(tumPtrPtr, encodeBufferSize: requiredBufferSize);
+    print("bluey 23");
+    return encodedTumData;
     // What happens with the encodedTum
   }
 
@@ -66,5 +118,383 @@ class TumBuilder{
     ptrPtr.value = messageFramePtr.cast<Void>();
     
     return ptrPtr;
+  }
+
+  Pointer<Pointer<Void>> tumDataToPtrPtr(C.TumData message) {
+
+    //final Pointer<C.MessageFrame> messageFramePtr = calloc<C.MessageFrame>();
+    final Pointer<C.TumData> tumDataFramePtr = calloc<C.TumData>();
+
+    // messageFramePtr.ref.messageId = 38;
+    //messageFramePtr.ref.value.present = C.MessageFrame__value_PR.MessageFrame__value_PR_TollUsageMessage;
+    //messageFramePtr.ref.value.choice.TollUsageMessage = message;
+    tumDataFramePtr.ref = message;
+
+    final Pointer<Pointer<Void>> ptrPtr = calloc<Pointer<Void>>();
+    
+    // Store the message pointer as void pointer
+    ptrPtr.value = tumDataFramePtr.cast<Void>();
+    
+    return ptrPtr;
+  }
+
+  void generateTumFromTam(TollAdvertisementMessage tam, List<LocAndTimeStamp> historicalVehiclePath, List<int> vehicleIdList){
+    Vehicle selectedVehicle = configController.selectedVehicle.value;
+    if (tam.tollAdvInfo == null) {
+      throw Exception("TollAdvertisementMessage does not contain toll advertisement info");
+    } else {
+      TollChargerInfo tollPointInfo = tam.tollAdvInfo!.tollChargerInfo; //Good to go
+      TemporaryID tempId = TemporaryID(randomizeId()); //Check with john if combination of num and letter is okay
+      MsgCount tumSequenceNum = MsgCount(0); //Currently just set to zero TODO
+      MsgCount tamSequenceNum = tam.tollAdvInfo!.tamSequenceNum; //Good to go
+
+      // TODO: Skipping tumhash for now
+
+      // EncryptedTumData
+      // TollUserData
+      DDateTime timestamp = DDateTime.fromDateTime(DateTime.now().toUtc()); //TODO: check with john if this is an okay way to get the time
+      String tspId = tam.tollAdvInfo!.tollChargerInfo.tollChargerId; //Good to go - same as the tollpointid info id
+      
+      // VehicleId
+      String vehicleidentity =  vehicleIdList.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join().toUpperCase();//TODO: same as bsm - need to make id generator a global field in the map page
+      String licensePlateState = configController.selectedVehicle.value.licensePlateState ?? "CA"; //need to check optionality on this field
+      String licensePlateNumber = configController.selectedVehicle.value.licensePlateNumber ?? "123ABC"; //need to check optionality on this field
+      //skipping license plate num trailer for now
+      //skipping user id 
+      VehicleId vehicleId = VehicleId.fromDetails(vehicleidentity, licensePlateState, licensePlateNumber);
+      
+      //VehicleTypes vehicleType = convertVehicleClassificationToVehicleTypes(configController.selectedVehicle.value.classification);
+      VehicleTypes vehicleType = VehicleMappingService.getVehicleTypes(selectedVehicle.classification);
+      print("quebec Selected vehicle type: ${vehicleType.name}");
+      //skipping vehicle description
+      //VehicleAxlesAndWeightInfo
+      int vehNumAxles = VehicleMappingService.getAxles(selectedVehicle.classification); //TODO: set based on vehicle config, create a mapping
+      int vehWeight = VehicleMappingService.getWeight(selectedVehicle.classification); //TODO: set based on vehicle config, create a mapping
+      VehicleAxlesAndWeightInfo vehicleAxlesAndWeightInfo = VehicleAxlesAndWeightInfo(vehNumAxles, null, vehWeight, VehicleMappingService.getDefaultWeightUnit(selectedVehicle.classification));
+      int numOccupants = VehicleMappingService.getNumOccupants(selectedVehicle.classification); //TODO: set based on vehicle config, create a mapping
+      // Skipping entrytollpointid for the moment
+      // skipping entryTimestamp for the moment
+
+      // locAndTimeStamps
+      int maxNumberOfLocTimeStamps = tam.tollAdvInfo!.tumInstructions!.maxNumOfLocTimeStamps.maxNumOfLocTimeStampsInteger;
+      int locTimeStampRate = tam.tollAdvInfo!.tumInstructions!.locTimeStampRate.locTimeStampRateInteger; //in Hz
+      List<LocAndTimeStamp> locAndTimeStampslist = getLocAndTimeStampsList(historicalVehiclePath, maxNumberOfLocTimeStamps, locTimeStampRate);
+      LocAndTimeStamps locAndTimeStamps = LocAndTimeStamps(locAndTimeStampslist);
+      
+      //charge
+      PaymentFee charge = getPaymentFeeFromTam(tam, locAndTimeStampslist);
+
+      // build toll user data
+      TollUserData tollUserData = TollUserData(
+        timestamp: timestamp,
+        tspId: tspId,
+        vehicleId: vehicleId,
+        vehType: vehicleType,
+        vehAxlesAndWeight: vehicleAxlesAndWeightInfo,
+        numOccupants: numOccupants,
+        locAndTimeStamps: locAndTimeStamps,
+        charge: charge,
+      );
+      TumData tumData = TumData(
+        tollUserData: tollUserData,
+      );
+      
+      //Pointer for tumdata
+      Pointer<C.TumData> tumDataPtr = calloc<C.TumData>();
+      tumData.toC(tumDataPtr);  // This modifies tumDataPtr.ref in-place
+      C.TumData cTumData = tumDataPtr.ref; 
+
+      // for testing, convert back to dart object
+      TumData dartTumData = TumData.fromC(cTumData);
+      //print("bluey 27 Dart TumData: ${dartTumData.tollUserData.charge!.paymentFeeAmount}");
+      //print("bluey 27 Dart TumData: ${dartTumData.tollUserData.charge!.paymentFeeUnit.payUnit}");
+      
+      
+      String encodedTumData = encodeTumData(cTumData);
+      print("bluey Encoded TUM Data: $encodedTumData");
+
+      EncryptedTumData encryptedTumData = EncryptedTumData(encodedTumData);
+
+      TollUsageMessage tum = TollUsageMessage(
+        tollPointInfo: tollPointInfo,
+        tempID: tempId,
+        tumSequenceNum: tumSequenceNum,
+        tamSequenceNum: tamSequenceNum,
+        encryptedTumData: encryptedTumData,
+      );
+
+      C.TollUsageMessage cTum = buildCTum(tum);
+      encodeTum(cTum);
+      print("bluey 26");
+
+    }
+  }
+
+  String convertVehicleIdToOctetString(List<int> vehicleId) {
+ 
+    return vehicleId.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join().toUpperCase();
+    //return vehicleIdString;
+  }
+
+  List<int> randomizeId() {
+    List<int> randomId = List.generate(4, (_) => random.nextInt(255));
+    return randomId;
+  }
+
+  VehicleTypes convertVehicleClassificationToVehicleTypes(VehicleType classification) {
+    //TODO: Check these
+    switch (classification) {
+      case VehicleType.PASSENGER_VEHICLE:
+        return VehicleTypes.passengerCars;
+      case VehicleType.BUS:
+        return VehicleTypes.buses;
+      case VehicleType.LIGHT_TRUCK:
+        return VehicleTypes.fourTireSingleUnit;
+      case VehicleType.TRUCK:
+        return VehicleTypes.fourOrMoreAxleSingleUnit;
+      case VehicleType.MOTORCYCLE:
+        return VehicleTypes.motorcycles;
+      case VehicleType.FIRE:
+        return VehicleTypes.twoAxleSixTireSingleUnit;
+      default:
+        return VehicleTypes.fourTireSingleUnit;
+    }
+  }
+  //TODO: check these mappings
+  int getAxlesFromVehicleClassification(VehicleType classification) {
+    switch (classification) {
+      case VehicleType.PASSENGER_VEHICLE:
+        return 2;
+      case VehicleType.BUS:
+        return 2;
+      case VehicleType.LIGHT_TRUCK:
+        return 2;
+      case VehicleType.TRUCK:
+        return 2;
+      case VehicleType.MOTORCYCLE:
+        return 2;
+      case VehicleType.FIRE:
+        return 3;
+      default:
+        return 2;
+    }
+  }
+
+  int getWeightFromVehicleClassification(VehicleType classification) {
+    switch (classification) {
+      case VehicleType.PASSENGER_VEHICLE:
+        return 3000;
+      case VehicleType.BUS:
+        return 10000;
+      case VehicleType.LIGHT_TRUCK:
+        return 8000;
+      case VehicleType.TRUCK:
+        return 20000;
+      case VehicleType.MOTORCYCLE:
+        return 500;
+      case VehicleType.FIRE:
+        return 15000;
+      default:
+        return 3000;
+    }
+  }
+
+  List<T> takeLast<T>(List<T> list, int count) {
+    if (list.isEmpty) return [];
+    final start = list.length > count ? list.length - count : 0;
+    return list.sublist(start);
+  }
+
+  List<LocAndTimeStamp> getLocAndTimeStampsList(List<LocAndTimeStamp> historicalVehiclePath, int maxNumberOfLocTimeStamps, int locTimeStampRate) {
+    List<LocAndTimeStamp> result = [];
+    if (historicalVehiclePath.isEmpty) return [];
+    const int currentRateHz = 10;
+
+    if (locTimeStampRate == currentRateHz || locTimeStampRate > currentRateHz) {
+      result = historicalVehiclePath.reversed.toList();
+    } else if (locTimeStampRate < currentRateHz) {
+      int step = (currentRateHz / locTimeStampRate).round();
+      for (int i = historicalVehiclePath.length - 1; i >= 0; i -= step) {
+        result.add(historicalVehiclePath[i]);
+      }
+    }
+    // if (maxNumberOfLocTimeStamps > 5) {
+    //   maxNumberOfLocTimeStamps = 5;
+    // }
+    if (result.length > maxNumberOfLocTimeStamps) {
+      return result.sublist(0, maxNumberOfLocTimeStamps);
+    } else {
+      return result;
+    }
+  }
+  
+  PaymentFee getPaymentFeeFromTam(TollAdvertisementMessage tam, List<LocAndTimeStamp> historicalVehiclePath) {
+    TollTypeChargeChoice tollTypeCharge = tam.tollChargesTable.tollTypeCharge;
+    PaymentFee paymentFee = PaymentFee(0, "5553"); // Default initialization - TODO: check units
+    if (tollTypeCharge.tollTypeCharge is TimeChargesTable) {
+      TimeChargesTable pointCharges = tollTypeCharge.tollTypeCharge as TimeChargesTable;
+      ChargesTable chargesTable = pointCharges.chargesTable;
+      paymentFee = getPaymentFeeFromChargesTable(chargesTable);
+      //TODO: check what maxtimeinteger is used for here
+    } else if (tollTypeCharge.tollTypeCharge is PerClosedNetworkChargesTable) {
+      PerClosedNetworkChargesTable perClosedNetworkChargesTable = tollTypeCharge.tollTypeCharge as PerClosedNetworkChargesTable;
+      //TODO; implement
+      //ClosedNetworkChargesTable closedNetworkChargesTable = perClosedNetworkChargesTable.getClosedNetworkChargesTableFrom
+    } else if (tollTypeCharge.tollTypeCharge is PerLaneChargesTable) {
+      PerLaneChargesTable perLaneChargesTable = tollTypeCharge.tollTypeCharge as PerLaneChargesTable;
+      int laneId = getLaneId(tam, historicalVehiclePath);
+      LaneChargesTable laneChargesTable = perLaneChargesTable.getLaneChargesTableFromLaneId(laneId); 
+      ChargesTable chargesTable = laneChargesTable.chargesTable;
+      paymentFee = getPaymentFeeFromChargesTable(chargesTable);
+    } else if (tollTypeCharge.tollTypeCharge is ChargesTable) {
+      ChargesTable chargesTable = tollTypeCharge.tollTypeCharge as ChargesTable;
+      paymentFee = getPaymentFeeFromChargesTable(chargesTable);
+    }
+    return paymentFee;
+  }
+
+  PaymentFee getPaymentFeeFromChargesTable(ChargesTable chargesTable) {
+    PaymentFee paymentFee = PaymentFee(0, "5553"); // Default initialization - TODO: check units
+    Vehicle selectedVehicle = configController.selectedVehicle.value;
+    if (chargesTable.chargesTableChoice.chargesTableChoice is VehTypeChargesTable) {
+      VehTypeChargesTable vehTypeCharges = chargesTable.chargesTableChoice.chargesTableChoice as VehTypeChargesTable;
+      VehTypeCharges vehTypeCharge = vehTypeCharges.getChargeForVehicleType(VehicleMappingService.getVehicleTypes(selectedVehicle.classification));
+      paymentFee = vehTypeCharge.charges;
+    } else if (chargesTable.chargesTableChoice.chargesTableChoice is AxlesChargesTable) {
+      AxlesChargesTable numAxlesBased = chargesTable.chargesTableChoice.chargesTableChoice as AxlesChargesTable;
+      AxlesCharges axlesCharges  = numAxlesBased.getChargeForAxles(VehicleMappingService.getAxles(selectedVehicle.classification));
+      paymentFee = axlesCharges.axlesCharge;
+    } else if (chargesTable.chargesTableChoice.chargesTableChoice is WeightChargesTable) {
+      WeightChargesTable weightChargesTable = chargesTable.chargesTableChoice.chargesTableChoice as WeightChargesTable;
+      WeightCharges weightCharges = weightChargesTable.getChargeForWeight(VehicleMappingService.getWeight(selectedVehicle.classification)); //TODO: set based on vehicle config, create a mapping
+      if (weightCharges.weightCharge.weightChargesChoice is TotalWeightCharges) {
+        TotalWeightCharges totalWeightCharges = weightCharges.weightCharge.weightChargesChoice as TotalWeightCharges;
+        paymentFee = totalWeightCharges.weightCharge;
+      }
+    }
+    return paymentFee;
+  }
+
+  int getLaneId(TollAdvertisementMessage tam, List<LocAndTimeStamp> historicalVehiclePath) {
+    TollZoneLanesMap tollZoneLanesMap = tam.tollAdvInfo!.tollPointMap.tollZoneLanesMap;
+    int laneWidth = tam.tollAdvInfo!.tollPointMap.laneWidth.laneWidth;
+    GeometryService geometryService = Get.find<GeometryService>();
+    print("bluey 17.6.1.1");
+    for (var lane in tollZoneLanesMap.tollZoneLanesMap) {
+      print("bluey 17.6.1.2");
+      NodeListXY nodeList = lane.nodeList;
+      print("bluey 17.6.1.3");
+      if (nodeList.nodeListXY is NodeSetXY) {
+          print("bluey 17.6.1.4");
+          NodeSetXY nodeSet = nodeList.nodeListXY as NodeSetXY;
+          print("bluey 17.6.1.5");
+          List<LatLng> lanePoints = geometryService.getLatLngCoordinatesFromNodeSetXY(nodeSet, tam.tollAdvInfo!.tollPointMap.referencePoint);
+          print("bluey 17.6.1.6");
+          List<LatLng> lanePolygon = generateLanePolygon(lanePoints, laneWidth.toDouble());
+          print("bluey 17.6.1.7");
+          print("bluey ${historicalVehiclePath.length}");
+          bool isInLane = isPointInPolygon(historicalVehiclePath.last, lanePolygon);
+          print("bluey 17.6.1.8");
+          if (isInLane) {
+            print("bluey 17.6.1.9 - Lane matched: ${lane.laneID.laneID}");
+            return lane.laneID.laneID;
+          }
+      }
+    }
+    return 3; // Default lane ID if none matched TODO: check default behavior
+  }
+
+  List<LatLng> generateLanePolygon(List<LatLng> centerlinePoints, double laneWidthMeters) {
+    if (centerlinePoints.length < 2) return [];
+    
+    List<LatLng> leftBoundary = [];
+    List<LatLng> rightBoundary = [];
+    
+    for (int i = 0; i < centerlinePoints.length; i++) {
+      LatLng current = centerlinePoints[i];
+      
+      // Calculate perpendicular direction
+      double bearing;
+      if (i == 0) {
+        // First point: use direction to next point
+        bearing = _calculateBearing(current, centerlinePoints[i + 1]);
+      } else if (i == centerlinePoints.length - 1) {
+        // Last point: use direction from previous point
+        bearing = _calculateBearing(centerlinePoints[i - 1], current);
+      } else {
+        // Middle points: average of incoming and outgoing directions
+        double bearing1 = _calculateBearing(centerlinePoints[i - 1], current);
+        double bearing2 = _calculateBearing(current, centerlinePoints[i + 1]);
+        bearing = (bearing1 + bearing2) / 2;
+      }
+      
+      // Calculate perpendicular bearings (90 degrees left and right)
+      double leftBearing = bearing + 90;
+      double rightBearing = bearing - 90;
+      
+      // Calculate offset points
+      LatLng leftPoint = _offsetLatLng(current, leftBearing, laneWidthMeters / 2);
+      LatLng rightPoint = _offsetLatLng(current, rightBearing, laneWidthMeters / 2);
+      
+      leftBoundary.add(leftPoint);
+      rightBoundary.add(rightPoint);
+    }
+    
+    // Create closed polygon: left boundary + reversed right boundary
+    List<LatLng> polygon = [...leftBoundary, ...rightBoundary.reversed];
+    return polygon;
+  }
+  
+  // Helper method to offset a coordinate by distance and bearing
+  LatLng _offsetLatLng(LatLng start, double bearingDegrees, double distanceMeters) {
+    const double earthRadius = 6378137.0; // Earth's radius in meters
+    double bearingRad = bearingDegrees * (pi / 180);
+    double latRad = start.latitude * (pi / 180);
+    double lonRad = start.longitude * (pi / 180);
+    
+    double newLatRad = asin(sin(latRad) * cos(distanceMeters / earthRadius) +
+        cos(latRad) * sin(distanceMeters / earthRadius) * cos(bearingRad));
+    
+    double newLonRad = lonRad + atan2(
+        sin(bearingRad) * sin(distanceMeters / earthRadius) * cos(latRad),
+        cos(distanceMeters / earthRadius) - sin(latRad) * sin(newLatRad));
+    
+    return LatLng(newLatRad * (180 / pi), newLonRad * (180 / pi));
+  }
+  
+  double _calculateBearing(LatLng start, LatLng end) {
+    double lat1Rad = start.latitude * (pi / 180);
+    double lat2Rad = end.latitude * (pi / 180);
+    double deltaLonRad = (end.longitude - start.longitude) * (pi / 180);
+    
+    double y = sin(deltaLonRad) * cos(lat2Rad);
+    double x = cos(lat1Rad) * sin(lat2Rad) - sin(lat1Rad) * cos(lat2Rad) * cos(deltaLonRad);
+    
+    return atan2(y, x) * (180 / pi);
+  }
+  
+  // Simple point-in-polygon check (ray casting algorithm)
+  bool isPointInPolygon(LocAndTimeStamp point, List<LatLng> polygon) {
+    print("bluey 17.6.1.7.1");
+    int crossings = 0;
+    print("bluey 17.6.1.7.2");
+    for (int i = 0; i < polygon.length; i++) {
+      int j = (i + 1) % polygon.length;
+      
+      if (((polygon[i].latitude <= point.latitude.latitude) && (point.latitude.latitude < polygon[j].latitude)) ||
+          ((polygon[j].latitude <= point.latitude.latitude) && (point.latitude.latitude < polygon[i].latitude))) {
+        
+        double intersectLon = polygon[i].longitude + 
+            (point.latitude.latitude - polygon[i].latitude) / (polygon[j].latitude - polygon[i].latitude) *
+            (polygon[j].longitude - polygon[i].longitude);
+        
+        if (point.longitude.longitude < intersectLon) {
+          crossings++;
+        }
+      }
+    }
+    print("bluey 17.6.1.7.3");
+    
+    return crossings % 2 == 1;
   }
 }

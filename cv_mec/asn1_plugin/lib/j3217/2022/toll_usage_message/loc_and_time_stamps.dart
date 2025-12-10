@@ -24,7 +24,7 @@ import 'package:asn1_plugin/generated_bindings.dart' as C;
 import 'dart:ffi';
 
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/loc_and_time_stamp.dart';
-
+import 'package:ffi/ffi.dart';
 
 class LocAndTimeStamps {
     late List<LocAndTimeStamp> locAndTimeStamps;
@@ -34,4 +34,35 @@ class LocAndTimeStamps {
             locAndTimeStamps.add(LocAndTimeStamp.fromC(value.list.array[i].ref));
         }
     }
+
+    void toC(Pointer<C.LocAndTimeStamps> pointer) {
+      final c_locAndTimeStamps = pointer.ref;
+
+      // Free previous list if needed
+      if (c_locAndTimeStamps.list.array != nullptr && c_locAndTimeStamps.list.count > 0) {
+        for (int i = 0; i < c_locAndTimeStamps.list.count; i++) {
+          calloc.free(c_locAndTimeStamps.list.array[i]);
+        }
+        calloc.free(c_locAndTimeStamps.list.array);
+        c_locAndTimeStamps.list.array = nullptr;
+        c_locAndTimeStamps.list.count = 0;
+      }
+
+      // Allocate new array
+      final count = locAndTimeStamps.length;
+      final arrayPtr = calloc<Pointer<C.LocAndTimeStamp>>(count);
+      for (int i = 0; i < count; i++) {
+        final stampPtr = calloc<C.LocAndTimeStamp>();
+        //Zero-initialize nested struct
+        stampPtr.cast<Uint8>().asTypedList(sizeOf<C.LocAndTimeStamp>()).fillRange(0, sizeOf<C.LocAndTimeStamp>(), 0);
+        locAndTimeStamps[i].toC(stampPtr);
+        arrayPtr[i] = stampPtr;
+      }
+
+      c_locAndTimeStamps.list.array = arrayPtr;
+      c_locAndTimeStamps.list.count = count;
+    }
+
+    LocAndTimeStamps(this.locAndTimeStamps);
+    
 }

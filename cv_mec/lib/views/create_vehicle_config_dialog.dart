@@ -18,6 +18,8 @@ class CreateVehicleConfigDialog extends StatelessWidget {
   final TextEditingController vehicleNameController = TextEditingController();
   final TextEditingController vehicleLengthController = TextEditingController();
   final TextEditingController vehicleWidthController = TextEditingController();
+  final TextEditingController licensePlateStateController = TextEditingController();
+  final TextEditingController licensePlateNumberController = TextEditingController();
   VehicleType? vehicleClassification;
   List<Color> vehicleColors = [
     Colors.red,
@@ -50,6 +52,10 @@ class CreateVehicleConfigDialog extends StatelessWidget {
           configController.vehicleConfigs[configController.vehicleBeingEditedIndex.value].color.toLowerCase();
       obdIIaddress.value =
           configController.vehicleConfigs[configController.vehicleBeingEditedIndex.value].obdIIBluetoothAddress ?? "";
+      licensePlateStateController.text =
+          configController.vehicleConfigs[configController.vehicleBeingEditedIndex.value].licensePlateState ?? "";
+      licensePlateNumberController.text =
+          configController.vehicleConfigs[configController.vehicleBeingEditedIndex.value].licensePlateNumber ?? "";
     }
     return Dialog(
       shape: RoundedRectangleBorder(
@@ -120,6 +126,26 @@ class CreateVehicleConfigDialog extends StatelessWidget {
                               padding: const EdgeInsets.only(left: 18),
                               child: _inputField("Vehicle Width", vehicleWidthController,
                                   isRequired: true, isNumeric: true, context: context),
+                            ),
+                            verticalSpaceMedium,
+                            SizedBox(
+                                width: screenWidth(context) * 0.8,
+                                child: CVMECText.styleThree("License Plate State")),
+                            verticalSpaceSmall,
+                            Padding(
+                              padding: const EdgeInsets.only(left: 18),
+                              child: _inputField("License Plate State", licensePlateStateController,
+                                  isRequired: true, isNumeric: false, context: context),
+                            ),
+                            verticalSpaceMedium,
+                            SizedBox(
+                                width: screenWidth(context) * 0.8,
+                                child: CVMECText.styleThree("License Plate Number")),
+                            verticalSpaceSmall,
+                            Padding(
+                              padding: const EdgeInsets.only(left: 18),
+                              child: _inputField("License Plate Number", licensePlateNumberController,
+                                  isRequired: true, isNumeric: false, context: context),
                             ),
                             verticalSpaceSmall,
                             SizedBox(
@@ -249,7 +275,9 @@ class CreateVehicleConfigDialog extends StatelessWidget {
                 selectedColor.value,
                 int.parse(vehicleLengthController.text),
                 int.parse(vehicleWidthController.text),
-                obdIIaddress.value.isEmpty ? null : obdIIaddress.value);
+                obdIIaddress.value.isEmpty ? null : obdIIaddress.value,
+                licensePlateStateController.text.isEmpty ? null : licensePlateStateController.text,
+                licensePlateNumberController.text.isEmpty ? null : licensePlateNumberController.text);
             if (configController.vehicleBeingEditedIndex.value != -1) {
               //Edit existing vehicle config
               await configController.editVehicleConfig(vehicle);
