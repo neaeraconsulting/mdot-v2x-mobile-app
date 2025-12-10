@@ -228,7 +228,7 @@ class MapState extends State<MapPage> {
 
     _mapController = MapController();
     timingService.startAllUpdates();
-    bsmBuilder = BsmMessageBuilder(vehicleId);
+    bsmBuilder = BsmMessageBuilder(vehicleId.sublist(0, 4));
     psmBuilder = PsmMessageBuilder();
 
     // Testing TUM's dinosaur
@@ -323,10 +323,7 @@ class MapState extends State<MapPage> {
 
   List<int> randomizeId() {
     Random random = Random();
-    List<int> randomNumbers = List.generate(4, (_) => random.nextInt(255));
-    // Uint8List dataBuffer = bsm.coreData.id.buf.asTypedList(randomNumbers.length);
-    // bsm.coreData.id.size = 4;
-    // dataBuffer.setAll(0, randomNumbers);
+    List<int> randomNumbers = List.generate(16, (_) => random.nextInt(255));
     return randomNumbers;
   }
 
@@ -1201,11 +1198,7 @@ class MapState extends State<MapPage> {
           rotate: true,
           child: GestureDetector(
             onTap: () {
-              print("bluey tapped");
-              //String vehicleID = ASNService.bytesToHex(bsm.coreData.id.temporaryID);
-              if (mappableTam.tam == null) {
-                print("bluey null");
-              } else {
+              if (mappableTam.tam != null) {
                 tumBuilder.generateTumFromTam(mappableTam.tam!, historicalVehiclePath, vehicleId); //TODO: Check !
               }
             },

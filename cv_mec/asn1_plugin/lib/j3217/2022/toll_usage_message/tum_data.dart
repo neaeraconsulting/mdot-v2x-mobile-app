@@ -71,15 +71,11 @@ class TumData {
 
       // // Handle tollUserData - allocate and assign pointer
       final tollUserDataPtr = calloc<C.TollUserData>();
-      //print("bluey ${sizeOf<C.TollUserData>()}");
+
       tollUserDataPtr.cast<Uint8>().asTypedList(sizeOf<C.TollUserData>()).fillRange(0, sizeOf<C.TollUserData>(), 0);
-      print("bluey Dart 1: ${tollUserData.vehicleId.vehicleIdentity}");
       tollUserData.toC(tollUserDataPtr);
       c_tumData.tollUserData = tollUserDataPtr.ref;  // This is correct for struct value
-      print("bluey C 2: ${c_tumData.tollUserData.vehicleId.vehicleIdentity.ref.size}");
-      // final tumDataAddress = pointer.address;
-      // final tollUserDataPtr = Pointer<C.TollUserData>.fromAddress(tumDataAddress);
-      // tollUserData.toC(tollUserDataPtr);
+     
 
       // Handle tollServiceProviderData - allocate and assign pointer
       if(tollServiceProviderData != null){

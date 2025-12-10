@@ -67,17 +67,14 @@ class TumBuilder{
     Pointer<Pointer<Void>> tumPtrPtr = tollUsageMessageToPtrPtr(cTum);
     int requiredBufferSize = calculateRequiredBufferSize(cTum);
     String encodedTum = asnService.encode(tumPtrPtr, encodeBufferSize: requiredBufferSize);
-    print("bluey 25: Encoded TUM: $encodedTum");
+    print("Encoded TUM: $encodedTum");
     // What happens with the encodedTum
   }
 
   String encodeTumData(C.TumData cTumData) {
-    print("bluey 21");
     Pointer<Pointer<Void>> tumPtrPtr = tumDataToPtrPtr(cTumData);
     int requiredBufferSize = 4096; //TODO: calculateRequiredBufferSize(cTumData);
-    print("bluey 22");
     String encodedTumData = asnService.encodeTumData(tumPtrPtr, encodeBufferSize: requiredBufferSize);
-    print("bluey 23");
     return encodedTumData;
     // What happens with the encodedTum
   }
@@ -206,12 +203,9 @@ class TumBuilder{
 
       // for testing, convert back to dart object
       TumData dartTumData = TumData.fromC(cTumData);
-      //print("bluey 27 Dart TumData: ${dartTumData.tollUserData.charge!.paymentFeeAmount}");
-      //print("bluey 27 Dart TumData: ${dartTumData.tollUserData.charge!.paymentFeeUnit.payUnit}");
       
       
       String encodedTumData = encodeTumData(cTumData);
-      print("bluey Encoded TUM Data: $encodedTumData");
 
       EncryptedTumData encryptedTumData = EncryptedTumData(encodedTumData);
 
@@ -225,7 +219,6 @@ class TumBuilder{
 
       C.TollUsageMessage cTum = buildCTum(tum);
       encodeTum(cTum);
-      print("bluey 26");
 
     }
   }
@@ -379,24 +372,14 @@ class TumBuilder{
     TollZoneLanesMap tollZoneLanesMap = tam.tollAdvInfo!.tollPointMap.tollZoneLanesMap;
     int laneWidth = tam.tollAdvInfo!.tollPointMap.laneWidth.laneWidth;
     GeometryService geometryService = Get.find<GeometryService>();
-    print("bluey 17.6.1.1");
     for (var lane in tollZoneLanesMap.tollZoneLanesMap) {
-      print("bluey 17.6.1.2");
       NodeListXY nodeList = lane.nodeList;
-      print("bluey 17.6.1.3");
       if (nodeList.nodeListXY is NodeSetXY) {
-          print("bluey 17.6.1.4");
           NodeSetXY nodeSet = nodeList.nodeListXY as NodeSetXY;
-          print("bluey 17.6.1.5");
           List<LatLng> lanePoints = geometryService.getLatLngCoordinatesFromNodeSetXY(nodeSet, tam.tollAdvInfo!.tollPointMap.referencePoint);
-          print("bluey 17.6.1.6");
           List<LatLng> lanePolygon = generateLanePolygon(lanePoints, laneWidth.toDouble());
-          print("bluey 17.6.1.7");
-          print("bluey ${historicalVehiclePath.length}");
           bool isInLane = isPointInPolygon(historicalVehiclePath.last, lanePolygon);
-          print("bluey 17.6.1.8");
           if (isInLane) {
-            print("bluey 17.6.1.9 - Lane matched: ${lane.laneID.laneID}");
             return lane.laneID.laneID;
           }
       }
@@ -475,9 +458,7 @@ class TumBuilder{
   
   // Simple point-in-polygon check (ray casting algorithm)
   bool isPointInPolygon(LocAndTimeStamp point, List<LatLng> polygon) {
-    print("bluey 17.6.1.7.1");
     int crossings = 0;
-    print("bluey 17.6.1.7.2");
     for (int i = 0; i < polygon.length; i++) {
       int j = (i + 1) % polygon.length;
       
@@ -493,7 +474,6 @@ class TumBuilder{
         }
       }
     }
-    print("bluey 17.6.1.7.3");
     
     return crossings % 2 == 1;
   }

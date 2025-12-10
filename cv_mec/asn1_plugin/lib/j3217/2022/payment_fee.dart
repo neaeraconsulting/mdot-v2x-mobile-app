@@ -63,7 +63,6 @@ class PayUnit {
       c_payUnit.size = 0;
     }
 
-    print("bluey 4 ${payUnit}");
 
     // Convert hexadecimal to octet string - Might need to take out if the incoming TAM changes their payment fee unit to actually be an octet string
     // String octetString = "";
@@ -93,26 +92,4 @@ class PayUnit {
     this.payUnit = payUnit;
   }
 }
-
-
- // void toC(Pointer<C.PayUnit_t> pointer) {
-  //   final payUnitPtr = calloc<C.OCTET_STRING_t>();
-  //   payUnitPtr.cast<Uint8>().asTypedList(sizeOf<C.OCTET_STRING>()).fillRange(0, sizeOf<C.OCTET_STRING>(), 0);
-  //   final bytes = <int>[];
-  //   for (int i = 0; i < payUnit.length; i += 2) {
-  //     bytes.add(int.parse(payUnit.substring(i, i + 2), radix: 16));
-  //   }
-  //   print("bluey 28: PayUnit Hex bytes length: ${bytes.length}");  // Debug: Check conversion
-  //   print("bluey 28: PayUnit Hex bytes: $bytes");
-  //   if (bytes.isNotEmpty) {
-  //     payUnitPtr.ref.buf = calloc<Uint8>(bytes.length);
-  //     payUnitPtr.ref.size = bytes.length;
-      
-  //     for (int i = 0; i < bytes.length; i++) {
-  //       payUnitPtr.ref.buf[i] = bytes[i];
-  //     }
-  //   } else {
-  //     payUnitPtr.ref.buf = nullptr;
-  //     payUnitPtr.ref.size = 0;
-  //   }
-  // }  
+ 

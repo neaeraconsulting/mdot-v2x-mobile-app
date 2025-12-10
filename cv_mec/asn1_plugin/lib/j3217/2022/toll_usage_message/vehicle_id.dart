@@ -57,7 +57,7 @@ class VehicleId {
 
     void toC(Pointer<C.TumVehicleId> pointer) {
       final c_vehicleId = pointer.ref;
-      print("bluey a8.1: $vehicleIdentity");
+
       // Clean up existing allocations first
       _cleanupExistingAllocations(c_vehicleId);
       
@@ -66,7 +66,6 @@ class VehicleId {
       
       // Handle vehicleIdentity (OCTET_STRING)
       if (vehicleIdentity != null) {
-        print("bluey vehicleIdentity is not null: '$vehicleIdentity'");
         final vehicleIdentityPtr = calloc<C.OCTET_STRING>();
         vehicleIdentityPtr.cast<Uint8>().asTypedList(sizeOf<C.OCTET_STRING>()).fillRange(0, sizeOf<C.OCTET_STRING>(), 0);
         
@@ -76,8 +75,6 @@ class VehicleId {
         for (int i = 0; i < vehicleIdentity!.length; i += 2) {
           bytes.add(int.parse(vehicleIdentity!.substring(i, i + 2), radix: 16));
         }
-        print("bluey Hex bytes length: ${bytes.length}");  // Debug: Check conversion
-        print("bluey Hex bytes: $bytes");
         if (bytes.isNotEmpty) {
           vehicleIdentityPtr.ref.buf = calloc<Uint8>(bytes.length);
           vehicleIdentityPtr.ref.size = bytes.length;
@@ -92,7 +89,6 @@ class VehicleId {
         
         c_vehicleId.vehicleIdentity = vehicleIdentityPtr;
 
-        print("bluey C VehicleId: ${c_vehicleId.vehicleIdentity.ref.size}");
       } else {
         c_vehicleId.vehicleIdentity = nullptr;
       }
@@ -140,7 +136,6 @@ class VehicleId {
 
     // Helper method to convert hex string to bytes
     List<int> _hexStringToBytes(String hexString) {
-      print("bluey Converting hex string to bytes: '$hexString'");
       List<int> bytes = [];
       // Remove any spaces or separators
       String cleanHex = hexString.replaceAll(RegExp(r'[^0-9a-fA-F]'), '');

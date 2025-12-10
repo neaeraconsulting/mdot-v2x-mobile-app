@@ -90,30 +90,21 @@ class TollUserData {
     }
 
     C.TollUserData toC(Pointer<C.TollUserData> pointer) {
-      print("bluey a1");
       final c_tollUserData = pointer.ref;
       
       // Clean up existing allocations first
       _cleanupExistingAllocations(c_tollUserData);
-      print("bluey a2");
       
       final timestampPtr = calloc<C.DDateTime>();
-      print("bluey a3");
       timestampPtr.cast<Uint8>().asTypedList(sizeOf<C.DDateTime>()).fillRange(0, sizeOf<C.DDateTime>(), 0);
-      print("bluey a4");
       timestamp.toC(timestampPtr);
-      print("bluey a5");
       c_tollUserData.timeStamp = timestampPtr.ref;
-      print("bluey a6");
 
       _fillTspId(tspId, pointer);
-      print("bluey a7");
       final vehicleIdPtr = calloc<C.TumVehicleId>();
-      print("bluey a8");
       vehicleIdPtr.cast<Uint8>().asTypedList(sizeOf<C.TumVehicleId>()).fillRange(0, sizeOf<C.TumVehicleId>(), 0);
       vehicleId.toC(vehicleIdPtr);
       c_tollUserData.vehicleId = vehicleIdPtr.ref;
-      print("bluey a9");
 
       // CORRECTED: VehicleTypes enum conversion
       if(vehType != null){

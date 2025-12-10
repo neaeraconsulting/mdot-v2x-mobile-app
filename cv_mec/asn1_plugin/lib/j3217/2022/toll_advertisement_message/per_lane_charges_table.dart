@@ -14,14 +14,11 @@ class PerLaneChargesTable extends Choice_TollTypeCharge{
   }
 
   LaneChargesTable getLaneChargesTableFromLaneId(int laneId) {
-    print("bluey 17.6.2.1");
     for (var laneCharge in perLaneChargesTable) {
-      print("bluey 17.6.2.2");
       if (laneCharge.laneId.laneID == laneId) {
         return laneCharge;
       }
     }
-    print("bluey 17.6.2.3");
     throw Exception('No charges found for lane ID: $laneId');
   }
 }
