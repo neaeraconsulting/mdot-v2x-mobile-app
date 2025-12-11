@@ -62,8 +62,9 @@ class PathService{
       int prevTimestamp = vehiclePath.timestamps[prevIndex];
       
 
-      int timestampDiff = (currentTimestamp - prevTimestamp).abs();
-      if (prevIndex == route.length - 1) {
+      int timestampDiff = (currentTimestamp - prevTimestamp);
+      print("Delay${route.length} - $index - $prevIndex : $currentTimestamp - $prevTimestamp = $timestampDiff");
+      if (timestampDiff <=0) {
         // If looping back to start, estimate delay based on average speed
         timestampDiff = 100; // Default to 100 ms for loopback
       }
@@ -90,7 +91,6 @@ class PathService{
           headingAccuracy: 0,
           speed: speed,
           speedAccuracy: 0);
-
       await Future.delayed(delay);
       count++;
     }
