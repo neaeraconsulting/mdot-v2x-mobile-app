@@ -37,6 +37,8 @@ class VehicleConfigSelectionDialog extends StatelessWidget {
                             icon: const Icon(Icons.delete),
                             onPressed: () {
                               deleteConfigMode.value = !deleteConfigMode.value;
+                              //delete from storage
+                              
                             },
                           ),
                           horizontalSpaceMedium,

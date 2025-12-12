@@ -1,5 +1,6 @@
 // ignore: depend_on_referenced_packages
 import 'package:asn1_plugin/j2735/2024/common/basic_vehicle_class.dart';
+import 'package:cv_mec/models/us_states.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'vehicle.g.dart';
@@ -12,8 +13,8 @@ class Vehicle {
   late int length;
   late int width;
   late String? obdIIBluetoothAddress;
-  late String? licensePlateState;
-  late String? licensePlateNumber;
+  late USState licensePlateState;
+  late String licensePlateNumber;
 
   Vehicle() {
     name = "";
@@ -21,7 +22,7 @@ class Vehicle {
     color = "";
     length = 0;
     width = 0;
-    licensePlateState = "CO"; //TODO : remove from default
+    licensePlateState = USState.ALABAMA; //TODO : remove from default
     licensePlateNumber = "ABC-123"; //TODO : remove from default
   }
 

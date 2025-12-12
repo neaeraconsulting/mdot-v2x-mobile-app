@@ -154,8 +154,8 @@ class TumBuilder{
       
       // VehicleId
       String vehicleidentity =  vehicleIdList.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join().toUpperCase();//TODO: same as bsm - need to make id generator a global field in the map page
-      String licensePlateState = configController.selectedVehicle.value.licensePlateState ?? "CA"; //need to check optionality on this field
-      String licensePlateNumber = configController.selectedVehicle.value.licensePlateNumber ?? "123ABC"; //need to check optionality on this field
+      String licensePlateState = configController.selectedVehicle.value.licensePlateState.code;
+      String licensePlateNumber = configController.selectedVehicle.value.licensePlateNumber ?? "123ABC"; //need to check optionality on this field TODO
       //skipping license plate num trailer for now
       //skipping user id 
       VehicleId vehicleId = VehicleId.fromDetails(vehicleidentity, licensePlateState, licensePlateNumber);

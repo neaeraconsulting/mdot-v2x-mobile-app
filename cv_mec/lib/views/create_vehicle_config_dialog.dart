@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:bluetooth_classic/models/device.dart';
 import 'package:cv_mec/controllers/configuration_controller.dart';
+import 'package:cv_mec/models/us_states.dart';
 import 'package:cv_mec/models/vehicle.dart';
 import 'package:cv_mec/styles/screen_size.dart';
 import 'package:cv_mec/styles/spacing.dart';
@@ -18,7 +19,8 @@ class CreateVehicleConfigDialog extends StatelessWidget {
   final TextEditingController vehicleNameController = TextEditingController();
   final TextEditingController vehicleLengthController = TextEditingController();
   final TextEditingController vehicleWidthController = TextEditingController();
-  final TextEditingController licensePlateStateController = TextEditingController();
+  //final TextEditingController licensePlateStateController = TextEditingController();
+  USState licensePlateState = USState.ALABAMA;
   final TextEditingController licensePlateNumberController = TextEditingController();
   VehicleType? vehicleClassification;
   List<Color> vehicleColors = [
@@ -33,6 +35,7 @@ class CreateVehicleConfigDialog extends StatelessWidget {
     Colors.black,
     Colors.white,
   ];
+
   Rx<String> selectedColor = "".obs;
   Rx<String> obdIIaddress = "".obs;
 
@@ -52,10 +55,10 @@ class CreateVehicleConfigDialog extends StatelessWidget {
           configController.vehicleConfigs[configController.vehicleBeingEditedIndex.value].color.toLowerCase();
       obdIIaddress.value =
           configController.vehicleConfigs[configController.vehicleBeingEditedIndex.value].obdIIBluetoothAddress ?? "";
-      licensePlateStateController.text =
-          configController.vehicleConfigs[configController.vehicleBeingEditedIndex.value].licensePlateState ?? "";
+      licensePlateState =
+          configController.vehicleConfigs[configController.vehicleBeingEditedIndex.value].licensePlateState;
       licensePlateNumberController.text =
-          configController.vehicleConfigs[configController.vehicleBeingEditedIndex.value].licensePlateNumber ?? "";
+          configController.vehicleConfigs[configController.vehicleBeingEditedIndex.value].licensePlateNumber;
     }
     return Dialog(
       shape: RoundedRectangleBorder(
@@ -134,8 +137,7 @@ class CreateVehicleConfigDialog extends StatelessWidget {
                             verticalSpaceSmall,
                             Padding(
                               padding: const EdgeInsets.only(left: 18),
-                              child: _inputField("License Plate State", licensePlateStateController,
-                                  isRequired: true, isNumeric: false, context: context),
+                              child: _licensePlateStateDropdownField(context),
                             ),
                             verticalSpaceMedium,
                             SizedBox(
@@ -232,6 +234,32 @@ class CreateVehicleConfigDialog extends StatelessWidget {
         });
   }
 
+  Widget _licensePlateStateDropdownField(BuildContext context) {
+    return DropdownButtonFormField(
+        decoration: InputDecoration(
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          filled: true,
+          fillColor: Theme.of(context).scaffoldBackgroundColor,
+        ),
+        value: licensePlateState,
+        isExpanded: true,
+        menuMaxHeight: screenHeightPercentage(context, percentage: 0.5),
+        dropdownColor: Theme.of(context).dialogBackgroundColor,
+        items: USState.values
+            .map((e) => DropdownMenuItem(
+                  value: e,
+                  child: Text(e.fullName),
+                ))
+            .toList(),
+        onChanged: (value) async {
+          if (value != null) {
+            licensePlateState = value;
+          }
+        });
+  }
+
   IconButton colorButton(Color color) {
     IconButton nonSelectedIconButton = IconButton(
       icon: Icon(Icons.circle, color: color.withOpacity(0.5)),
@@ -276,8 +304,9 @@ class CreateVehicleConfigDialog extends StatelessWidget {
                 int.parse(vehicleLengthController.text),
                 int.parse(vehicleWidthController.text),
                 obdIIaddress.value.isEmpty ? null : obdIIaddress.value,
-                licensePlateStateController.text.isEmpty ? null : licensePlateStateController.text,
-                licensePlateNumberController.text.isEmpty ? null : licensePlateNumberController.text);
+                licensePlateState,
+                licensePlateNumberController.text
+            );
             if (configController.vehicleBeingEditedIndex.value != -1) {
               //Edit existing vehicle config
               await configController.editVehicleConfig(vehicle);
