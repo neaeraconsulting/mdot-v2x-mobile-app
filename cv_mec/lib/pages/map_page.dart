@@ -218,6 +218,9 @@ class MapState extends State<MapPage> {
   List<LocAndTimeStamp> historicalVehiclePath = [];
   List<int> vehicleId = [];
 
+  List<MappableTam> mappableTamList = [];
+  bool inTamZone = false;
+
   @override
   void initState() {
     super.initState();
@@ -236,6 +239,7 @@ class MapState extends State<MapPage> {
     TollUsageMessage tum = tumBuilder.getSampleTum();
     C.TollUsageMessage cTum = tumBuilder.buildCTum(tum);
     tumBuilder.encodeTum(cTum);
+
 
     if (mounted) {
       setState(() {
@@ -723,6 +727,35 @@ class MapState extends State<MapPage> {
     //addToReceiveLog(broker, topic, "TAM", recTime, sendTime, LeidosDateExtraction.extractDateFromMap(map), trimmedHex, source, validity);
   }
 
+  void checkAndSendTum() {
+    for (MappableTam mappableTam in mappableTamList) {
+      bool isInTam = checkPositionInTam(mappableTam.tollZoneBorder, currentPosition);
+      if (isInTam & !inTamZone) {
+        tumBuilder.generateTumFromTam(mappableTam.tam!, historicalVehiclePath, vehicleId);
+        inTamZone = true;
+      } else if (!isInTam & inTamZone) {
+        inTamZone = false;
+      }
+    }
+  }
+
+  bool checkPositionInTam(List<LatLng> tamBorder, Position? position) {
+    if (position == null) return false;
+    // check if position is within the polygon that is defined by tamBorder
+    int i, j = tamBorder.length - 1;
+    bool inside = false;
+    for (i = 0; i < tamBorder.length; j = i++) {
+      if (((tamBorder[i].longitude > position.longitude) != (tamBorder[j].longitude > position.longitude)) &&
+          (position.latitude <
+              (tamBorder[j].latitude - tamBorder[i].latitude) * (position.longitude - tamBorder[i].longitude) /
+                      (tamBorder[j].longitude - tamBorder[i].longitude) +
+                  tamBorder[i].latitude)) {
+        inside = !inside;
+      }
+    }
+    return inside;
+  }
+
   void addToReceiveLog(String? broker, String topic, String msgType, DateTime recTime, DateTime? sendTime, DateTime? generationTime,
       String hex, String source, ValidateStatus validity) async {
     int delta = 0;
@@ -885,6 +918,8 @@ class MapState extends State<MapPage> {
     if (historicalVehiclePath.length > 50) {
       historicalVehiclePath.removeAt(0);
     }
+
+    checkAndSendTum();
 
     updateGraphics();
     updateTimeToChange();
@@ -1188,8 +1223,8 @@ class MapState extends State<MapPage> {
       }
     }
 
-    List<MappableTam> mappableTams = tamManager.getActiveTamGeometry();
-    for (MappableTam mappableTam in mappableTams) {
+    mappableTamList = tamManager.getActiveTamGeometry();
+    for (MappableTam mappableTam in mappableTamList) {
       for (LatLng coord in mappableTam.markerPoints) {
         markerList.add(Marker(
           width: 40.0,
@@ -1474,18 +1509,25 @@ class MapState extends State<MapPage> {
 
     List<MappableTam> mappableTams = tamManager.getActiveTamGeometry();
     for (MappableTam mappableTam in mappableTams) {
-      for (List<Polygon> polygonPoints in mappableTam.tollZonePolygons) {
-        for (Polygon polygon in polygonPoints) {
-          Polygon<HitValue> hitPoly = Polygon(
-            points: polygon.points,
-            borderColor: Colors.white,
-            //color: Colors.blue.withValues(alpha: 0.5),
-            borderStrokeWidth: 5,
-            hitValue: null,
-          );
-          polygons.add(hitPoly);
-        }
-      }
+      Polygon<HitValue> hitPoly = Polygon(  
+        points: mappableTam.tollZoneBorder,
+        borderColor: Colors.white,
+        borderStrokeWidth: 5,
+        hitValue: null,
+      );
+      polygons.add(hitPoly);
+      // for (List<Polygon> polygonPoints in mappableTam.tollZonePolygons) {
+      //   for (Polygon polygon in polygonPoints) {
+      //     Polygon<HitValue> hitPoly = Polygon(
+      //       points: polygon.points,
+      //       borderColor: Colors.white,
+      //       //color: Colors.blue.withValues(alpha: 0.5),
+      //       borderStrokeWidth: 5,
+      //       hitValue: null,
+      //     );
+      //     polygons.add(hitPoly);
+      //   }
+      // }
     }
 
     return polygons;

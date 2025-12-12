@@ -19,7 +19,7 @@ class MappableTam {
   final TollAdvertisementMessage? tam;
   List<List<LatLng>> approachPolylinePoints = [];
   List<List<LatLng>> tollZonePolylinePoints = [];
-  List<List<Polygon>> tollZonePolygons = [];
+  List<LatLng> tollZoneBorder = [];
   List<LatLng> markerPoints = [];
   List<LatLng> approachMarkerPoints = [];
   double approachMarkerRotation = 0.0;
@@ -29,7 +29,7 @@ class MappableTam {
       {required this.tam,
       required this.approachPolylinePoints,
       required this.tollZonePolylinePoints,
-      required this.tollZonePolygons,
+      required this.tollZoneBorder,
       required this.markerPoints});
 
   // Custom constructor using an initializer list
@@ -44,14 +44,13 @@ class MappableTam {
       TollZoneLanesMap tollZoneLanesMap = tollPointMap.tollZoneLanesMap;
       for (GenericLane lane in tollZoneLanesMap.tollZoneLanesMap) {
         List<LatLng> lanePoints = [];
-        List<Polygon> polygonLanePoints = [];
+        //List<Polygon> polygonLanePoints = [];
         NodeListXY nodeList = lane.nodeList;
         if (nodeList.nodeListXY is NodeSetXY) {
           NodeSetXY nodeSet = nodeList.nodeListXY as NodeSetXY;
           lanePoints = geometryService.getLatLngCoordinatesFromNodeSetXY(nodeSet, tollPointMap.referencePoint);
-          polygonLanePoints = _generateTollBorderShape(lanePoints);
+          tollZoneBorder = _generateTollBorderShape(lanePoints, tam.tollAdvInfo!.tollPointMap.laneWidth.laneWidth);
           tollZonePolylinePoints.add(lanePoints);
-          tollZonePolygons.add(polygonLanePoints);
           if (lanePoints.isNotEmpty) {
             LatLng startMarker = lanePoints[0];
             LatLng endMarker = lanePoints[lanePoints.length - 1];
@@ -94,15 +93,15 @@ class MappableTam {
     //_addSampleTamPolylinePoints();
   }
 
-  List<Polygon> _generateTollBorderShape(List<LatLng> points) {
-    double widthInMeters = 30; // Example width of the toll border
+  List<LatLng> _generateTollBorderShape(List<LatLng> points, int laneWidth) {
+    double widthInMeters = (laneWidth.toDouble()) / 10; // Should be divided by 100 but making the border bigger for testing
     double widthInDegreesLat =
         widthInMeters / 111320.0; // Approximate conversion factor for latitude
     double widthInDegreesLon = widthInMeters /
         (111320.0 *
             cos(points[0].latitude *
                 (pi / 180.0))); // Approximate conversion factor for longitude
-    List<Polygon> borderZones = <Polygon>[];
+    List<List<LatLng>> borderZonePieces = <List<LatLng>>[];
     for (int i = 0; i < points.length - 1; i++) {
       double x1 = points[i].latitude;
       double y1 = points[i].longitude;
@@ -125,17 +124,37 @@ class MappableTam {
       double y5 = y3 + (y2 - y1);
       double x6 = x4 + (x2 - x1);
       double y6 = y4 + (y2 - y1);
-      Polygon reportZonePolygon = Polygon(
-        points: [
-          LatLng(x3, y3),
-          LatLng(x5, y5),
-          LatLng(x6, y6),
-          LatLng(x4, y4)
-        ],
-        color: Colors.blue,
-      );
-      borderZones.add(reportZonePolygon);
+      // Polygon reportZonePolygon = Polygon(
+      //   points: [
+      //     LatLng(x3, y3),
+      //     LatLng(x5, y5),
+      //     LatLng(x6, y6),
+      //     LatLng(x4, y4)
+      //   ],
+      //   color: Colors.blue,
+      // );
+      borderZonePieces.add([
+        LatLng(x3, y3),
+        LatLng(x5, y5),
+        LatLng(x6, y6),
+        LatLng(x4, y4)
+      ]);
     }
-    return borderZones;
+    return cleanUpBorderZonePieces(borderZonePieces);
+    //return borderZones;
+  }
+
+  List<LatLng> cleanUpBorderZonePieces(List<List<LatLng>> borderZonePieces) {
+    //TODO finish this
+    List<LatLng> cleanedUpPoints = [];
+    for (var piece in borderZonePieces) {
+      cleanedUpPoints.add(piece[0]);
+      cleanedUpPoints.add(piece[1]);
+    }
+    for (var piece in borderZonePieces) {
+      cleanedUpPoints.add(piece[2]);
+      cleanedUpPoints.add(piece[3]);
+    }
+    return cleanedUpPoints;
   }
 }
