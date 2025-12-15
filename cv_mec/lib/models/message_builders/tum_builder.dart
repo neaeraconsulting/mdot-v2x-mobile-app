@@ -138,7 +138,7 @@ class TumBuilder{
     return ptrPtr;
   }
 
-  void generateTumFromTam(TollAdvertisementMessage tam, List<LocAndTimeStamp> historicalVehiclePath, List<int> vehicleIdList){
+  TollUsageMessage generateTumFromTam(TollAdvertisementMessage tam, List<LocAndTimeStamp> historicalVehiclePath, List<int> vehicleIdList){
     Vehicle selectedVehicle = configController.selectedVehicle.value;
     if (tam.tollAdvInfo == null) {
       throw Exception("TollAdvertisementMessage does not contain toll advertisement info");
@@ -176,7 +176,7 @@ class TumBuilder{
       if (numOccupants > 5) {
         numOccupants = 5; //Based on J3217 saying if numOccupants is 5 or greater, then set numOccupants to 5
       }
-      
+
       // Skipping entrytollpointid for the moment
       // skipping entryTimestamp for the moment
 
@@ -215,7 +215,7 @@ class TumBuilder{
       
       String encodedTumData = encodeTumData(cTumData);
 
-      EncryptedTumData encryptedTumData = EncryptedTumData(encodedTumData);
+      EncryptedTumData encryptedTumData = EncryptedTumData(encodedTumData, tumData: tumData);
 
       TollUsageMessage tum = TollUsageMessage(
         tollPointInfo: tollPointInfo,
@@ -227,6 +227,7 @@ class TumBuilder{
 
       C.TollUsageMessage cTum = buildCTum(tum);
       encodeTum(cTum);
+      return tum;
 
     }
   }

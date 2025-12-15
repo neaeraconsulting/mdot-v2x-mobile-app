@@ -410,6 +410,13 @@ class MapState extends State<MapPage> {
 
   void updateGraphics(){
     if (mounted) {
+      if (!settingsController.tollingEnabled.value && tamManager.storedTams.isNotEmpty) {
+        tamManager.storedTams.clear();
+        mappableTamList.clear();
+      }
+      // if (!settingsController.showTims.value && timManager.geometryMap.isNotEmpty) {
+      //   timManager.geometryMap.clear();
+      // }
       if(DateTime.now().difference(lastRedrawTime).inMilliseconds > 50){ //DateTime.now used since timing service accuracy not required, and may not be initialized yet.
         setState(() {
           drawnPolygons = getPolygons();
@@ -755,16 +762,22 @@ class MapState extends State<MapPage> {
     //addToReceiveLog(broker, topic, "TAM", recTime, sendTime, tam.timeStamp.getAsDateTime(), trimmedHex, source, validity); TODO: Dinosaur
   }
 
+  void sendPaymentSentMessage(TollUsageMessage tum) {
+    toastification.show(
+      context: context,
+      type: ToastificationType.success,
+      style: ToastificationStyle.flatColored,
+      title: const Text("Payment Sent"),
+      description: Text("Amount Sent: ${tum.encryptedTumData.tumData!.tollUserData.charge!.paymentFeeAmount} ${tum.encryptedTumData.tumData!.tollUserData.charge!.paymentFeeUnit.payUnit}"),
+      alignment: Alignment.topCenter,
+      autoCloseDuration: const Duration(seconds: 4),
+      showProgressBar: false,
+      dragToClose: true,
+      icon: Icon(Icons.monetization_on),
+    );
+  }
+  
   void sendPaymentReceivedMessage() {
-    // toastification.show(
-    //     context: Get.context!,
-    //     title: const Text('Payment Received'),
-    //     type: ToastificationType.success,
-    //     autoCloseDuration: const Duration(seconds: 5),
-    //     dragToClose: true,
-
-
-    //   );
     toastification.show(
       context: context,
       type: ToastificationType.success,
@@ -782,8 +795,11 @@ class MapState extends State<MapPage> {
     for (MappableTam mappableTam in mappableTamList) {
       bool isInTam = checkPositionInTam(mappableTam.tollZoneBorder, currentPosition);
       if (isInTam & !inTamZone) {
-        tumBuilder.generateTumFromTam(mappableTam.tam!, historicalVehiclePath, vehicleId);
-        sendPaymentReceivedMessage();
+        TollUsageMessage tum = tumBuilder.generateTumFromTam(mappableTam.tam!, historicalVehiclePath, vehicleId);
+        sendPaymentSentMessage(tum);
+        Future.delayed(Duration(seconds: 2), () { //TODO: remove
+          sendPaymentReceivedMessage();
+        });
         inTamZone = true;
       } else if (!isInTam & inTamZone) {
         inTamZone = false;
@@ -1184,58 +1200,7 @@ class MapState extends State<MapPage> {
     List<Marker> markerList = [];
 
     Position? pos = currentPosition;
-    
-
-    // if (pos != null) {
-    //   Marker userMarker = Marker(
-    //     point: getUserLocation(),
-    //     width: 60,
-    //     height: 60,
-    //     child: iconBase(getSenderIcon(), Colors.blue[900]!,
-    //         sirensOn: configController.isIceCreamSongOn.value || configController.isSirenOn.value,
-    //         busWarningOn: configController.isBusWarningOn.value),
-    //   );
-    //   markerList.add(userMarker);
-    //   if (_mapController.camera.zoom > 17.5) {
-    //     // Get Maps that the user is near or in
-    //     List<GeoMap> geoMaps = mapManager.getActiveMaps(pos.longitude, pos.latitude);
-
-    //     for (GeoMap map in geoMaps) {
-    //       // Get SPaT messages associated with the relavent MAP messages
-    //       List<IntersectionState> states =
-    //           spatManager.getActiveSpats(map.intersectionGeometry.id.id.intersectionID, timingService.getTime());
-
-    //       for (IntersectionState state in states) {
-    //         // This code indexes light colors by signal group to allow easy lookup down the line
-    //         Map<int, MovementEvent> stateMap = {};
-    //         for (MovementState movement in state.states.movementList) {
-    //           if (movement.state_time_speed.movementEventList.isNotEmpty) {
-    //             stateMap[movement.signalGroup.signalGroupID] = movement.state_time_speed.movementEventList.first;
-    //           }
-    //         }
-
-    //         for (RenderLightLocation lightLocation in map.lightLocations.values) {
-    //           MovementPhaseState dominantState = MovementPhaseState.UNAVAILABLE;
-    //           for (int signalGroup in lightLocation.signalGroups) {
-    //             if (stateMap.containsKey(signalGroup)) {
-    //               dominantState = getDominantMovementPhaseState(stateMap[signalGroup]!.eventState, dominantState);
-    //             }
-    //           }
-    //           markerList.add(Marker(
-    //             width: 20.0,
-    //             height: 40.0,
-    //             point: lightLocation.coordinate,
-    //             child: lightStateMap[dominantState] ??
-    //                 const Icon(
-    //                   Icons.traffic,
-    //                   color: Colors.grey,
-    //                 ),
-    //           ));
-    //         }
-    //       }
-    //     }
-    //   }
-    // }
+  
     DateTime compTime = timingService.getTime();
     DateTime endTime = compTime.add(const Duration(seconds: 3));
     DateTime startTime = compTime.subtract(const Duration(seconds: 3));
@@ -1274,8 +1239,9 @@ class MapState extends State<MapPage> {
         messageManager.shown.remove(key);
       }
     }
-
-    mappableTamList = tamManager.getActiveTamGeometry();
+    if (settingsController.tollingEnabled.value) {
+      mappableTamList = tamManager.getActiveTamGeometry();
+    }
     for (MappableTam mappableTam in mappableTamList) {
       for (LatLng coord in mappableTam.markerPoints) {
         markerList.add(Marker(
@@ -1558,8 +1524,8 @@ class MapState extends State<MapPage> {
         }
       }
 
-      List<MappableTam> mappableTams = tamManager.getActiveTamGeometry();
-      for (MappableTam mappableTam in mappableTams) {
+      //List<MappableTam> mappableTams = tamManager.getActiveTamGeometry();
+      for (MappableTam mappableTam in mappableTamList) {
         for (List<LatLng> lanePoints in mappableTam.tollZonePolylinePoints) {
           Polyline<PolyLineHitValue> hitPoly = Polyline(
             points: lanePoints,
@@ -1591,11 +1557,12 @@ class MapState extends State<MapPage> {
     List<Polygon<HitValue>> polygons = [];
 
     List<DataFrameGeometry> dataFrames = timManager.getActiveTimGeometry(true);
-
+    print("kiwi Data Frames Length: ${dataFrames.length}");
     for (DataFrameGeometry frame in dataFrames) {
       TravelerDataFrame tdFrame = frame.frame;
 
       for (GeometryDirection geoDir in frame.geometry) {
+        print("kiwi ${geoDir.direction} ");
         List<LatLng> polyPoints = geometryService.convertGeometryToLatLngList(geoDir.geometry);
 
         Polygon<HitValue> hitPoly = Polygon(
@@ -1610,8 +1577,8 @@ class MapState extends State<MapPage> {
       }
     }
 
-    List<MappableTam> mappableTams = tamManager.getActiveTamGeometry();
-    for (MappableTam mappableTam in mappableTams) {
+    //List<MappableTam> mappableTams = tamManager.getActiveTamGeometry();
+    for (MappableTam mappableTam in mappableTamList) {
       Polygon<HitValue> hitPoly = Polygon(  
         points: mappableTam.tollZoneBorder,
         borderColor: Colors.white,
@@ -1754,6 +1721,8 @@ class MapState extends State<MapPage> {
                     child: Column(children: [
                       managementButtons(),
                       verticalSpaceSmall,
+                      settingsController.tollingEnabled.value ? hovButton() : Container(),
+                      settingsController.tollingEnabled.value ? verticalSpaceSmall : Container(),
                       configController.hasASiren()
                           ? sirenButton()
                           : (configController.isVehicleConfig.value &&
@@ -2030,6 +1999,69 @@ class MapState extends State<MapPage> {
                     ? configController.images[configController.sirenPhotoIndex.value]
                     : "assets/images/Siren/siren_bw.png",
                 fit: BoxFit.cover,
+              ),
+            ),
+          ),
+        ));
+  }
+
+  Widget hovButton() {
+    return Obx(() => GestureDetector(
+          onTap: () {
+            configController.isHovOn.value = !configController.isHovOn.value;
+            if (configController.isHovOn.value) {
+              toastification.show(
+                context: context,
+                type: ToastificationType.success,
+                style: ToastificationStyle.flatColored,
+                title: const Text("HOV Enabled"),
+                alignment: Alignment.topCenter,
+                autoCloseDuration: const Duration(seconds: 1),
+                showProgressBar: false,
+                dragToClose: true,
+                icon: Icon(Icons.group),
+              );
+            } else {
+              toastification.show(
+                context: context,
+                type: ToastificationType.info,
+                style: ToastificationStyle.flatColored,
+                title: const Text("HOV Disabled"),
+                alignment: Alignment.topCenter,
+                autoCloseDuration: const Duration(seconds: 1),
+                showProgressBar: false,
+                dragToClose: true,
+                icon: Icon(Icons.group),
+              );
+            }
+          },
+          child: Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: lightGrey,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: configController.isHovOn.value ? Colors.green : mediumGrey,
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.8),
+                  spreadRadius: 1,
+                  blurRadius: 5,
+                  offset: const Offset(-1, 3), // changes position of shadow
+                ),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                "HOV",
+                style: TextStyle(
+                  color: configController.isHovOn.value ? Colors.green : mediumGrey,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
             ),
           ),

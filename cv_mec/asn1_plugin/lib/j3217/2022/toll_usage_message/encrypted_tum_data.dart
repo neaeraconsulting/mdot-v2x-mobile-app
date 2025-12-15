@@ -39,7 +39,7 @@ class EncryptedTumData{
     encryptedTumData = byteList.map((b) => b.toRadixString(16).padLeft(2, '0')).join('');
   }
 
-  EncryptedTumData(this.encryptedTumData);
+  EncryptedTumData(this.encryptedTumData, {this.tumData});
 
   void toC(Pointer<C.OCTET_STRING> pointer) {
     final c_encryptedTumData = pointer.ref;

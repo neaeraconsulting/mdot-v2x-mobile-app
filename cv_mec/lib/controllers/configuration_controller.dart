@@ -39,6 +39,9 @@ class ConfigurationController extends GetxController {
   //Is Ice Cream Song On
   RxBool isIceCreamSongOn = false.obs;
 
+  //HOV on
+  RxBool isHovOn = false.obs;
+
   //Configuration State
   RxBool isVehicleConfig = true.obs; //true for vehicle, false for pedestrian
 
