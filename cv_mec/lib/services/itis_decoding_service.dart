@@ -128,7 +128,9 @@ class ItisDecodingService{
 
       if(doesTimMatchSequence(def, category, items)){
         List<String> populateValues = getValuesForSequence(def, items);
-        return ItisSequence(items, await createDynamicImage(def, populateValues));
+        String key = getKeyForTimItisCodes(def.type, items);
+        graphicsMap[key] = ItisSequence(items, await createDynamicImage(def, populateValues));
+        return graphicsMap[key]!;
       }
     }
     logger.e("Unable to find Matching TIM definition for message $category ${ItisConverter.getItisListAsString(items)} ${ItisConverter.getItisListAsCodeString(items)}");

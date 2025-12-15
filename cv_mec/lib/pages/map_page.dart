@@ -483,6 +483,8 @@ class MapState extends State<MapPage> {
     });
   }
 
+  
+
   Stream<Position> fakePosition(List<List<double>> fakePosition) {
     return Stream<Position>.periodic(const Duration(milliseconds: 500), (count) {
       List<List<double>> route = fakePosition.reversed.toList();
