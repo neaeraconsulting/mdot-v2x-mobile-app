@@ -37,6 +37,7 @@ import 'package:asn1_plugin/j2735/2024/spat/time_mark.dart';
 import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_data_frame.dart';
 import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_information.dart';
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/toll_advertisement_message.dart';
+import 'package:asn1_plugin/j3217/2022/toll_usage_ack_message/toll_usage_ack_message.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/loc_and_time_stamp.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/toll_usage_message.dart';
 import 'package:bluetooth_classic/models/device.dart';
@@ -58,6 +59,7 @@ import 'package:cv_mec/models/message_builders/tum_builder.dart';
 import 'package:cv_mec/models/message_managers/map_manager.dart';
 import 'package:cv_mec/models/message_managers/received_message_manager.dart';
 import 'package:cv_mec/models/message_managers/tam_manager.dart';
+import 'package:cv_mec/models/message_managers/tum_ack_manager.dart';
 import 'package:cv_mec/models/mqtt/etx_mqtt_agent.dart';
 import 'package:cv_mec/models/mqtt/iss_mqtt_agent.dart';
 import 'package:cv_mec/models/mqtt/mqtt_agent_manager.dart';
@@ -144,6 +146,7 @@ class MapState extends State<MapPage> {
   SpatManager spatManager = SpatManager();
   ReceivedMessageManager messageManager = ReceivedMessageManager();
   TamManager tamManager = TamManager(); 
+  TumAckManager tumAckManager = TumAckManager();
 
   SecureStorage secureStorage = SecureStorage();
 
@@ -236,10 +239,12 @@ class MapState extends State<MapPage> {
 
     // Testing TUM's dinosaur
     tumBuilder = TumBuilder();
-    TollUsageMessage tum = tumBuilder.getSampleTum();
-    C.TollUsageMessage cTum = tumBuilder.buildCTum(tum);
-    tumBuilder.encodeTum(cTum);
+    // TollUsageMessage tum = tumBuilder.getSampleTum();
+    // C.TollUsageMessage cTum = tumBuilder.buildCTum(tum);
+    // tumBuilder.encodeTum(cTum);
 
+    //Testing TUMAck dinosaur
+    TollUsageAckMessage tumAck = tumAckManager.getSampleTumAck();
 
     if (mounted) {
       setState(() {
@@ -568,6 +573,14 @@ class MapState extends State<MapPage> {
         addToAppLog("Identified Message as SDSM");
         processNewSdsm(broker, topic, hex, recTime, sendTime, source, validity);
         break;
+      case MsgType.TAM:
+        addToAppLog("Identified Message as TAM");
+        processNewTam(broker, topic, hex, recTime, sendTime, source, validity);
+        break;
+      case MsgType.TUMACK:
+        addToAppLog("Identified Message as TUMACK");
+        processNewTumAck(broker, topic, hex, recTime, sendTime, source, validity);
+        break;
       default:
         addToAppLog("Unable to Identify Message Type: $msgType");
     }
@@ -691,25 +704,23 @@ class MapState extends State<MapPage> {
     addToReceiveLog(broker, topic, "SDSM", recTime, sendTime, sdsm.sDSMTimeStamp.getAsDateTime(), trimmedHex, source, validity);
   }
 
-  //TODO: Implement TAM Processing
-  void processNewTAM(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
-    print("TAM Processing Not Implemented");
+  void processNewTam(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
 
     // Trim the Hex
     String trimmedHex = asnService.trimMessageHeaders(hex, asnService.TAM_START_FLAG)!; 
     
     //ASN service decodes the TAM
-    //TollAdvertisementMessage tam = asnService.decodeTam(trimmedHex);
+    TollAdvertisementMessage tam = asnService.decodeTam(trimmedHex);
     
     //Add the Tam message to the TAM manager
-    //tamManager.addOrUpdate(tam);
+    tamManager.addOrUpdate(tam);
 
-    //updateGraphics();
+    updateGraphics();
 
-    //addToReceiveLog(broker, topic, "TAM", recTime, sendTime, LeidosDateExtraction.extractDateFromMap(map), trimmedHex, source, validity);
+    //addToReceiveLog(broker, topic, "TAM", recTime, sendTime, tam.timeStamp.getAsDateTime(), trimmedHex, source, validity); TODO: Dinosaur
   }
 
-  //TODO: Implement TUM Processing 
+  //TODO: Implement TUM Processing - DO WE NEED THIS
   void processNewTUM(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
     print("TAM Processing Not Implemented");
 
@@ -725,6 +736,22 @@ class MapState extends State<MapPage> {
     //updateGraphics();
 
     //addToReceiveLog(broker, topic, "TAM", recTime, sendTime, LeidosDateExtraction.extractDateFromMap(map), trimmedHex, source, validity);
+  }
+
+  void processNewTumAck(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
+
+    // Trim the Hex
+    String trimmedHex = asnService.trimMessageHeaders(hex, asnService.TUMACK_START_FLAG)!; 
+    
+    //ASN service decodes the TAM
+    TollUsageAckMessage tumAck = asnService.decodeTumAck(trimmedHex);
+    
+    //Add the Tam message to the TAM manager
+    tumAckManager.add(tumAck);
+
+    updateGraphics();
+
+    //addToReceiveLog(broker, topic, "TAM", recTime, sendTime, tam.timeStamp.getAsDateTime(), trimmedHex, source, validity); TODO: Dinosaur
   }
 
   void checkAndSendTum() {
@@ -1134,56 +1161,56 @@ class MapState extends State<MapPage> {
     Position? pos = currentPosition;
     
 
-    if (pos != null) {
-      Marker userMarker = Marker(
-        point: getUserLocation(),
-        width: 60,
-        height: 60,
-        child: iconBase(getSenderIcon(), Colors.blue[900]!,
-            sirensOn: configController.isIceCreamSongOn.value || configController.isSirenOn.value,
-            busWarningOn: configController.isBusWarningOn.value),
-      );
-      markerList.add(userMarker);
-      if (_mapController.camera.zoom > 17.5) {
-        // Get Maps that the user is near or in
-        List<GeoMap> geoMaps = mapManager.getActiveMaps(pos.longitude, pos.latitude);
+    // if (pos != null) {
+    //   Marker userMarker = Marker(
+    //     point: getUserLocation(),
+    //     width: 60,
+    //     height: 60,
+    //     child: iconBase(getSenderIcon(), Colors.blue[900]!,
+    //         sirensOn: configController.isIceCreamSongOn.value || configController.isSirenOn.value,
+    //         busWarningOn: configController.isBusWarningOn.value),
+    //   );
+    //   markerList.add(userMarker);
+    //   if (_mapController.camera.zoom > 17.5) {
+    //     // Get Maps that the user is near or in
+    //     List<GeoMap> geoMaps = mapManager.getActiveMaps(pos.longitude, pos.latitude);
 
-        for (GeoMap map in geoMaps) {
-          // Get SPaT messages associated with the relavent MAP messages
-          List<IntersectionState> states =
-              spatManager.getActiveSpats(map.intersectionGeometry.id.id.intersectionID, timingService.getTime());
+    //     for (GeoMap map in geoMaps) {
+    //       // Get SPaT messages associated with the relavent MAP messages
+    //       List<IntersectionState> states =
+    //           spatManager.getActiveSpats(map.intersectionGeometry.id.id.intersectionID, timingService.getTime());
 
-          for (IntersectionState state in states) {
-            // This code indexes light colors by signal group to allow easy lookup down the line
-            Map<int, MovementEvent> stateMap = {};
-            for (MovementState movement in state.states.movementList) {
-              if (movement.state_time_speed.movementEventList.isNotEmpty) {
-                stateMap[movement.signalGroup.signalGroupID] = movement.state_time_speed.movementEventList.first;
-              }
-            }
+    //       for (IntersectionState state in states) {
+    //         // This code indexes light colors by signal group to allow easy lookup down the line
+    //         Map<int, MovementEvent> stateMap = {};
+    //         for (MovementState movement in state.states.movementList) {
+    //           if (movement.state_time_speed.movementEventList.isNotEmpty) {
+    //             stateMap[movement.signalGroup.signalGroupID] = movement.state_time_speed.movementEventList.first;
+    //           }
+    //         }
 
-            for (RenderLightLocation lightLocation in map.lightLocations.values) {
-              MovementPhaseState dominantState = MovementPhaseState.UNAVAILABLE;
-              for (int signalGroup in lightLocation.signalGroups) {
-                if (stateMap.containsKey(signalGroup)) {
-                  dominantState = getDominantMovementPhaseState(stateMap[signalGroup]!.eventState, dominantState);
-                }
-              }
-              markerList.add(Marker(
-                width: 20.0,
-                height: 40.0,
-                point: lightLocation.coordinate,
-                child: lightStateMap[dominantState] ??
-                    const Icon(
-                      Icons.traffic,
-                      color: Colors.grey,
-                    ),
-              ));
-            }
-          }
-        }
-      }
-    }
+    //         for (RenderLightLocation lightLocation in map.lightLocations.values) {
+    //           MovementPhaseState dominantState = MovementPhaseState.UNAVAILABLE;
+    //           for (int signalGroup in lightLocation.signalGroups) {
+    //             if (stateMap.containsKey(signalGroup)) {
+    //               dominantState = getDominantMovementPhaseState(stateMap[signalGroup]!.eventState, dominantState);
+    //             }
+    //           }
+    //           markerList.add(Marker(
+    //             width: 20.0,
+    //             height: 40.0,
+    //             point: lightLocation.coordinate,
+    //             child: lightStateMap[dominantState] ??
+    //                 const Icon(
+    //                   Icons.traffic,
+    //                   color: Colors.grey,
+    //                 ),
+    //           ));
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
     DateTime compTime = timingService.getTime();
     DateTime endTime = compTime.add(const Duration(seconds: 3));
     DateTime startTime = compTime.subtract(const Duration(seconds: 3));
@@ -1270,6 +1297,57 @@ class MapState extends State<MapPage> {
             )
           ),
         ));
+      }
+    }
+
+    if (pos != null) {
+      Marker userMarker = Marker(
+        point: getUserLocation(),
+        width: 60,
+        height: 60,
+        child: iconBase(getSenderIcon(), Colors.blue[900]!,
+            sirensOn: configController.isIceCreamSongOn.value || configController.isSirenOn.value,
+            busWarningOn: configController.isBusWarningOn.value),
+      );
+      markerList.add(userMarker);
+      if (_mapController.camera.zoom > 17.5) {
+        // Get Maps that the user is near or in
+        List<GeoMap> geoMaps = mapManager.getActiveMaps(pos.longitude, pos.latitude);
+
+        for (GeoMap map in geoMaps) {
+          // Get SPaT messages associated with the relavent MAP messages
+          List<IntersectionState> states =
+              spatManager.getActiveSpats(map.intersectionGeometry.id.id.intersectionID, timingService.getTime());
+
+          for (IntersectionState state in states) {
+            // This code indexes light colors by signal group to allow easy lookup down the line
+            Map<int, MovementEvent> stateMap = {};
+            for (MovementState movement in state.states.movementList) {
+              if (movement.state_time_speed.movementEventList.isNotEmpty) {
+                stateMap[movement.signalGroup.signalGroupID] = movement.state_time_speed.movementEventList.first;
+              }
+            }
+
+            for (RenderLightLocation lightLocation in map.lightLocations.values) {
+              MovementPhaseState dominantState = MovementPhaseState.UNAVAILABLE;
+              for (int signalGroup in lightLocation.signalGroups) {
+                if (stateMap.containsKey(signalGroup)) {
+                  dominantState = getDominantMovementPhaseState(stateMap[signalGroup]!.eventState, dominantState);
+                }
+              }
+              markerList.add(Marker(
+                width: 20.0,
+                height: 40.0,
+                point: lightLocation.coordinate,
+                child: lightStateMap[dominantState] ??
+                    const Icon(
+                      Icons.traffic,
+                      color: Colors.grey,
+                    ),
+              ));
+            }
+          }
+        }
       }
     }
     

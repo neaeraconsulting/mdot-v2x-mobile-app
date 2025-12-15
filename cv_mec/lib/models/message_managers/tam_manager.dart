@@ -17,6 +17,7 @@ import 'package:uuid/uuid.dart';
 class TamManager {
   Map<int, TollAdvertisementMessage> storedTams = <int, TollAdvertisementMessage>{};
 
+
   List<MappableTam> getActiveTamGeometry() {
     List<MappableTam> activeTams = [];
     for (int key in storedTams.keys) {
@@ -35,5 +36,9 @@ class TamManager {
     String sampleTamTwo = "00257a44000c00080002aa9b0400002a01f7fbf4a2d2200023404042820077359400e27f65fe51f4016d00000200000000188b7da42e65183fb988b7eda5265179fd800001000000000c45bf6fad328bce14c45c04c1d328b5ac00c00000000000003a00004005be180000000000000000000000000000000000000000";
     ASNService asnService = Get.find<ASNService>();
     return asnService.decodeTam(sampleTamTwo);
+  }
+
+  void addOrUpdate(TollAdvertisementMessage tam) {
+    storedTams[tam.tollAdvInfo!.tollChargerInfo.tollPointId.tollPointID] = tam;
   }
 }

@@ -9,6 +9,7 @@ import 'package:asn1_plugin/j2735/2024/basic_safety_message/basic_safety_message
 import 'package:asn1_plugin/j2735/2024/map_data/map_data.dart';
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/toll_advertisement_message.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/toll_usage_message.dart';
+import 'package:asn1_plugin/j3217/2022/toll_usage_message/tum_data.dart';
 import 'package:cv_mec/models/msg_types.dart';
 import 'package:get/get.dart';
 import 'dart:ffi';
@@ -17,6 +18,7 @@ import 'package:logger/logger.dart';
 import 'dart:math';
 import 'dart:io';
 import 'package:path/path.dart' as p;
+import 'package:asn1_plugin/j3217/2022/toll_usage_ack_message/toll_usage_ack_message.dart';
 
 class ASNService extends GetxController {
   late C.NativeBindings _bindings;
@@ -37,6 +39,7 @@ class ASNService extends GetxController {
   final String SDSM_START_FLAG = "0029";
   final String TAM_START_FLAG = "0025";  
   final String TUM_START_FLAG = "0026";
+  final String TUMACK_START_FLAG = "0027";
 
   late final List<String> checkStartFlags;
   late final Map<String, MsgType> messageTypeMap;
@@ -63,6 +66,7 @@ class ASNService extends GetxController {
       SDSM_START_FLAG,
       TAM_START_FLAG, 
       TUM_START_FLAG,
+      TUMACK_START_FLAG,
     ];
 
     messageTypeMap = {
@@ -76,6 +80,7 @@ class ASNService extends GetxController {
       SDSM_START_FLAG: MsgType.SDSM,
       TAM_START_FLAG: MsgType.TAM,  
       TUM_START_FLAG: MsgType.TUM,
+      TUMACK_START_FLAG: MsgType.TUMACK,
     };
   }
 
@@ -193,7 +198,27 @@ class ASNService extends GetxController {
     C.MessageFrame messageFrame = messageFrameValuePtr.ref;
     C.TollUsageMessage cTum = messageFrame.value.choice.TollUsageMessage;
     TollUsageMessage tum = TollUsageMessage.fromC(cTum);
+    print("koala 1.1.1");
+    tum.encryptedTumData.tumData = decodeTumData(tum.encryptedTumData.encryptedTumData);
+    print("koala 1.1.2");
+    print("koala: ${tum.encryptedTumData.tumData!.tollUserData.numOccupants}");
+    //TODO: Not here... but change num occupants to not be included is numOccupants is 1 and do the max to
     return tum;
+  }
+
+  TumData parseTumData(Pointer<Pointer<Void>> message) {
+    Pointer<C.TumData> tumDataValuePtr = message.value.cast<C.TumData>();
+    C.TumData c_tumData = tumDataValuePtr.ref;
+    TumData tumData = TumData.fromC(c_tumData);
+    return tumData;
+  }
+
+  TollUsageAckMessage parseTumAck(Pointer<Pointer<Void>> message) {
+    Pointer<C.MessageFrame> messageFrameValuePtr = message.value.cast<C.MessageFrame>();
+    C.MessageFrame messageFrame = messageFrameValuePtr.ref;
+    C.TollUsageAckMessage cTumAck = messageFrame.value.choice.TollUsageAckMessage;
+    TollUsageAckMessage tumAck = TollUsageAckMessage.fromC(cTumAck);
+    return tumAck;
   }
 
   BasicSafetyMessage decodeBsm(String asn1) {
@@ -268,11 +293,31 @@ class ASNService extends GetxController {
 
   TollUsageMessage decodeTum(String asn1) {
     Pointer<Pointer<Void>> decoded = decode(asn1);
-
+    print("koala 1.1");
     TollUsageMessage tum = parseTum(decoded);
     cleanupDecoded(decoded);
 
     return tum;
+  }
+
+  TollUsageAckMessage decodeTumAck(String asn1) {
+    Pointer<Pointer<Void>> decoded = decode(asn1);
+
+    TollUsageAckMessage tumAck = parseTumAck(decoded);
+
+    cleanupDecoded(decoded);
+
+    return tumAck;
+  }
+
+  TumData decodeTumData(String asn1) {
+    print("koala 1.1.1.1: ${asn1}");
+    Pointer<Pointer<Void>> decoded = c_decodeTumData(asn1);
+    print("koala 1.1.1.2");
+    TumData tumData = parseTumData(decoded);
+    print("koala 1.1.1.3");
+    cleanupDecoded(decoded);
+    return tumData;
   }
 
   void cleanupDecoded(Pointer<Pointer<Void>> decoded) {
@@ -294,6 +339,48 @@ class ASNService extends GetxController {
       Pointer<C.asn_TYPE_descriptor_s> typeDescriptorPtr = calloc<C.asn_TYPE_descriptor_s>();
       typeDescriptorPtr.ref = _bindings.asn_DEF_MessageFrame;
 
+
+      Uint8List byteList = hexToBytes(hexInput);
+
+      Pointer<Uint8> dataPtr = malloc.allocate<Uint8>(byteList.length);
+    
+      Uint8List dataBuffer = dataPtr.asTypedList(byteList.length);
+      dataBuffer.setAll(0, byteList);
+
+      Pointer<Void> bufferPtr = dataPtr.cast<Void>();
+
+      int size = hexInput.length ~/ 2;
+
+      C.asn_dec_rval_s rval = _bindings.uper_decode(optCodecCtxPtr, typeDescriptorPtr, ptrToPtr, bufferPtr, size, 0, 0);
+
+      if (rval.code != 0) {
+        _logger.w("Failed to Decode Message ${hexInput}");
+      }
+
+      calloc.free(optCodecCtxPtr);
+      calloc.free(typeDescriptorPtr);
+      calloc.free(dataPtr);
+    } catch (e) {
+      // No specified type, handles all
+      _logger.e("Exception during decode: $e");
+    }
+
+    return ptrToPtr;
+  }
+
+  Pointer<Pointer<Void>> c_decodeTumData(String hexInput) {
+
+    Pointer<C.TumData> structPtr = calloc<C.TumData>();
+
+    Pointer<Pointer<Void>> ptrToPtr = calloc<Pointer<Void>>();
+    ptrToPtr.value = structPtr.cast<Void>();
+
+    try {
+      Pointer<C.asn_codec_ctx_s> optCodecCtxPtr = calloc<C.asn_codec_ctx_s>();
+      optCodecCtxPtr.ref.max_stack_size = 0;
+
+      Pointer<C.asn_TYPE_descriptor_s> typeDescriptorPtr = calloc<C.asn_TYPE_descriptor_s>();
+      typeDescriptorPtr.ref = _bindings.asn_DEF_TumData;
 
       Uint8List byteList = hexToBytes(hexInput);
 

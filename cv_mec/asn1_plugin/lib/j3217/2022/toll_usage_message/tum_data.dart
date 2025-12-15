@@ -38,28 +38,6 @@ class TumData {
         }
     }
 
-    // void toC(Pointer<C.TumData> pointer) {
-    //   final c_tumData = pointer.ref;
-
-    //   //Zero-initialize the entire struct first
-    //   pointer.cast<Uint8>().asTypedList(sizeOf<C.TumData>()).fillRange(0, sizeOf<C.TumData>(), 0);
-
-    //   final tollUserDataPtr = calloc<C.TollUserData>();
-    //   //Zero-initialize nested struct
-    //   tollUserDataPtr.cast<Uint8>().asTypedList(sizeOf<C.TollUserData>()).fillRange(0, sizeOf<C.TollUserData>(), 0);
-    //   tollUserData.toC(tollUserDataPtr);
-    //   c_tumData.tollUserData = tollUserDataPtr.ref;
-
-    //   if(tollServiceProviderData != null){
-    //     final tollServiceProviderDataPtr = calloc<C.OCTET_STRING>();
-    //     tollServiceProviderDataPtr.cast<Uint8>().asTypedList(sizeOf<C.OCTET_STRING>()).fillRange(0, sizeOf<C.OCTET_STRING>(), 0);
-    //     tollServiceProviderData!.toC(tollServiceProviderDataPtr);
-    //     c_tumData.tollServiceProviderData = tollServiceProviderDataPtr;
-    //   } else {
-    //     c_tumData.tollServiceProviderData = nullptr;
-    //   }
-    // }
-
     void toC(Pointer<C.TumData> pointer) {
       final c_tumData = pointer.ref;
 
@@ -109,43 +87,6 @@ class TumData {
     void cleanup(Pointer<C.TumData> pointer) {
       _cleanupExistingAllocations(pointer.ref);
     }
-
-    // void toC(Pointer<C.TollUsageMessage> pointer) {
-    //   final c_tum = pointer.ref;
-      
-    //   _cleanupExistingAllocations(c_tum);
-      
-    //   // Zero-initialize the entire struct first
-    //   pointer.cast<Uint8>().asTypedList(sizeOf<C.TollUsageMessage>()).fillRange(0, sizeOf<C.TollUsageMessage>(), 0);
-      
-    //   final tollPointInfoPtr = calloc<C.TollChargerInfo>();
-    //   // Zero-initialize nested struct
-    //   tollPointInfoPtr.cast<Uint8>().asTypedList(sizeOf<C.TollChargerInfo>()).fillRange(0, sizeOf<C.TollChargerInfo>(), 0);
-    //   tollPointInfo.toC(tollPointInfoPtr);
-    //   c_tum.tollPointInfo = tollPointInfoPtr.ref;
-
-    //   final tempIdPtr = calloc<C.OCTET_STRING>();
-    //   tempIdPtr.cast<Uint8>().asTypedList(sizeOf<C.OCTET_STRING>()).fillRange(0, sizeOf<C.OCTET_STRING>(), 0);
-    //   tempID.toC(tempIdPtr);
-    //   c_tum.tempID = tempIdPtr.ref;
-
-    //   c_tum.tumSequenceNum = tumSequenceNum.msgCount;
-    //   c_tum.tamSequenceNum = tamSequenceNum.msgCount;
-
-    //   if(tumHash != null){
-    //     final tumHashPtr = calloc<C.OCTET_STRING>();
-    //     tumHashPtr.cast<Uint8>().asTypedList(sizeOf<C.OCTET_STRING>()).fillRange(0, sizeOf<C.OCTET_STRING>(), 0);
-    //     tumHash!.toC(tumHashPtr);
-    //     c_tum.tumHash = tumHashPtr;
-    //   } else {
-    //     c_tum.tumHash = nullptr;
-    //   }
-
-    //   final encryptedDataPtr = calloc<C.OCTET_STRING>();
-    //   encryptedDataPtr.cast<Uint8>().asTypedList(sizeOf<C.OCTET_STRING>()).fillRange(0, sizeOf<C.OCTET_STRING>(), 0);
-    //   encryptedTumData.toC(encryptedDataPtr);
-    //   c_tum.encryptedTumData = encryptedDataPtr.ref;
-    // }
 
     TumData ({
       required this.tollUserData,

@@ -67,7 +67,10 @@ class TumBuilder{
     Pointer<Pointer<Void>> tumPtrPtr = tollUsageMessageToPtrPtr(cTum);
     int requiredBufferSize = calculateRequiredBufferSize(cTum);
     String encodedTum = asnService.encode(tumPtrPtr, encodeBufferSize: requiredBufferSize);
-    print("Encoded TUM: $encodedTum");
+    print("Koala Encoded TUM: $encodedTum");
+    print("koala 1");
+    asnService.decodeTum(encodedTum); //TODO: remove - used for testing
+    print("koala 2");
     // What happens with the encodedTum
   }
 
@@ -162,7 +165,6 @@ class TumBuilder{
       
       //VehicleTypes vehicleType = convertVehicleClassificationToVehicleTypes(configController.selectedVehicle.value.classification);
       VehicleTypes vehicleType = VehicleMappingService.getVehicleTypes(selectedVehicle.classification);
-      print("quebec Selected vehicle type: ${vehicleType.name}");
       //skipping vehicle description
       //VehicleAxlesAndWeightInfo
       int vehNumAxles = VehicleMappingService.getAxles(selectedVehicle.classification); //TODO: set based on vehicle config, create a mapping
