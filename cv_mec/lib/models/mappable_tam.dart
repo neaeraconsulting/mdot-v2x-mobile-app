@@ -141,7 +141,6 @@ class MappableTam {
       ]);
     }
     return cleanUpBorderZonePieces(borderZonePieces);
-    //return borderZones;
   }
 
   List<LatLng> cleanUpBorderZonePieces(List<List<LatLng>> borderZonePieces) {
@@ -155,6 +154,9 @@ class MappableTam {
       cleanedUpPoints.add(piece[2]);
       cleanedUpPoints.add(piece[3]);
     }
+
+    //go through the points and check for any line crossings. If the line crosses, create a new point at the intersection and remove the surrounding point
+    
     return cleanedUpPoints;
   }
 }

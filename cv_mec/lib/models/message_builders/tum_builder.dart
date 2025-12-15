@@ -165,12 +165,18 @@ class TumBuilder{
       
       //VehicleTypes vehicleType = convertVehicleClassificationToVehicleTypes(configController.selectedVehicle.value.classification);
       VehicleTypes vehicleType = VehicleMappingService.getVehicleTypes(selectedVehicle.classification);
+      
       //skipping vehicle description
+      
       //VehicleAxlesAndWeightInfo
       int vehNumAxles = VehicleMappingService.getAxles(selectedVehicle.classification); //TODO: set based on vehicle config, create a mapping
       int vehWeight = VehicleMappingService.getWeight(selectedVehicle.classification); //TODO: set based on vehicle config, create a mapping
       VehicleAxlesAndWeightInfo vehicleAxlesAndWeightInfo = VehicleAxlesAndWeightInfo(vehNumAxles, null, vehWeight, VehicleMappingService.getDefaultWeightUnit(selectedVehicle.classification));
       int numOccupants = VehicleMappingService.getNumOccupants(selectedVehicle.classification); //TODO: set based on vehicle config, create a mapping
+      if (numOccupants > 5) {
+        numOccupants = 5; //Based on J3217 saying if numOccupants is 5 or greater, then set numOccupants to 5
+      }
+      
       // Skipping entrytollpointid for the moment
       // skipping entryTimestamp for the moment
 
@@ -190,7 +196,7 @@ class TumBuilder{
         vehicleId: vehicleId,
         vehType: vehicleType,
         vehAxlesAndWeight: vehicleAxlesAndWeightInfo,
-        numOccupants: numOccupants,
+        numOccupants: numOccupants > 1 ? numOccupants : null,
         locAndTimeStamps: locAndTimeStamps,
         charge: charge,
       );

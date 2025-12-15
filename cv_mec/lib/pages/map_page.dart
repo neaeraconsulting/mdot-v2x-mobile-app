@@ -749,9 +749,33 @@ class MapState extends State<MapPage> {
     //Add the Tam message to the TAM manager
     tumAckManager.add(tumAck);
 
-    updateGraphics();
+    //updateGraphics();
+    sendPaymentReceivedMessage();
 
     //addToReceiveLog(broker, topic, "TAM", recTime, sendTime, tam.timeStamp.getAsDateTime(), trimmedHex, source, validity); TODO: Dinosaur
+  }
+
+  void sendPaymentReceivedMessage() {
+    // toastification.show(
+    //     context: Get.context!,
+    //     title: const Text('Payment Received'),
+    //     type: ToastificationType.success,
+    //     autoCloseDuration: const Duration(seconds: 5),
+    //     dragToClose: true,
+
+
+    //   );
+    toastification.show(
+      context: context,
+      type: ToastificationType.success,
+      style: ToastificationStyle.flatColored,
+      title: const Text("Payment Received"),
+      alignment: Alignment.topCenter,
+      autoCloseDuration: const Duration(seconds: 4),
+      showProgressBar: false,
+      dragToClose: true,
+      icon: Icon(Icons.monetization_on),
+    );
   }
 
   void checkAndSendTum() {
@@ -759,6 +783,7 @@ class MapState extends State<MapPage> {
       bool isInTam = checkPositionInTam(mappableTam.tollZoneBorder, currentPosition);
       if (isInTam & !inTamZone) {
         tumBuilder.generateTumFromTam(mappableTam.tam!, historicalVehiclePath, vehicleId);
+        sendPaymentReceivedMessage();
         inTamZone = true;
       } else if (!isInTam & inTamZone) {
         inTamZone = false;

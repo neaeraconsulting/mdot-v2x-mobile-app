@@ -271,29 +271,7 @@ class TollUserData {
         c_tollUserData.entryTollPointId = nullptr;
       }
       
-      // Add cleanup for other optional pointer fields...
     }
-
-    // void toC(Pointer<C.TollChargerInfo> pointer) {
-    //   final c_info = pointer.ref;
-      
-    //   _fillTollChargerId(tollChargerId, pointer);
-    //   c_info.tollPointId = tollPointId.tollPointID;
-
-    //   // Clean up existing descriptiveName allocation first
-    //   if (c_info.descriptiveName != nullptr) {
-    //     calloc.free(c_info.descriptiveName);
-    //     c_info.descriptiveName = nullptr;
-    //   }
-      
-    //   if(descriptiveName != null){
-    //     final descriptiveNamePtr = calloc<C.OCTET_STRING>();
-    //     descriptiveName!.toC(descriptiveNamePtr);
-    //     c_info.descriptiveName = descriptiveNamePtr;
-    //   } else {
-    //     c_info.descriptiveName = nullptr;
-    //   }
-    // }
 
     TollUserData({
       required this.timestamp,

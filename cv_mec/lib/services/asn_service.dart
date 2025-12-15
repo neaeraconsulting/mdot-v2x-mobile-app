@@ -198,11 +198,7 @@ class ASNService extends GetxController {
     C.MessageFrame messageFrame = messageFrameValuePtr.ref;
     C.TollUsageMessage cTum = messageFrame.value.choice.TollUsageMessage;
     TollUsageMessage tum = TollUsageMessage.fromC(cTum);
-    print("koala 1.1.1");
     tum.encryptedTumData.tumData = decodeTumData(tum.encryptedTumData.encryptedTumData);
-    print("koala 1.1.2");
-    print("koala: ${tum.encryptedTumData.tumData!.tollUserData.numOccupants}");
-    //TODO: Not here... but change num occupants to not be included is numOccupants is 1 and do the max to
     return tum;
   }
 

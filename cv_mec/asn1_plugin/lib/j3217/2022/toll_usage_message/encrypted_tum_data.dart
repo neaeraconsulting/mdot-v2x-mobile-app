@@ -36,9 +36,7 @@ class EncryptedTumData{
 
   EncryptedTumData.fromOctetString(C.OCTET_STRING string){
     final Uint8List byteList = string.buf.asTypedList(string.size);
-    //encryptedTumData = utf8.decode(byteList);
     encryptedTumData = byteList.map((b) => b.toRadixString(16).padLeft(2, '0')).join('');
-    // ToDo: Add initialization of tumData if needed - doing this in asn1 service
   }
 
   EncryptedTumData(this.encryptedTumData);
