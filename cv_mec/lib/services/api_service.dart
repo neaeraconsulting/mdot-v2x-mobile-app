@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:cv_mec/controllers/settings_controller.dart';
+import 'package:cv_mec/models/api_responses/mqtt_permission';
 import 'package:cv_mec/models/api_responses/path_response/path_response.dart';
 import 'package:cv_mec/models/api_responses/secrets/secret_response.dart';
 import 'package:cv_mec/models/etx/full_registration.dart';
@@ -191,6 +192,36 @@ class ApiService extends GetxController {
       _logger.e("Caught exception when attempting to register app with API: $e");
       return null;
     }
+  }
+
+  Future<MqttPermission?> getAclRules() async {
+    if(token == null){
+      await setupToken();
+    }
+    try {
+      String uri = "${settingsController.baseUri.value}/prd/v2/acl-rules";
+      final Map<String, String> headers = {"Content-Type": "application/json", "Authorization": "Bearer $token"};
+      try {
+        var response = await http.get(Uri.parse(uri), headers: headers);
+        print("ACL Response" + response.body.toString());
+        if (response.statusCode == 200) {
+          List<dynamic> jsonList = jsonDecode(response.body.toString());
+          if (jsonList.isNotEmpty) {
+            return MqttPermission.fromJson(jsonList.first);
+          }
+          return null;
+        }else{
+          _logger.e("Error Downloading ACL Rules ${response.statusCode} ${response.body.toString()}");
+        }
+      } catch (e) {
+        return null;
+      }
+
+      return null;
+    } on SocketException catch (e) {
+      _logger.e("Caught exception when attempting to register app with API: $e");
+      return null;
+    }    
   }
 
   Future<String?> getTimConfiguration() async {
