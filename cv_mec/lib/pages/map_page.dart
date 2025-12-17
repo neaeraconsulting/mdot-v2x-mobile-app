@@ -414,9 +414,10 @@ class MapState extends State<MapPage> {
         tamManager.storedTams.clear();
         mappableTamList.clear();
       }
-      // if (!settingsController.showTims.value && timManager.geometryMap.isNotEmpty) {
-      //   timManager.geometryMap.clear();
-      // }
+      if (!settingsController.showTims.value && timManager.geometryMap.isNotEmpty) {
+        timManager.storedTims.clear();
+        timManager.geometryMap.clear();
+      }
       if(DateTime.now().difference(lastRedrawTime).inMilliseconds > 50){ //DateTime.now used since timing service accuracy not required, and may not be initialized yet.
         setState(() {
           drawnPolygons = getPolygons();
@@ -731,7 +732,6 @@ class MapState extends State<MapPage> {
 
   //TODO: Implement TUM Processing - DO WE NEED THIS
   void processNewTUM(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
-    print("TAM Processing Not Implemented");
 
     // Trim the Hex
     String trimmedHex = asnService.trimMessageHeaders(hex, asnService.TUM_START_FLAG)!; 
@@ -793,16 +793,19 @@ class MapState extends State<MapPage> {
     );
   }
 
-  void checkAndSendTum() {
+  void checkAndSendTum() async {
     for (MappableTam mappableTam in mappableTamList) {
       bool isInTam = checkPositionInTam(mappableTam.tollZoneBorder, currentPosition);
       if (isInTam & !inTamZone) {
-        TollUsageMessage tum = tumBuilder.generateTumFromTam(mappableTam.tam!, historicalVehiclePath, vehicleId);
-        sendPaymentSentMessage(tum);
-        Future.delayed(Duration(seconds: 2), () { //TODO: remove
-          sendPaymentReceivedMessage();
-        });
-        inTamZone = true;
+        bool sent = await sendTumMessage(mappableTam.tam!, historicalVehiclePath, vehicleId);
+        //inTamZone = true; //TODO: remove this one
+        if (sent) {
+          inTamZone = true;
+          //sendPaymentSentMessage(tum);
+          Future.delayed(Duration(seconds: 2), () { //TODO: remove
+            sendPaymentReceivedMessage();
+          });
+        }
       } else if (!isInTam & inTamZone) {
         inTamZone = false;
       }
@@ -955,6 +958,36 @@ class MapState extends State<MapPage> {
         updateConnectedStatus(ConnectedStatus.DISCONNECTED);
       }
     }
+  }
+
+  bool sendTumMessage(TollAdvertisementMessage tam, List<LocAndTimeStamp> historicalVehiclePath, List<int> vehicleId) {
+    if (currentPosition == null) {
+      addToAppLog("Cannot Send TUM. Location is Null");
+      updateConnectedStatus(ConnectedStatus.PARTIAL);
+      return false;
+    }
+
+    DateTime sendTime = timingService.getTime();
+    MsgType messageType = MsgType.TUM;
+
+    TollUsageMessage tum = tumBuilder.generateTumFromTam(tam, historicalVehiclePath, vehicleId, sendTime);
+    String tumHex = tumBuilder.convertTumToHex(tum);
+
+    if (tumHex != "") {
+      List<int> tumBytes = ASNService.hexToBytes(tumHex);
+      mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false);
+      sendPaymentSentMessage(tum);
+      int connectionCount = mqttAgents.getConnectionCount();
+      if( connectionCount == mqttAgents.agents.length){
+        updateConnectedStatus(ConnectedStatus.CONNECTED);
+      }else if(connectionCount > 0){
+        updateConnectedStatus(ConnectedStatus.PARTIAL);
+      }else{
+        updateConnectedStatus(ConnectedStatus.DISCONNECTED);
+      }
+      return true;
+    }
+    return false;
   }
 
   void stopSendingBSM() {
@@ -1253,9 +1286,9 @@ class MapState extends State<MapPage> {
           rotate: true,
           child: GestureDetector(
             onTap: () {
-              if (mappableTam.tam != null) {
-                tumBuilder.generateTumFromTam(mappableTam.tam!, historicalVehiclePath, vehicleId); //TODO: Check !
-              }
+              // if (mappableTam.tam != null) {
+              //   tumBuilder.generateTumFromTam(mappableTam.tam!, historicalVehiclePath, vehicleId); //TODO: Check !
+              // }
             },
             child: Container(
               decoration: BoxDecoration(
@@ -1559,12 +1592,10 @@ class MapState extends State<MapPage> {
     List<Polygon<HitValue>> polygons = [];
 
     List<DataFrameGeometry> dataFrames = timManager.getActiveTimGeometry(true);
-    print("kiwi Data Frames Length: ${dataFrames.length}");
     for (DataFrameGeometry frame in dataFrames) {
       TravelerDataFrame tdFrame = frame.frame;
 
       for (GeometryDirection geoDir in frame.geometry) {
-        print("kiwi ${geoDir.direction} ");
         List<LatLng> polyPoints = geometryService.convertGeometryToLatLngList(geoDir.geometry);
 
         Polygon<HitValue> hitPoly = Polygon(

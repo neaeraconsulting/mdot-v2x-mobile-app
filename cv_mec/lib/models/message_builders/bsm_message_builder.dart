@@ -127,7 +127,6 @@ class BsmMessageBuilder extends MessageBuilder {
   }
 
   void randomizeId(List<int> randomNumbers) {
-    //List<int> randomNumbers = List.generate(4, (_) => random.nextInt(255));
     Uint8List dataBuffer = bsm.coreData.id.buf.asTypedList(randomNumbers.length);
     bsm.coreData.id.size = 4;
     dataBuffer.setAll(0, randomNumbers);

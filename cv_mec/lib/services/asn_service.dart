@@ -289,7 +289,6 @@ class ASNService extends GetxController {
 
   TollUsageMessage decodeTum(String asn1) {
     Pointer<Pointer<Void>> decoded = decode(asn1);
-    print("koala 1.1");
     TollUsageMessage tum = parseTum(decoded);
     cleanupDecoded(decoded);
 
@@ -307,11 +306,8 @@ class ASNService extends GetxController {
   }
 
   TumData decodeTumData(String asn1) {
-    print("koala 1.1.1.1: ${asn1}");
     Pointer<Pointer<Void>> decoded = c_decodeTumData(asn1);
-    print("koala 1.1.1.2");
     TumData tumData = parseTumData(decoded);
-    print("koala 1.1.1.3");
     cleanupDecoded(decoded);
     return tumData;
   }

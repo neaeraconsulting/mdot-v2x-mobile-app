@@ -22,8 +22,8 @@ class Vehicle {
     color = "";
     length = 0;
     width = 0;
-    licensePlateState = USState.ALABAMA; //TODO : remove from default
-    licensePlateNumber = "ABC-123"; //TODO : remove from default
+    licensePlateState = USState.ALABAMA; 
+    licensePlateNumber = "abc123"; 
   }
 
   Vehicle.detailed(this.name, this.classification, this.color, this.length, this.width, this.obdIIBluetoothAddress, this.licensePlateState, this.licensePlateNumber);

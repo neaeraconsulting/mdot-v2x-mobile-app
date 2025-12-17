@@ -33,13 +33,13 @@ class TumInstructions{
 }
 class MaxNumOfLocTimeStampsInteger{
     late int maxNumOfLocTimeStampsInteger;
-    MaxNumOfLocTimeStampsInteger(int value): maxNumOfLocTimeStampsInteger = value;
+    MaxNumOfLocTimeStampsInteger(int value): maxNumOfLocTimeStampsInteger = value <= 5 ? value : 5; //integer 1-5
 }
 
 
 class LocTimeStampRateInteger{
     late int locTimeStampRateInteger;
-    LocTimeStampRateInteger(int value): locTimeStampRateInteger = value;
+    LocTimeStampRateInteger(int value): locTimeStampRateInteger = value <= 10 ? value : 10; //integer 1-10
 }
 
 

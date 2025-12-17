@@ -13,7 +13,7 @@ class NodeListXY extends Choice_Offset {
     } else if (c_nodeListXY.present == C.NodeListXY_PR.NodeListXY_PR_computed) {
       nodeListXY = ComputedLane.fromC(c_nodeListXY.choice.computed);
     } else {
-      print("dinosaur Choice nodeListXY ${c_nodeListXY.present} is invalid for NodeListXY");
+      print("Choice nodeListXY ${c_nodeListXY.present} is invalid for NodeListXY");
     }
   }
 }

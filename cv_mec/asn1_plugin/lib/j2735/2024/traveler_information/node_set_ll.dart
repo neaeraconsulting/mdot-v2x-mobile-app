@@ -6,11 +6,10 @@ class NodeSetLL {
   late List<NodeLL> nodeSetLL;
 
   NodeSetLL.fromC(C.NodeSetLL nodeSet) {
-    // nodeSetLL = [];
-    // for (int i = 0; i < nodeSet.list.count; i++) {
-    //   nodeSetLL.add(NodeLL.fromC(nodeSet.list.array[i].ref));
-    // }
+    nodeSetLL = [];
+    for (int i = 0; i < nodeSet.list.count; i++) {
+      nodeSetLL.add(NodeLL.fromC(nodeSet.list.array[i].ref));
+    }
   }
 }
 
-//COOKIE - Here

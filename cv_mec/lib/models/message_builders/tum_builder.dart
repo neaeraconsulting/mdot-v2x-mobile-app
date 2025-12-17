@@ -63,15 +63,12 @@ class TumBuilder{
     return asnService.decodeTum(sampleTum);
   }
 
-  void encodeTum(C.TollUsageMessage cTum) {
+  String encodeTum(C.TollUsageMessage cTum) {
     Pointer<Pointer<Void>> tumPtrPtr = tollUsageMessageToPtrPtr(cTum);
     int requiredBufferSize = calculateRequiredBufferSize(cTum);
     String encodedTum = asnService.encode(tumPtrPtr, encodeBufferSize: requiredBufferSize);
-    print("Koala Encoded TUM: $encodedTum");
-    print("koala 1");
-    asnService.decodeTum(encodedTum); //TODO: remove - used for testing
-    print("koala 2");
-    // What happens with the encodedTum
+    print("Encoded TUM: $encodedTum");
+    return encodedTum;
   }
 
   String encodeTumData(C.TumData cTumData) {
@@ -138,7 +135,7 @@ class TumBuilder{
     return ptrPtr;
   }
 
-  TollUsageMessage generateTumFromTam(TollAdvertisementMessage tam, List<LocAndTimeStamp> historicalVehiclePath, List<int> vehicleIdList){
+  TollUsageMessage generateTumFromTam(TollAdvertisementMessage tam, List<LocAndTimeStamp> historicalVehiclePath, List<int> vehicleIdList, DateTime sendTime){
     Vehicle selectedVehicle = configController.selectedVehicle.value;
     if (tam.tollAdvInfo == null) {
       throw Exception("TollAdvertisementMessage does not contain toll advertisement info");
@@ -152,7 +149,7 @@ class TumBuilder{
 
       // EncryptedTumData
       // TollUserData
-      DDateTime timestamp = DDateTime.fromDateTime(DateTime.now().toUtc()); //TODO: check with john if this is an okay way to get the time
+      DDateTime timestamp = DDateTime.fromDateTime(sendTime.toUtc()); //TODO: check with john if this is an okay way to get the time
       String tspId = tam.tollAdvInfo!.tollChargerInfo.tollChargerId; //Good to go - same as the tollpointid info id
       
       // VehicleId
@@ -225,11 +222,15 @@ class TumBuilder{
         encryptedTumData: encryptedTumData,
       );
 
-      C.TollUsageMessage cTum = buildCTum(tum);
-      encodeTum(cTum);
       return tum;
 
     }
+  }
+
+  String convertTumToHex(TollUsageMessage tum) {
+    C.TollUsageMessage cTum = buildCTum(tum);
+    String encoded = encodeTum(cTum);
+    return encoded;
   }
 
   String convertVehicleIdToOctetString(List<int> vehicleId) {
