@@ -122,9 +122,6 @@ class TumBuilder{
     //final Pointer<C.MessageFrame> messageFramePtr = calloc<C.MessageFrame>();
     final Pointer<C.TumData> tumDataFramePtr = calloc<C.TumData>();
 
-    // messageFramePtr.ref.messageId = 38;
-    //messageFramePtr.ref.value.present = C.MessageFrame__value_PR.MessageFrame__value_PR_TollUsageMessage;
-    //messageFramePtr.ref.value.choice.TollUsageMessage = message;
     tumDataFramePtr.ref = message;
 
     final Pointer<Pointer<Void>> ptrPtr = calloc<Pointer<Void>>();
@@ -135,7 +132,7 @@ class TumBuilder{
     return ptrPtr;
   }
 
-  TollUsageMessage generateTumFromTam(TollAdvertisementMessage tam, List<LocAndTimeStamp> historicalVehiclePath, List<int> vehicleIdList, DateTime sendTime){
+  TollUsageMessageResult generateTumFromTam(TollAdvertisementMessage tam, List<LocAndTimeStamp> historicalVehiclePath, List<int> vehicleIdList, DateTime sendTime){
     Vehicle selectedVehicle = configController.selectedVehicle.value;
     if (tam.tollAdvInfo == null) {
       throw Exception("TollAdvertisementMessage does not contain toll advertisement info");
@@ -184,7 +181,11 @@ class TumBuilder{
       LocAndTimeStamps locAndTimeStamps = LocAndTimeStamps(locAndTimeStampslist);
       
       //charge
-      PaymentFee charge = getPaymentFeeFromTam(tam, locAndTimeStampslist);
+      PaymentFeeResult paymentFeeResult = getPaymentFeeFromTam(tam, locAndTimeStampslist);
+      if (paymentFeeResult.paymentFee == null) {
+        return TollUsageMessageResult.error(paymentFeeResult.errorMessage!);
+      } 
+      PaymentFee charge = paymentFeeResult.paymentFee!;
 
       // build toll user data
       TollUserData tollUserData = TollUserData(
@@ -222,7 +223,7 @@ class TumBuilder{
         encryptedTumData: encryptedTumData,
       );
 
-      return tum;
+      return TollUsageMessageResult.success(tum);
 
     }
   }
@@ -331,29 +332,34 @@ class TumBuilder{
     }
   }
   
-  PaymentFee getPaymentFeeFromTam(TollAdvertisementMessage tam, List<LocAndTimeStamp> historicalVehiclePath) {
+  PaymentFeeResult getPaymentFeeFromTam(TollAdvertisementMessage tam, List<LocAndTimeStamp> historicalVehiclePath) {
     TollTypeChargeChoice tollTypeCharge = tam.tollChargesTable.tollTypeCharge;
-    PaymentFee paymentFee = PaymentFee(0, "5553"); // Default initialization - TODO: check units
+    PaymentFee paymentFee = PaymentFee(0, "5553"); // Default initialization
     if (tollTypeCharge.tollTypeCharge is TimeChargesTable) {
       TimeChargesTable pointCharges = tollTypeCharge.tollTypeCharge as TimeChargesTable;
       ChargesTable chargesTable = pointCharges.chargesTable;
-      paymentFee = getPaymentFeeFromChargesTable(chargesTable);
-      //TODO: check what maxtimeinteger is used for here
+      paymentFee = getPaymentFeeFromChargesTable(chargesTable); //This fee is charge per minute. Time based chargine isn't implemented yet
+      return PaymentFeeResult.error("Time based charging not implemented");
     } else if (tollTypeCharge.tollTypeCharge is PerClosedNetworkChargesTable) {
       PerClosedNetworkChargesTable perClosedNetworkChargesTable = tollTypeCharge.tollTypeCharge as PerClosedNetworkChargesTable;
-      //TODO; implement
-      //ClosedNetworkChargesTable closedNetworkChargesTable = perClosedNetworkChargesTable.getClosedNetworkChargesTableFrom
+      return PaymentFeeResult.error("Per closed network charging not implemented");
     } else if (tollTypeCharge.tollTypeCharge is PerLaneChargesTable) {
       PerLaneChargesTable perLaneChargesTable = tollTypeCharge.tollTypeCharge as PerLaneChargesTable;
-      int laneId = getLaneId(tam, historicalVehiclePath);
-      LaneChargesTable laneChargesTable = perLaneChargesTable.getLaneChargesTableFromLaneId(laneId); 
+      int? laneId = getLaneId(tam, historicalVehiclePath);
+      if (laneId == null) {
+        return PaymentFeeResult.error("Could not determine lane ID for per-lane charges");
+      }
+      LaneChargesTable? laneChargesTable = perLaneChargesTable.getLaneChargesTableFromLaneId(laneId); 
+      if (laneChargesTable == null) {
+        return PaymentFeeResult.error("Could not find charges for lane ID: $laneId");
+      }
       ChargesTable chargesTable = laneChargesTable.chargesTable;
       paymentFee = getPaymentFeeFromChargesTable(chargesTable);
     } else if (tollTypeCharge.tollTypeCharge is ChargesTable) {
       ChargesTable chargesTable = tollTypeCharge.tollTypeCharge as ChargesTable;
       paymentFee = getPaymentFeeFromChargesTable(chargesTable);
     }
-    return paymentFee;
+    return PaymentFeeResult.success(paymentFee);
   }
 
   PaymentFee getPaymentFeeFromChargesTable(ChargesTable chargesTable) {
@@ -378,7 +384,7 @@ class TumBuilder{
     return paymentFee;
   }
 
-  int getLaneId(TollAdvertisementMessage tam, List<LocAndTimeStamp> historicalVehiclePath) {
+  int? getLaneId(TollAdvertisementMessage tam, List<LocAndTimeStamp> historicalVehiclePath) {
     TollZoneLanesMap tollZoneLanesMap = tam.tollAdvInfo!.tollPointMap.tollZoneLanesMap;
     int laneWidth = tam.tollAdvInfo!.tollPointMap.laneWidth.laneWidth;
     GeometryService geometryService = Get.find<GeometryService>();
@@ -394,7 +400,7 @@ class TumBuilder{
           }
       }
     }
-    return 3; // Default lane ID if none matched TODO: check default behavior
+    return null; // Default lane ID if none matched TODO: check default behavior
   }
 
   List<LatLng> generateLanePolygon(List<LatLng> centerlinePoints, double laneWidthMeters) {
@@ -487,4 +493,28 @@ class TumBuilder{
     
     return crossings % 2 == 1;
   }
+}
+
+class PaymentFeeResult {
+  final PaymentFee? paymentFee;
+  final String? errorMessage;
+  final bool isSuccess;
+
+  PaymentFeeResult.success(this.paymentFee) 
+      : errorMessage = null, isSuccess = true;
+  
+  PaymentFeeResult.error(this.errorMessage) 
+      : paymentFee = null, isSuccess = false;
+}
+
+class TollUsageMessageResult {
+  final TollUsageMessage? tollUsageMessage;
+  final String? errorMessage;
+  final bool isSuccess;
+
+  TollUsageMessageResult.success(this.tollUsageMessage) 
+      : errorMessage = null, isSuccess = true;
+  
+  TollUsageMessageResult.error(this.errorMessage) 
+      : tollUsageMessage = null, isSuccess = false;
 }

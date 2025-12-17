@@ -793,15 +793,13 @@ class MapState extends State<MapPage> {
     );
   }
 
-  void checkAndSendTum() async {
+  void checkAndSendTum() {
     for (MappableTam mappableTam in mappableTamList) {
       bool isInTam = checkPositionInTam(mappableTam.tollZoneBorder, currentPosition);
       if (isInTam & !inTamZone) {
-        bool sent = await sendTumMessage(mappableTam.tam!, historicalVehiclePath, vehicleId);
-        //inTamZone = true; //TODO: remove this one
+        bool sent = sendTumMessage(mappableTam.tam!, historicalVehiclePath, vehicleId);
+        inTamZone = true; 
         if (sent) {
-          inTamZone = true;
-          //sendPaymentSentMessage(tum);
           Future.delayed(Duration(seconds: 2), () { //TODO: remove
             sendPaymentReceivedMessage();
           });
@@ -970,7 +968,13 @@ class MapState extends State<MapPage> {
     DateTime sendTime = timingService.getTime();
     MsgType messageType = MsgType.TUM;
 
-    TollUsageMessage tum = tumBuilder.generateTumFromTam(tam, historicalVehiclePath, vehicleId, sendTime);
+    TollUsageMessageResult tumResult = tumBuilder.generateTumFromTam(tam, historicalVehiclePath, vehicleId, sendTime);
+    if (!tumResult.isSuccess) {
+      showError(tumResult.errorMessage!);
+      return false;
+    }
+    
+    TollUsageMessage tum = tumResult.tollUsageMessage!;
     String tumHex = tumBuilder.convertTumToHex(tum);
 
     if (tumHex != "") {
