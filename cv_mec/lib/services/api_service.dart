@@ -285,7 +285,7 @@ class ApiService extends GetxController {
       await setupToken();
     }
     try {
-      _logger.i("Registering Device");
+      _logger.i("Downloading Paths");
       final String uri = "${settingsController.baseUri.value}/prd/v2/paths";
 
       final Map<String, String> headers = {"Content-Type": "application/json", "Authorization": "Bearer $token"};

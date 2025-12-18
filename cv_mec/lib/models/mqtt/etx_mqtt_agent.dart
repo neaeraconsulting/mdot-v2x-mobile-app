@@ -40,7 +40,6 @@ class EtxMqttAgent extends MqttAgent{
       logger.i("Loading Registration from Cache");
       registration = await fileService.getRegistration();
       fullRegistration = await apiService.checkRegistration(registration.deviceID);
-      
     }
 
     if(registration == null || fullRegistration == null){
@@ -223,7 +222,7 @@ class EtxMqttAgent extends MqttAgent{
       List<String> parts = components[0].split('|');
       List<String> results = [];
       for(int i =0; i< parts.length; i++){
-        if(parts[i] != 'JSON' && parts[i] != 'VzTrafficDensity'){
+        if(parts[i] != 'JSON' && parts[i] != 'VzTrafficDensity'&& parts[i] != 'VzMapManager'){
           // Skip JSON format since there is not currently a standard encoding for JSON j2735 messages
           List<String> part_results = extractSubscriptions(components.sublist(1));
           for(int j =0; j< part_results.length; j++){
