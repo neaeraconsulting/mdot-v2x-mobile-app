@@ -1,6 +1,6 @@
 import 'package:cv_mec/controllers/configuration_controller.dart';
 import 'package:cv_mec/controllers/settings_controller.dart';
-import 'package:cv_mec/models/api_responses/mqtt_permission';
+import 'package:cv_mec/models/api_responses/mqtt_permission.dart';
 
 import 'package:cv_mec/models/etx/full_registration.dart';
 import 'package:cv_mec/models/etx/registration.dart';

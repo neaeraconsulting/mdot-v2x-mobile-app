@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:cv_mec/controllers/settings_controller.dart';
-import 'package:cv_mec/models/api_responses/mqtt_permission';
+import 'package:cv_mec/models/api_responses/mqtt_permission.dart';
 import 'package:cv_mec/models/api_responses/path_response/path_response.dart';
 import 'package:cv_mec/models/api_responses/secrets/secret_response.dart';
 import 'package:cv_mec/models/etx/full_registration.dart';
