@@ -797,7 +797,7 @@ class MapState extends State<MapPage> {
     for (MappableTam mappableTam in mappableTamList) {
       bool isInTam = checkPositionInTam(mappableTam.tollZoneBorder, currentPosition);
       if (isInTam & !inTamZone) {
-        bool sent = sendTumMessage(mappableTam.tam!, historicalVehiclePath, vehicleId);
+        bool sent = sendTumMessage(mappableTam.tam!);
         inTamZone = true; 
         if (sent) {
           Future.delayed(Duration(seconds: 2), () { //TODO: remove
@@ -813,6 +813,7 @@ class MapState extends State<MapPage> {
   bool checkPositionInTam(List<LatLng> tamBorder, Position? position) {
     if (position == null) return false;
     // check if position is within the polygon that is defined by tamBorder
+
     int i, j = tamBorder.length - 1;
     bool inside = false;
     for (i = 0; i < tamBorder.length; j = i++) {
@@ -958,7 +959,7 @@ class MapState extends State<MapPage> {
     }
   }
 
-  bool sendTumMessage(TollAdvertisementMessage tam, List<LocAndTimeStamp> historicalVehiclePath, List<int> vehicleId) {
+  bool sendTumMessage(TollAdvertisementMessage tam) {
     if (currentPosition == null) {
       addToAppLog("Cannot Send TUM. Location is Null");
       updateConnectedStatus(ConnectedStatus.PARTIAL);
@@ -968,7 +969,7 @@ class MapState extends State<MapPage> {
     DateTime sendTime = timingService.getTime();
     MsgType messageType = MsgType.TUM;
 
-    TollUsageMessageResult tumResult = tumBuilder.generateTumFromTam(tam, historicalVehiclePath, vehicleId, sendTime);
+    TollUsageMessageResult tumResult = tumBuilder.generateTumFromTam(tam, historicalVehiclePath, currentPosition!, vehicleId, sendTime);
     if (!tumResult.isSuccess) {
       showError(tumResult.errorMessage!);
       return false;
@@ -979,7 +980,7 @@ class MapState extends State<MapPage> {
 
     if (tumHex != "") {
       List<int> tumBytes = ASNService.hexToBytes(tumHex);
-      mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false);
+      //mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false); //TODO: Add back once it can be handled
       sendPaymentSentMessage(tum);
       int connectionCount = mqttAgents.getConnectionCount();
       if( connectionCount == mqttAgents.agents.length){

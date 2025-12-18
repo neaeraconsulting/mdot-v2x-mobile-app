@@ -43,6 +43,7 @@ import 'package:cv_mec/services/asn_service.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:geolocator_platform_interface/src/models/position.dart';
 
 class TumBuilder{
 
@@ -132,7 +133,7 @@ class TumBuilder{
     return ptrPtr;
   }
 
-  TollUsageMessageResult generateTumFromTam(TollAdvertisementMessage tam, List<LocAndTimeStamp> historicalVehiclePath, List<int> vehicleIdList, DateTime sendTime){
+  TollUsageMessageResult generateTumFromTam(TollAdvertisementMessage tam, List<LocAndTimeStamp> historicalVehiclePath, Position currentPosition, List<int> vehicleIdList, DateTime sendTime){
     Vehicle selectedVehicle = configController.selectedVehicle.value;
     if (tam.tollAdvInfo == null) {
       throw Exception("TollAdvertisementMessage does not contain toll advertisement info");
@@ -166,9 +167,15 @@ class TumBuilder{
       int vehNumAxles = VehicleMappingService.getAxles(selectedVehicle.classification); //TODO: set based on vehicle config, create a mapping
       int vehWeight = VehicleMappingService.getWeight(selectedVehicle.classification); //TODO: set based on vehicle config, create a mapping
       VehicleAxlesAndWeightInfo vehicleAxlesAndWeightInfo = VehicleAxlesAndWeightInfo(vehNumAxles, null, vehWeight, VehicleMappingService.getDefaultWeightUnit(selectedVehicle.classification));
-      int numOccupants = VehicleMappingService.getNumOccupants(selectedVehicle.classification); //TODO: set based on vehicle config, create a mapping
-      if (numOccupants > 5) {
-        numOccupants = 5; //Based on J3217 saying if numOccupants is 5 or greater, then set numOccupants to 5
+      int? numOccupants = null;
+      print("cookie ${configController.isHovOn.value}");
+      if (configController.isHovOn.value) {
+        print("cookie 3");
+        numOccupants = VehicleMappingService.getNumOccupants(selectedVehicle.classification); //TODO: set based on vehicle config, create a mapping
+        print("cookie ${numOccupants}");
+        if (numOccupants > 5) {
+          numOccupants = 5; //Based on J3217 saying if numOccupants is 5 or greater, then set numOccupants to 5
+        }
       }
 
       // Skipping entrytollpointid for the moment
@@ -181,11 +188,12 @@ class TumBuilder{
       LocAndTimeStamps locAndTimeStamps = LocAndTimeStamps(locAndTimeStampslist);
       
       //charge
-      PaymentFeeResult paymentFeeResult = getPaymentFeeFromTam(tam, locAndTimeStampslist);
+      PaymentFeeResult paymentFeeResult = getPaymentFeeFromTam(tam, currentPosition, numOccupants);
       if (paymentFeeResult.paymentFee == null) {
         return TollUsageMessageResult.error(paymentFeeResult.errorMessage!);
       } 
       PaymentFee charge = paymentFeeResult.paymentFee!;
+
 
       // build toll user data
       TollUserData tollUserData = TollUserData(
@@ -194,7 +202,7 @@ class TumBuilder{
         vehicleId: vehicleId,
         vehType: vehicleType,
         vehAxlesAndWeight: vehicleAxlesAndWeightInfo,
-        numOccupants: numOccupants > 1 ? numOccupants : null,
+        numOccupants: numOccupants,
         locAndTimeStamps: locAndTimeStamps,
         charge: charge,
       );
@@ -332,20 +340,19 @@ class TumBuilder{
     }
   }
   
-  PaymentFeeResult getPaymentFeeFromTam(TollAdvertisementMessage tam, List<LocAndTimeStamp> historicalVehiclePath) {
+  PaymentFeeResult getPaymentFeeFromTam(TollAdvertisementMessage tam, Position currentPosition, int? numOccupants) {
     TollTypeChargeChoice tollTypeCharge = tam.tollChargesTable.tollTypeCharge;
-    PaymentFee paymentFee = PaymentFee(0, "5553"); // Default initialization
     if (tollTypeCharge.tollTypeCharge is TimeChargesTable) {
       TimeChargesTable pointCharges = tollTypeCharge.tollTypeCharge as TimeChargesTable;
       ChargesTable chargesTable = pointCharges.chargesTable;
-      paymentFee = getPaymentFeeFromChargesTable(chargesTable); //This fee is charge per minute. Time based chargine isn't implemented yet
+      PaymentFee? paymentFee = getPaymentFeeFromChargesTable(chargesTable, numOccupants); //This fee is charge per minute. Time based chargine isn't implemented yet
       return PaymentFeeResult.error("Time based charging not implemented");
     } else if (tollTypeCharge.tollTypeCharge is PerClosedNetworkChargesTable) {
       PerClosedNetworkChargesTable perClosedNetworkChargesTable = tollTypeCharge.tollTypeCharge as PerClosedNetworkChargesTable;
       return PaymentFeeResult.error("Per closed network charging not implemented");
     } else if (tollTypeCharge.tollTypeCharge is PerLaneChargesTable) {
       PerLaneChargesTable perLaneChargesTable = tollTypeCharge.tollTypeCharge as PerLaneChargesTable;
-      int? laneId = getLaneId(tam, historicalVehiclePath);
+      int? laneId = getLaneId(tam, currentPosition);
       if (laneId == null) {
         return PaymentFeeResult.error("Could not determine lane ID for per-lane charges");
       }
@@ -354,47 +361,88 @@ class TumBuilder{
         return PaymentFeeResult.error("Could not find charges for lane ID: $laneId");
       }
       ChargesTable chargesTable = laneChargesTable.chargesTable;
-      paymentFee = getPaymentFeeFromChargesTable(chargesTable);
+      PaymentFee? paymentFee = getPaymentFeeFromChargesTable(chargesTable, numOccupants);
+      if (paymentFee == null) {
+        return PaymentFeeResult.error("Could not determine payment fee from charges table for lane ID: $laneId");
+      }
+      return PaymentFeeResult.success(paymentFee);
     } else if (tollTypeCharge.tollTypeCharge is ChargesTable) {
       ChargesTable chargesTable = tollTypeCharge.tollTypeCharge as ChargesTable;
-      paymentFee = getPaymentFeeFromChargesTable(chargesTable);
+      PaymentFee? paymentFee = getPaymentFeeFromChargesTable(chargesTable, numOccupants);
+      if (paymentFee == null) {
+        return PaymentFeeResult.error("Could not determine payment fee from charges table");
+      }
     }
-    return PaymentFeeResult.success(paymentFee);
+    return PaymentFeeResult.error("Unsupported toll type charge");
   }
 
-  PaymentFee getPaymentFeeFromChargesTable(ChargesTable chargesTable) {
-    PaymentFee paymentFee = PaymentFee(0, "5553"); // Default initialization - TODO: check units
+  PaymentFee? getPaymentFeeFromChargesTable(ChargesTable chargesTable, int? numOccupants) {
     Vehicle selectedVehicle = configController.selectedVehicle.value;
     if (chargesTable.chargesTableChoice.chargesTableChoice is VehTypeChargesTable) {
       VehTypeChargesTable vehTypeCharges = chargesTable.chargesTableChoice.chargesTableChoice as VehTypeChargesTable;
-      VehTypeCharges vehTypeCharge = vehTypeCharges.getChargeForVehicleType(VehicleMappingService.getVehicleTypes(selectedVehicle.classification));
-      paymentFee = vehTypeCharge.charges;
+      VehTypeCharges? vehTypeCharge = vehTypeCharges.getChargeForVehicleType(VehicleMappingService.getVehicleTypes(selectedVehicle.classification));
+      if (vehTypeCharge == null) {
+        return null;
+      }
+      ConfigurationController configController = Get.find<ConfigurationController>();
+      print("cookie 1");
+      print("cookie ${vehTypeCharge.specialCharges}");
+      print("cookie # ${numOccupants}");
+      if (vehTypeCharge.specialCharges != null) {
+        print("cookie 2");
+        switch (numOccupants) {
+          case 2:
+            if (vehTypeCharge.specialCharges!.hov2Charge != null) {
+              return vehTypeCharge.specialCharges!.hov2Charge!;
+            }
+            break;
+          case 3:
+            if (vehTypeCharge.specialCharges!.hov3Charge != null) {
+              return vehTypeCharge.specialCharges!.hov3Charge!;
+            }
+            break;
+          case 4:
+            if (vehTypeCharge.specialCharges!.hov4Charge != null) {
+              return vehTypeCharge.specialCharges!.hov4Charge!;
+            }
+            break;
+          case 5:
+            if (vehTypeCharge.specialCharges!.hov5PlusCharge != null) {
+              return vehTypeCharge.specialCharges!.hov5PlusCharge!;
+            }
+            break;
+          default:
+            break;
+        }
+      }
+      return vehTypeCharge.charges;
     } else if (chargesTable.chargesTableChoice.chargesTableChoice is AxlesChargesTable) {
       AxlesChargesTable numAxlesBased = chargesTable.chargesTableChoice.chargesTableChoice as AxlesChargesTable;
       AxlesCharges axlesCharges  = numAxlesBased.getChargeForAxles(VehicleMappingService.getAxles(selectedVehicle.classification));
-      paymentFee = axlesCharges.axlesCharge;
+      return axlesCharges.axlesCharge;
     } else if (chargesTable.chargesTableChoice.chargesTableChoice is WeightChargesTable) {
       WeightChargesTable weightChargesTable = chargesTable.chargesTableChoice.chargesTableChoice as WeightChargesTable;
       WeightCharges weightCharges = weightChargesTable.getChargeForWeight(VehicleMappingService.getWeight(selectedVehicle.classification)); //TODO: set based on vehicle config, create a mapping
       if (weightCharges.weightCharge.weightChargesChoice is TotalWeightCharges) {
         TotalWeightCharges totalWeightCharges = weightCharges.weightCharge.weightChargesChoice as TotalWeightCharges;
-        paymentFee = totalWeightCharges.weightCharge;
+        return totalWeightCharges.weightCharge;
       }
     }
-    return paymentFee;
+    return null;
   }
 
-  int? getLaneId(TollAdvertisementMessage tam, List<LocAndTimeStamp> historicalVehiclePath) {
+  int? getLaneId(TollAdvertisementMessage tam, Position currentPosition) {
     TollZoneLanesMap tollZoneLanesMap = tam.tollAdvInfo!.tollPointMap.tollZoneLanesMap;
-    int laneWidth = tam.tollAdvInfo!.tollPointMap.laneWidth.laneWidth;
+    double laneWidth = tam.tollAdvInfo!.tollPointMap.laneWidth.laneWidth * 0.01;
     GeometryService geometryService = Get.find<GeometryService>();
     for (var lane in tollZoneLanesMap.tollZoneLanesMap) {
       NodeListXY nodeList = lane.nodeList;
       if (nodeList.nodeListXY is NodeSetXY) {
           NodeSetXY nodeSet = nodeList.nodeListXY as NodeSetXY;
           List<LatLng> lanePoints = geometryService.getLatLngCoordinatesFromNodeSetXY(nodeSet, tam.tollAdvInfo!.tollPointMap.referencePoint);
-          List<LatLng> lanePolygon = generateLanePolygon(lanePoints, laneWidth.toDouble());
-          bool isInLane = isPointInPolygon(historicalVehiclePath.last, lanePolygon);
+          List<LatLng> lanePolygon = generateLanePolygon(lanePoints, laneWidth);
+          lanePolygon.add(lanePolygon.first); // Close the polygon
+          bool isInLane = isPointInPolygon(currentPosition, lanePolygon);
           if (isInLane) {
             return lane.laneID.laneID;
           }
@@ -473,25 +521,24 @@ class TumBuilder{
   }
   
   // Simple point-in-polygon check (ray casting algorithm)
-  bool isPointInPolygon(LocAndTimeStamp point, List<LatLng> polygon) {
-    int crossings = 0;
-    for (int i = 0; i < polygon.length; i++) {
-      int j = (i + 1) % polygon.length;
-      
-      if (((polygon[i].latitude <= point.latitude.latitude) && (point.latitude.latitude < polygon[j].latitude)) ||
-          ((polygon[j].latitude <= point.latitude.latitude) && (point.latitude.latitude < polygon[i].latitude))) {
-        
-        double intersectLon = polygon[i].longitude + 
-            (point.latitude.latitude - polygon[i].latitude) / (polygon[j].latitude - polygon[i].latitude) *
-            (polygon[j].longitude - polygon[i].longitude);
-        
-        if (point.longitude.longitude < intersectLon) {
-          crossings++;
-        }
+  bool isPointInPolygon(Position point, List<LatLng> laneBorder) {
+    
+    LatLng position = LatLng(point.latitude, point.longitude);
+    print("potato");
+    print("Checking position Lat: ${position.latitude}, Lon: ${position.longitude}");
+    // check if position is within the polygon that is defined by laneBorder
+    int i, j = laneBorder.length - 1;
+    bool inside = false;
+    for (i = 0; i < laneBorder.length; j = i++) {
+      if (((laneBorder[i].longitude > position.longitude) != (laneBorder[j].longitude > position.longitude)) &&
+          (position.latitude <
+              (laneBorder[j].latitude - laneBorder[i].latitude) * (position.longitude - laneBorder[i].longitude) /
+                      (laneBorder[j].longitude - laneBorder[i].longitude) +
+                  laneBorder[i].latitude)) {
+        inside = !inside;
       }
     }
-    
-    return crossings % 2 == 1;
+    return inside;
   }
 }
 

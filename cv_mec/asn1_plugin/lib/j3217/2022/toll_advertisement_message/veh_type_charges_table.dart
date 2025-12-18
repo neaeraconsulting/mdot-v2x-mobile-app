@@ -37,12 +37,12 @@ class VehTypeChargesTable extends Choice_ChargesTable{
     }
   }
 
-  VehTypeCharges getChargeForVehicleType(VehicleTypes vehicleType) {
+  VehTypeCharges? getChargeForVehicleType(VehicleTypes vehicleType) {
     for (var charge in vehTypeChargesTable) {
       if (charge.vehType == vehicleType) {
         return charge;
       }
     }
-    throw Exception('No charge found for vehicle type: $vehicleType');
+    return null;
   }
 }
