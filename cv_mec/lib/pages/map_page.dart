@@ -237,14 +237,7 @@ class MapState extends State<MapPage> {
     bsmBuilder = BsmMessageBuilder(vehicleId.sublist(0, 4));
     psmBuilder = PsmMessageBuilder();
 
-    // Testing TUM's dinosaur
     tumBuilder = TumBuilder();
-    // TollUsageMessage tum = tumBuilder.getSampleTum();
-    // C.TollUsageMessage cTum = tumBuilder.buildCTum(tum);
-    // tumBuilder.encodeTum(cTum);
-
-    //Testing TUMAck dinosaur
-    TollUsageAckMessage tumAck = tumAckManager.getSampleTumAck();
 
     if (mounted) {
       setState(() {

@@ -37,7 +37,7 @@ class WeightChargesTable extends Choice_ChargesTable{
     }
   }
 
-  WeightCharges getChargeForWeight(int weight) {
+  WeightCharges? getChargeForWeight(int weight) {
     for (var charge in weightChargesTable) {
       if (charge.weightCharge is TotalWeightCharges) {
         TotalWeightCharges totalWeightCharge = charge.weightCharge as TotalWeightCharges;
@@ -51,8 +51,7 @@ class WeightChargesTable extends Choice_ChargesTable{
         }
 
       }
-      //TODO: check logic here - I don't think the implementation is quite right
     }
-    throw Exception('No charge found for weight: $weight');
+    return null;
   }
 }

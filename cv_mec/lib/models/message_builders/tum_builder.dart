@@ -343,12 +343,12 @@ class TumBuilder{
   PaymentFeeResult getPaymentFeeFromTam(TollAdvertisementMessage tam, Position currentPosition, int? numOccupants) {
     TollTypeChargeChoice tollTypeCharge = tam.tollChargesTable.tollTypeCharge;
     if (tollTypeCharge.tollTypeCharge is TimeChargesTable) {
-      TimeChargesTable pointCharges = tollTypeCharge.tollTypeCharge as TimeChargesTable;
-      ChargesTable chargesTable = pointCharges.chargesTable;
-      PaymentFee? paymentFee = getPaymentFeeFromChargesTable(chargesTable, numOccupants); //This fee is charge per minute. Time based chargine isn't implemented yet
-      return PaymentFeeResult.error("Time based charging not implemented");
+      //TimeChargesTable pointCharges = tollTypeCharge.tollTypeCharge as TimeChargesTable;
+      //ChargesTable chargesTable = pointCharges.chargesTable;
+      //PaymentFeeResult paymentFeeResult = getPaymentFeeFromChargesTable(chargesTable, numOccupants); 
+      return PaymentFeeResult.error("Time based charging not implemented"); //This fee is charge per minute. Time based chargine isn't implemented yet
     } else if (tollTypeCharge.tollTypeCharge is PerClosedNetworkChargesTable) {
-      PerClosedNetworkChargesTable perClosedNetworkChargesTable = tollTypeCharge.tollTypeCharge as PerClosedNetworkChargesTable;
+      //PerClosedNetworkChargesTable perClosedNetworkChargesTable = tollTypeCharge.tollTypeCharge as PerClosedNetworkChargesTable;
       return PaymentFeeResult.error("Per closed network charging not implemented");
     } else if (tollTypeCharge.tollTypeCharge is PerLaneChargesTable) {
       PerLaneChargesTable perLaneChargesTable = tollTypeCharge.tollTypeCharge as PerLaneChargesTable;
@@ -361,74 +361,68 @@ class TumBuilder{
         return PaymentFeeResult.error("Could not find charges for lane ID: $laneId");
       }
       ChargesTable chargesTable = laneChargesTable.chargesTable;
-      PaymentFee? paymentFee = getPaymentFeeFromChargesTable(chargesTable, numOccupants);
-      if (paymentFee == null) {
-        return PaymentFeeResult.error("Could not determine payment fee from charges table for lane ID: $laneId");
-      }
-      return PaymentFeeResult.success(paymentFee);
+      return getPaymentFeeFromChargesTable(chargesTable, numOccupants);
     } else if (tollTypeCharge.tollTypeCharge is ChargesTable) {
       ChargesTable chargesTable = tollTypeCharge.tollTypeCharge as ChargesTable;
-      PaymentFee? paymentFee = getPaymentFeeFromChargesTable(chargesTable, numOccupants);
-      if (paymentFee == null) {
-        return PaymentFeeResult.error("Could not determine payment fee from charges table");
-      }
+      return getPaymentFeeFromChargesTable(chargesTable, numOccupants);
     }
     return PaymentFeeResult.error("Unsupported toll type charge");
   }
 
-  PaymentFee? getPaymentFeeFromChargesTable(ChargesTable chargesTable, int? numOccupants) {
+  PaymentFeeResult getPaymentFeeFromChargesTable(ChargesTable chargesTable, int? numOccupants) {
     Vehicle selectedVehicle = configController.selectedVehicle.value;
     if (chargesTable.chargesTableChoice.chargesTableChoice is VehTypeChargesTable) {
       VehTypeChargesTable vehTypeCharges = chargesTable.chargesTableChoice.chargesTableChoice as VehTypeChargesTable;
       VehTypeCharges? vehTypeCharge = vehTypeCharges.getChargeForVehicleType(VehicleMappingService.getVehicleTypes(selectedVehicle.classification));
       if (vehTypeCharge == null) {
-        return null;
+        return PaymentFeeResult.error("Could not determine vehicle type charge");
       }
-      ConfigurationController configController = Get.find<ConfigurationController>();
-      print("cookie 1");
-      print("cookie ${vehTypeCharge.specialCharges}");
-      print("cookie # ${numOccupants}");
       if (vehTypeCharge.specialCharges != null) {
-        print("cookie 2");
         switch (numOccupants) {
           case 2:
             if (vehTypeCharge.specialCharges!.hov2Charge != null) {
-              return vehTypeCharge.specialCharges!.hov2Charge!;
+              return PaymentFeeResult.success(vehTypeCharge.specialCharges!.hov2Charge!);
             }
             break;
           case 3:
             if (vehTypeCharge.specialCharges!.hov3Charge != null) {
-              return vehTypeCharge.specialCharges!.hov3Charge!;
+              return PaymentFeeResult.success(vehTypeCharge.specialCharges!.hov3Charge!);
             }
             break;
           case 4:
             if (vehTypeCharge.specialCharges!.hov4Charge != null) {
-              return vehTypeCharge.specialCharges!.hov4Charge!;
+              return PaymentFeeResult.success(vehTypeCharge.specialCharges!.hov4Charge!);
             }
             break;
           case 5:
             if (vehTypeCharge.specialCharges!.hov5PlusCharge != null) {
-              return vehTypeCharge.specialCharges!.hov5PlusCharge!;
+              return PaymentFeeResult.success(vehTypeCharge.specialCharges!.hov5PlusCharge!);
             }
             break;
           default:
             break;
         }
       }
-      return vehTypeCharge.charges;
+      return PaymentFeeResult.success(vehTypeCharge.charges);
     } else if (chargesTable.chargesTableChoice.chargesTableChoice is AxlesChargesTable) {
       AxlesChargesTable numAxlesBased = chargesTable.chargesTableChoice.chargesTableChoice as AxlesChargesTable;
-      AxlesCharges axlesCharges  = numAxlesBased.getChargeForAxles(VehicleMappingService.getAxles(selectedVehicle.classification));
-      return axlesCharges.axlesCharge;
+      AxlesCharges? axlesCharges  = numAxlesBased.getChargeForAxles(VehicleMappingService.getAxles(selectedVehicle.classification));
+      if (axlesCharges == null) {
+        return PaymentFeeResult.error("Could not determine axles charge");
+      }
+      return PaymentFeeResult.success(axlesCharges.axlesCharge);
     } else if (chargesTable.chargesTableChoice.chargesTableChoice is WeightChargesTable) {
       WeightChargesTable weightChargesTable = chargesTable.chargesTableChoice.chargesTableChoice as WeightChargesTable;
-      WeightCharges weightCharges = weightChargesTable.getChargeForWeight(VehicleMappingService.getWeight(selectedVehicle.classification)); //TODO: set based on vehicle config, create a mapping
+      WeightCharges? weightCharges = weightChargesTable.getChargeForWeight(VehicleMappingService.getWeight(selectedVehicle.classification)); //TODO: set based on vehicle config, create a mapping
+      if (weightCharges == null) {
+        return PaymentFeeResult.error("Could not determine weight charge");
+      }
       if (weightCharges.weightCharge.weightChargesChoice is TotalWeightCharges) {
         TotalWeightCharges totalWeightCharges = weightCharges.weightCharge.weightChargesChoice as TotalWeightCharges;
-        return totalWeightCharges.weightCharge;
+        return PaymentFeeResult.success(totalWeightCharges.weightCharge);
       }
     }
-    return null;
+    return PaymentFeeResult.error("Could not determine payment fee");
   }
 
   int? getLaneId(TollAdvertisementMessage tam, Position currentPosition) {
@@ -448,7 +442,7 @@ class TumBuilder{
           }
       }
     }
-    return null; // Default lane ID if none matched TODO: check default behavior
+    return null; 
   }
 
   List<LatLng> generateLanePolygon(List<LatLng> centerlinePoints, double laneWidthMeters) {
