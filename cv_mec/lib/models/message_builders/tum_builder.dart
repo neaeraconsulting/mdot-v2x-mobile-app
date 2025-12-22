@@ -30,7 +30,6 @@ import 'package:asn1_plugin/j3217/2022/toll_usage_message/loc_and_time_stamps.da
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/toll_usage_message.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/toll_user_data.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/tum_data.dart';
-import 'package:asn1_plugin/j3217/2022/toll_usage_message/veh_weight_units.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/vehicle_axles_and_weight_info.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/vehicle_id.dart';
 import 'package:cv_mec/controllers/configuration_controller.dart';
@@ -41,7 +40,6 @@ import 'package:ffi/ffi.dart';
 import 'package:asn1_plugin/generated_bindings.dart' as C;
 import 'package:cv_mec/services/asn_service.dart';
 import 'package:get/get.dart';
-import 'package:http/http.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator_platform_interface/src/models/position.dart';
 
@@ -74,10 +72,9 @@ class TumBuilder{
 
   String encodeTumData(C.TumData cTumData) {
     Pointer<Pointer<Void>> tumPtrPtr = tumDataToPtrPtr(cTumData);
-    int requiredBufferSize = 4096; //TODO: calculateRequiredBufferSize(cTumData);
+    int requiredBufferSize = 4096; 
     String encodedTumData = asnService.encodeTumData(tumPtrPtr, encodeBufferSize: requiredBufferSize);
     return encodedTumData;
-    // What happens with the encodedTum
   }
 
   int calculateRequiredBufferSize(C.TollUsageMessage tum) {
@@ -112,7 +109,6 @@ class TumBuilder{
 
     final Pointer<Pointer<Void>> ptrPtr = calloc<Pointer<Void>>();
     
-    // Store the message pointer as void pointer
     ptrPtr.value = messageFramePtr.cast<Void>();
     
     return ptrPtr;
@@ -120,14 +116,12 @@ class TumBuilder{
 
   Pointer<Pointer<Void>> tumDataToPtrPtr(C.TumData message) {
 
-    //final Pointer<C.MessageFrame> messageFramePtr = calloc<C.MessageFrame>();
     final Pointer<C.TumData> tumDataFramePtr = calloc<C.TumData>();
 
     tumDataFramePtr.ref = message;
 
     final Pointer<Pointer<Void>> ptrPtr = calloc<Pointer<Void>>();
     
-    // Store the message pointer as void pointer
     ptrPtr.value = tumDataFramePtr.cast<Void>();
     
     return ptrPtr;
@@ -138,41 +132,35 @@ class TumBuilder{
     if (tam.tollAdvInfo == null) {
       throw Exception("TollAdvertisementMessage does not contain toll advertisement info");
     } else {
-      TollChargerInfo tollPointInfo = tam.tollAdvInfo!.tollChargerInfo; //Good to go
-      TemporaryID tempId = TemporaryID(randomizeId()); //Check with john if combination of num and letter is okay
-      MsgCount tumSequenceNum = MsgCount(0); //Currently just set to zero TODO
-      MsgCount tamSequenceNum = tam.tollAdvInfo!.tamSequenceNum; //Good to go
+      TollChargerInfo tollPointInfo = tam.tollAdvInfo!.tollChargerInfo;
+      TemporaryID tempId = TemporaryID(randomizeId()); 
+      MsgCount tumSequenceNum = MsgCount(0);
+      MsgCount tamSequenceNum = tam.tollAdvInfo!.tamSequenceNum; 
 
-      // TODO: Skipping tumhash for now
+      // Skipping tumhash for now
 
       // EncryptedTumData
       // TollUserData
-      DDateTime timestamp = DDateTime.fromDateTime(sendTime.toUtc()); //TODO: check with john if this is an okay way to get the time
-      String tspId = tam.tollAdvInfo!.tollChargerInfo.tollChargerId; //Good to go - same as the tollpointid info id
+      DDateTime timestamp = DDateTime.fromDateTime(sendTime.toUtc()); 
+      String tspId = tam.tollAdvInfo!.tollChargerInfo.tollChargerId; 
       
       // VehicleId
-      String vehicleidentity =  vehicleIdList.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join().toUpperCase();//TODO: same as bsm - need to make id generator a global field in the map page
+      String vehicleidentity =  vehicleIdList.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join().toUpperCase();
       String licensePlateState = configController.selectedVehicle.value.licensePlateState.code;
-      String licensePlateNumber = configController.selectedVehicle.value.licensePlateNumber ?? "123ABC"; //need to check optionality on this field TODO
+      String licensePlateNumber = configController.selectedVehicle.value.licensePlateNumber;
       //skipping license plate num trailer for now
       //skipping user id 
       VehicleId vehicleId = VehicleId.fromDetails(vehicleidentity, licensePlateState, licensePlateNumber);
       
-      //VehicleTypes vehicleType = convertVehicleClassificationToVehicleTypes(configController.selectedVehicle.value.classification);
       VehicleTypes vehicleType = VehicleMappingService.getVehicleTypes(selectedVehicle.classification);
-      
-      //skipping vehicle description
       
       //VehicleAxlesAndWeightInfo
       int vehNumAxles = VehicleMappingService.getAxles(selectedVehicle.classification); //TODO: set based on vehicle config, create a mapping
       int vehWeight = VehicleMappingService.getWeight(selectedVehicle.classification); //TODO: set based on vehicle config, create a mapping
       VehicleAxlesAndWeightInfo vehicleAxlesAndWeightInfo = VehicleAxlesAndWeightInfo(vehNumAxles, null, vehWeight, VehicleMappingService.getDefaultWeightUnit(selectedVehicle.classification));
-      int? numOccupants = null;
-      print("cookie ${configController.isHovOn.value}");
+      int? numOccupants;
       if (configController.isHovOn.value) {
-        print("cookie 3");
         numOccupants = VehicleMappingService.getNumOccupants(selectedVehicle.classification); //TODO: set based on vehicle config, create a mapping
-        print("cookie ${numOccupants}");
         if (numOccupants > 5) {
           numOccupants = 5; //Based on J3217 saying if numOccupants is 5 or greater, then set numOccupants to 5
         }
@@ -214,10 +202,6 @@ class TumBuilder{
       Pointer<C.TumData> tumDataPtr = calloc<C.TumData>();
       tumData.toC(tumDataPtr);  // This modifies tumDataPtr.ref in-place
       C.TumData cTumData = tumDataPtr.ref; 
-
-      // for testing, convert back to dart object
-      TumData dartTumData = TumData.fromC(cTumData);
-      
       
       String encodedTumData = encodeTumData(cTumData);
 
@@ -243,9 +227,7 @@ class TumBuilder{
   }
 
   String convertVehicleIdToOctetString(List<int> vehicleId) {
- 
     return vehicleId.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join().toUpperCase();
-    //return vehicleIdString;
   }
 
   List<int> randomizeId() {
@@ -254,7 +236,6 @@ class TumBuilder{
   }
 
   VehicleTypes convertVehicleClassificationToVehicleTypes(VehicleType classification) {
-    //TODO: Check these
     switch (classification) {
       case VehicleType.PASSENGER_VEHICLE:
         return VehicleTypes.passengerCars;
@@ -270,44 +251,6 @@ class TumBuilder{
         return VehicleTypes.twoAxleSixTireSingleUnit;
       default:
         return VehicleTypes.fourTireSingleUnit;
-    }
-  }
-  //TODO: check these mappings
-  int getAxlesFromVehicleClassification(VehicleType classification) {
-    switch (classification) {
-      case VehicleType.PASSENGER_VEHICLE:
-        return 2;
-      case VehicleType.BUS:
-        return 2;
-      case VehicleType.LIGHT_TRUCK:
-        return 2;
-      case VehicleType.TRUCK:
-        return 2;
-      case VehicleType.MOTORCYCLE:
-        return 2;
-      case VehicleType.FIRE:
-        return 3;
-      default:
-        return 2;
-    }
-  }
-
-  int getWeightFromVehicleClassification(VehicleType classification) {
-    switch (classification) {
-      case VehicleType.PASSENGER_VEHICLE:
-        return 3000;
-      case VehicleType.BUS:
-        return 10000;
-      case VehicleType.LIGHT_TRUCK:
-        return 8000;
-      case VehicleType.TRUCK:
-        return 20000;
-      case VehicleType.MOTORCYCLE:
-        return 500;
-      case VehicleType.FIRE:
-        return 15000;
-      default:
-        return 3000;
     }
   }
 
@@ -330,9 +273,6 @@ class TumBuilder{
         result.add(historicalVehiclePath[i]);
       }
     }
-    // if (maxNumberOfLocTimeStamps > 5) {
-    //   maxNumberOfLocTimeStamps = 5;
-    // }
     if (result.length > maxNumberOfLocTimeStamps) {
       return result.sublist(0, maxNumberOfLocTimeStamps);
     } else {
@@ -486,7 +426,6 @@ class TumBuilder{
     return polygon;
   }
   
-  // Helper method to offset a coordinate by distance and bearing
   LatLng _offsetLatLng(LatLng start, double bearingDegrees, double distanceMeters) {
     const double earthRadius = 6378137.0; // Earth's radius in meters
     double bearingRad = bearingDegrees * (pi / 180);
@@ -514,12 +453,10 @@ class TumBuilder{
     return atan2(y, x) * (180 / pi);
   }
   
-  // Simple point-in-polygon check (ray casting algorithm)
+  // point-in-polygon check (ray casting algorithm)
   bool isPointInPolygon(Position point, List<LatLng> laneBorder) {
     
     LatLng position = LatLng(point.latitude, point.longitude);
-    print("potato");
-    print("Checking position Lat: ${position.latitude}, Lon: ${position.longitude}");
     // check if position is within the polygon that is defined by laneBorder
     int i, j = laneBorder.length - 1;
     bool inside = false;

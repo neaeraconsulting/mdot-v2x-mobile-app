@@ -1,16 +1,12 @@
 import 'dart:math';
 
 import 'package:asn1_plugin/j2735/2024/common/computed_lane.dart';
-import 'package:asn1_plugin/j2735/2024/common/latitude.dart';
-import 'package:asn1_plugin/j2735/2024/common/longitude.dart';
 import 'package:asn1_plugin/j2735/2024/common/node_list_xy.dart';
 import 'package:asn1_plugin/j2735/2024/common/node_set_xy.dart';
 import 'package:asn1_plugin/j2735/2024/map_data/generic_lane.dart';
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/toll_advertisement_message.dart';
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/toll_point_map.dart';
 import 'package:cv_mec/services/geometry_service.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -32,7 +28,7 @@ class MappableTam {
       required this.tollZoneBorder,
       required this.markerPoints});
 
-  // Custom constructor using an initializer list
+
   MappableTam.fromTam(this.tam) {
     _initializePolylinePoints(tam!);
   }
@@ -239,7 +235,6 @@ class MappableTam {
   }
 
   void _addMidPointMarker() {
-    //TODO: fix this
     if (tollZoneBorder.isEmpty) return;
     double totalLat = 0.0;
     double totalLon = 0.0;

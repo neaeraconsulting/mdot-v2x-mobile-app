@@ -63,7 +63,7 @@ class PathService{
       
 
       int timestampDiff = (currentTimestamp - prevTimestamp);
-      //print("Delay${route.length} - $index - $prevIndex : $currentTimestamp - $prevTimestamp = $timestampDiff");
+      print("Delay${route.length} - $index - $prevIndex : $currentTimestamp - $prevTimestamp = $timestampDiff");
       if (timestampDiff <=0) {
         // If looping back to start, estimate delay based on average speed
         timestampDiff = 100; // Default to 100 ms for loopback

@@ -99,6 +99,7 @@ class ASNService extends GetxController {
         messageType = messageTypeMap[checkStartFlags[i]] ?? MsgType.UNKNOWN;
       }
     }
+    print("dinosaur: ${messageType.name}");
     return messageType;
   }
 
@@ -346,7 +347,7 @@ class ASNService extends GetxController {
       C.asn_dec_rval_s rval = _bindings.uper_decode(optCodecCtxPtr, typeDescriptorPtr, ptrToPtr, bufferPtr, size, 0, 0);
 
       if (rval.code != 0) {
-        _logger.w("Failed to Decode Message ${hexInput}");
+        _logger.w("DECODE: Failed to Decode Message ${hexInput}");
       }
 
       calloc.free(optCodecCtxPtr);
@@ -354,7 +355,7 @@ class ASNService extends GetxController {
       calloc.free(dataPtr);
     } catch (e) {
       // No specified type, handles all
-      _logger.e("Exception during decode: $e");
+      _logger.e("Unknown Failure during decoding: $e, $hexInput");
     }
 
     return ptrToPtr;
@@ -411,7 +412,7 @@ class ASNService extends GetxController {
     optCodecCtxPtr.ref.max_stack_size = 0;
 
     Pointer<C.asn_TYPE_descriptor_s> typeDescriptorPtr = calloc<C.asn_TYPE_descriptor_s>();
-    typeDescriptorPtr.ref = _bindings.asn_DEF_MessageFrame; //<- change this to toll usage data for doing the tum data
+    typeDescriptorPtr.ref = _bindings.asn_DEF_MessageFrame;
     Pointer<Uint8> buffer = calloc<Uint8>(encodeBufferSize);
     // Encode Data To Buffer
     C.asn_enc_rval_t rval = _bindings.asn_encode_to_buffer(
@@ -443,7 +444,7 @@ class ASNService extends GetxController {
     optCodecCtxPtr.ref.max_stack_size = 0;
 
     Pointer<C.asn_TYPE_descriptor_s> typeDescriptorPtr = calloc<C.asn_TYPE_descriptor_s>();
-    typeDescriptorPtr.ref = _bindings.asn_DEF_TumData; //<- change this to tum data for doing the tum data
+    typeDescriptorPtr.ref = _bindings.asn_DEF_TumData; 
     Pointer<Uint8> buffer = calloc<Uint8>(encodeBufferSize);
 
     // Encode Data To Buffer
@@ -457,7 +458,7 @@ class ASNService extends GetxController {
 
     
     if (rval.encoded < 0) {
-      print("EncodeTumData failed");
+      _logger.e("Failed to encode TumData: $e");
       return "";
     }
 

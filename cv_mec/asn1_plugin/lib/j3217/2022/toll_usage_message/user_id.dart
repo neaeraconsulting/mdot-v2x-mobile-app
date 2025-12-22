@@ -99,7 +99,6 @@ class UserId {
       }
 }
 
-// Helper method to convert string to OCTET_STRING
 void _stringToOctetString(String str, Pointer<C.OCTET_STRING> octetPtr) {
   List<int> bytes = str.codeUnits;
   
@@ -116,7 +115,6 @@ void _stringToOctetString(String str, Pointer<C.OCTET_STRING> octetPtr) {
   }
 }
 
-// Helper method to clean up existing allocations
 void _cleanupExistingAllocations(C.UserId c_userId) {
   // Clean up pan
   if (c_userId.pan != nullptr) {

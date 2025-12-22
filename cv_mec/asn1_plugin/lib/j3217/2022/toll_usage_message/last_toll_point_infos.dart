@@ -69,7 +69,6 @@ class LastTollPointInfos{
     c_lastTollPointInfos.list.array = arrayPtr;
   }
 
-  // Add cleanup method
   void _cleanupExistingAllocations(C.LastTollPointInfos c_lastTollPointInfos) {
     if (c_lastTollPointInfos.list.array != nullptr) {
       // Free individual items first

@@ -93,10 +93,6 @@ class TollUsageMessage{
         calloc.free(c_tum.tumHash);
         c_tum.tumHash = nullptr;
       }
-      
-      // Note: tollPointInfo, tempID, and encryptedTumData are struct values,
-      // so we can't directly free them, but their internal buffers should be
-      // cleaned up by their respective toC methods
     }
 
     void backFromC(C.TollUsageMessage c_obj) {

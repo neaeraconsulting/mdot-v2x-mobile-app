@@ -54,7 +54,6 @@ class Lpn {
     }
   }
   
-  // Helper method to clean up existing allocations
   void _cleanupExistingAllocations(C.Lpn c_lpn) {
     // Clean up licencePlateNumber buffer
     if (c_lpn.licencePlateNumber.buf != nullptr) {
@@ -71,7 +70,6 @@ class CountryCode {
   CountryCode(C.CountryCode_t c_obj)
       : value = String.fromCharCodes(c_obj.buf.asTypedList(c_obj.size));
   
-  // You may need to add a toC method here too
   void toC(Pointer<C.CountryCode_t> pointer) {
     final c_countryCode = pointer.ref;
     

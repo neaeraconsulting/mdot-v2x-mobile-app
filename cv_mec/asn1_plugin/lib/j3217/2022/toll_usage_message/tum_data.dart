@@ -66,11 +66,7 @@ class TumData {
       }
     }
 
-    // Add cleanup method to prevent memory leaks
     void _cleanupExistingAllocations(C.TumData c_tumData) {
-      // Note: tollUserData appears to be a struct value (not pointer), 
-      // so we don't free it directly, but we need to clean up its internal allocations
-      // This would need to be handled by TollUserData's cleanup method
       
       // Clean up tollServiceProviderData
       if (c_tumData.tollServiceProviderData != nullptr) {
@@ -83,7 +79,6 @@ class TumData {
       }
     }
 
-    // Add cleanup method for external use
     void cleanup(Pointer<C.TumData> pointer) {
       _cleanupExistingAllocations(pointer.ref);
     }

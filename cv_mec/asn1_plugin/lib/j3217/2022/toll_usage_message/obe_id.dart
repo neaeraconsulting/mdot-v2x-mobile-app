@@ -47,7 +47,6 @@ class ObeId {
     }
   }
   
-  // Helper method to clean up existing allocations
   void _cleanupExistingAllocations(C.ObeId c_obeId) {
     // Clean up equipmentObuId buffer
     if (c_obeId.equipmentObuId.buf != nullptr) {

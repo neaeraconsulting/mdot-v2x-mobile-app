@@ -19,7 +19,6 @@ class CreateVehicleConfigDialog extends StatelessWidget {
   final TextEditingController vehicleNameController = TextEditingController();
   final TextEditingController vehicleLengthController = TextEditingController();
   final TextEditingController vehicleWidthController = TextEditingController();
-  //final TextEditingController licensePlateStateController = TextEditingController();
   USState licensePlateState = USState.ALABAMA;
   final TextEditingController licensePlateNumberController = TextEditingController();
   VehicleType? vehicleClassification;
@@ -35,7 +34,6 @@ class CreateVehicleConfigDialog extends StatelessWidget {
     Colors.black,
     Colors.white,
   ];
-
   Rx<String> selectedColor = "".obs;
   Rx<String> obdIIaddress = "".obs;
 

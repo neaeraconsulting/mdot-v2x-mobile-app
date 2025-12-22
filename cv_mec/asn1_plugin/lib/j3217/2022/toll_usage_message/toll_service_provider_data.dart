@@ -29,7 +29,5 @@ class TollServiceProviderData {
 
     void toC(Pointer<C.OCTET_STRING> pointer) {
       final c_tspData = pointer.ref;
-      
-      // Implementation to convert Dart object to C OCTET_STRING goes here
     }
 }

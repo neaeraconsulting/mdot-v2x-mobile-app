@@ -317,6 +317,9 @@ class MapState extends State<MapPage> {
       
     });
 
+    String sampleTamFour = "0025809544000401080052aa9900002aaa9b0400002a01f7fbf4a2d22000234020400ee6b2801c4fecbfca3e802da000004000000003116fb485cca307f73116fdb4a4ca2f3fb02000200000000188b7ed89e6517ab0188b80842a6516c6a0001000000000622dfb5e79945e8c4622e020bd9945b0200600000000000001d00002002df0c00000000000000000000000000000000000000000";
+    tamManager.addOrUpdateFromString(sampleTamFour);
+
     updateGraphics();
     
 
@@ -542,6 +545,7 @@ class MapState extends State<MapPage> {
   }
 
   void processIncomingMessage(String? broker, String topic, List<int> bytes, DateTime recTime, DateTime? sendTime, String source) async {
+    print("dinosaur processing incoming message from $broker on topic $topic");
     String hex = ASNService.bytesToHex(bytes);
     MsgType msgType = asnService.determineHexMessageType(hex);
     ValidateStatus validity;

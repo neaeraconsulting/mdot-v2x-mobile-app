@@ -29,7 +29,7 @@ import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/vehicle_types.
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/last_toll_point_infos.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/loc_and_time_stamps.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/vehicle_axles_and_weight_info.dart';
-import 'package:asn1_plugin/j3217/2022/toll_usage_message/vehicle_description.dart';
+import 'package:asn1_plugin/j3217/2022/toll_usage_message/vehicle_description/vehicle_description.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/vehicle_id.dart'; 
 import 'package:ffi/ffi.dart';
 
@@ -106,11 +106,10 @@ class TollUserData {
       vehicleId.toC(vehicleIdPtr);
       c_tollUserData.vehicleId = vehicleIdPtr.ref;
 
-      // CORRECTED: VehicleTypes enum conversion
       if(vehType != null){
         final vehTypePtr = calloc<Int32>();
         vehTypePtr.value = (vehType!.index) + 1;
-        c_tollUserData.vehType = vehTypePtr.cast<C.VehicleTypes_t>(); // Use VehicleTypes_t
+        c_tollUserData.vehType = vehTypePtr.cast<C.VehicleTypes_t>();
       } else {
         c_tollUserData.vehType = nullptr;
       }
@@ -124,25 +123,22 @@ class TollUserData {
         c_tollUserData.vehicleDescription = nullptr;
       }
 
-      // Handle numOccupants (similar pattern)
       if(numOccupants != null){
-        final numOccupantsPtr = calloc<Int32>();  // Use Int32 instead
+        final numOccupantsPtr = calloc<Int32>(); 
         numOccupantsPtr.value = numOccupants!;
         c_tollUserData.numOccupants = numOccupantsPtr.cast<Long>();
       } else {
         c_tollUserData.numOccupants = nullptr;
       }
 
-      // Handle entryTollPointId
       if(entryTollPointId != null){
-        final entryTollPointIdPtr = calloc<Int32>();  // Use Int32 instead
+        final entryTollPointIdPtr = calloc<Int32>();
         entryTollPointIdPtr.value = entryTollPointId!.tollPointID;
         c_tollUserData.entryTollPointId = entryTollPointIdPtr.cast<C.TollPointID_t>();
       } else {
         c_tollUserData.entryTollPointId = nullptr;
       }
 
-      // Handle other optional fields...
       if(entryTimeStamp != null){
         final entryTimeStampPtr = calloc<C.DDateTime>();
         entryTimeStamp!.toC(entryTimeStampPtr);

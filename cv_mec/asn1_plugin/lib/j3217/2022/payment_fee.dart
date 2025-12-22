@@ -31,7 +31,6 @@ class PaymentFee {
   }
 
 
-  // Helper method to clean up existing allocations
   void _cleanupExistingAllocations(C.PaymentFee c_paymentFee) {
     // Clean up paymentFeeUnit buffer
     if (c_paymentFee.paymentFeeUnit.buf != nullptr) {
@@ -62,14 +61,6 @@ class PayUnit {
       c_payUnit.buf = nullptr;
       c_payUnit.size = 0;
     }
-
-
-    // Convert hexadecimal to octet string - Might need to take out if the incoming TAM changes their payment fee unit to actually be an octet string
-    // String octetString = "";
-    // for (int i = 0; i < payUnit.length-1; i += 2) {
-    //   // This assumes payUnit is a hex string; adjust if it's not
-    //   octetString += String.fromCharCode(int.parse(payUnit.substring(i, i + 2), radix: 16));
-    // }
     
     // Convert string to bytes (treating as regular string, not hex)
     final bytes = payUnit.codeUnits;  // Get UTF-16 code units as bytes

@@ -64,13 +64,11 @@ class VehicleId {
       // Zero-initialize the struct
       pointer.cast<Uint8>().asTypedList(sizeOf<C.TumVehicleId>()).fillRange(0, sizeOf<C.TumVehicleId>(), 0);
       
-      // Handle vehicleIdentity (OCTET_STRING)
       if (vehicleIdentity != null) {
         final vehicleIdentityPtr = calloc<C.OCTET_STRING>();
         vehicleIdentityPtr.cast<Uint8>().asTypedList(sizeOf<C.OCTET_STRING>()).fillRange(0, sizeOf<C.OCTET_STRING>(), 0);
         
         // Convert hex string to bytes
-        //List<int> bytes = _hexStringToBytes(vehicleIdentity!);
         final bytes = <int>[];
         for (int i = 0; i < vehicleIdentity!.length; i += 2) {
           bytes.add(int.parse(vehicleIdentity!.substring(i, i + 2), radix: 16));
@@ -93,7 +91,6 @@ class VehicleId {
         c_vehicleId.vehicleIdentity = nullptr;
       }
       
-      // Handle licPlateState (IA5String_t)
       if (licPlateState != null) {
         final licPlateStatePtr = calloc<C.IA5String_t>();
         licPlateStatePtr.cast<Uint8>().asTypedList(sizeOf<C.IA5String_t>()).fillRange(0, sizeOf<C.IA5String_t>(), 0);
@@ -103,7 +100,6 @@ class VehicleId {
         c_vehicleId.licPlateState = nullptr;
       }
       
-      // Handle licPlateNumVeh (IA5String_t)
       if (licPlateNumVeh != null) {
         final licPlateNumVehPtr = calloc<C.IA5String_t>();
         licPlateNumVehPtr.cast<Uint8>().asTypedList(sizeOf<C.IA5String_t>()).fillRange(0, sizeOf<C.IA5String_t>(), 0);
@@ -113,7 +109,6 @@ class VehicleId {
         c_vehicleId.licPlateNumVeh = nullptr;
       }
       
-      // Handle licPlateNumTrailer (IA5String_t)
       if (licPlateNumTrailer != null) {
         final licPlateNumTrailerPtr = calloc<C.IA5String_t>();
         licPlateNumTrailerPtr.cast<Uint8>().asTypedList(sizeOf<C.IA5String_t>()).fillRange(0, sizeOf<C.IA5String_t>(), 0);
@@ -123,7 +118,6 @@ class VehicleId {
         c_vehicleId.licPlateNumTrailer = nullptr;
       }
       
-      // Handle userId
       if (userId != null) {
         final userIdPtr = calloc<C.UserId>();
         userIdPtr.cast<Uint8>().asTypedList(sizeOf<C.UserId>()).fillRange(0, sizeOf<C.UserId>(), 0);
@@ -134,27 +128,6 @@ class VehicleId {
       }
     }
 
-    // Helper method to convert hex string to bytes
-    List<int> _hexStringToBytes(String hexString) {
-      List<int> bytes = [];
-      // Remove any spaces or separators
-      String cleanHex = hexString.replaceAll(RegExp(r'[^0-9a-fA-F]'), '');
-      
-      // Ensure even number of characters
-      if (cleanHex.length % 2 != 0) {
-        cleanHex = '0' + cleanHex;
-      }
-      
-      for (int i = 0; i < cleanHex.length; i += 2) {
-        String hexByte = cleanHex.substring(i, i + 2);
-        int byte = int.parse(hexByte, radix: 16);
-        bytes.add(byte);
-      }
-      
-      return bytes;
-    }
-
-    // Helper method to convert string to IA5String_t
     void _stringToIA5String(String str, Pointer<C.IA5String_t> ia5Ptr) {
       List<int> bytes = str.codeUnits;
       
@@ -171,7 +144,6 @@ class VehicleId {
       }
     }
 
-      // Helper method to clean up existing allocations
       void _cleanupExistingAllocations(C.TumVehicleId c_vehicleId) {
         // Clean up vehicleIdentity
         if (c_vehicleId.vehicleIdentity != nullptr) {
