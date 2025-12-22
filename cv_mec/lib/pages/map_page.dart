@@ -217,7 +217,6 @@ class MapState extends State<MapPage> {
 
   DateTime lastRedrawTime = DateTime.now();
 
-  // List<LatLng> historicalVehiclePath = [];
   List<LocAndTimeStamp> historicalVehiclePath = [];
   List<int> vehicleId = [];
 
@@ -317,8 +316,8 @@ class MapState extends State<MapPage> {
       
     });
 
-    String sampleTamFour = "0025809544000401080052aa9900002aaa9b0400002a01f7fbf4a2d22000234020400ee6b2801c4fecbfca3e802da000004000000003116fb485cca307f73116fdb4a4ca2f3fb02000200000000188b7ed89e6517ab0188b80842a6516c6a0001000000000622dfb5e79945e8c4622e020bd9945b0200600000000000001d00002002df0c00000000000000000000000000000000000000000";
-    tamManager.addOrUpdateFromString(sampleTamFour);
+    String sampleTam = "0025809544000401080052aa9900002aaa9b0400002a01f7fbf4a2d22000234020400ee6b2801c4fecbfca3e802da000004000000003116fb485cca307f73116fdb4a4ca2f3fb02000200000000188b7ed89e6517ab0188b80842a6516c6a0001000000000622dfb5e79945e8c4622e020bd9945b0200600000000000001d00002002df0c00000000000000000000000000000000000000000";
+    tamManager.addOrUpdateFromString(sampleTam);
 
     updateGraphics();
     
@@ -545,7 +544,6 @@ class MapState extends State<MapPage> {
   }
 
   void processIncomingMessage(String? broker, String topic, List<int> bytes, DateTime recTime, DateTime? sendTime, String source) async {
-    print("dinosaur processing incoming message from $broker on topic $topic");
     String hex = ASNService.bytesToHex(bytes);
     MsgType msgType = asnService.determineHexMessageType(hex);
     ValidateStatus validity;
@@ -724,24 +722,7 @@ class MapState extends State<MapPage> {
 
     updateGraphics();
 
-    //addToReceiveLog(broker, topic, "TAM", recTime, sendTime, tam.timeStamp.getAsDateTime(), trimmedHex, source, validity); TODO: Dinosaur
-  }
-
-  //TODO: Implement TUM Processing - DO WE NEED THIS
-  void processNewTUM(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
-
-    // Trim the Hex
-    String trimmedHex = asnService.trimMessageHeaders(hex, asnService.TUM_START_FLAG)!; 
-    
-    //ASN service decodes the TAM
-    //TollUsageMessage tum = asnService.decodeTum(trimmedHex);
-    
-    //Add the Tam message to the TAM manager
-    //tamManager.addOrUpdate(tam);
-
-    //updateGraphics();
-
-    //addToReceiveLog(broker, topic, "TAM", recTime, sendTime, LeidosDateExtraction.extractDateFromMap(map), trimmedHex, source, validity);
+    addToReceiveLog(broker, topic, "TAM", recTime, sendTime, tam.tollAdvInfo!.timestamp.getAsDateTime(), trimmedHex, source, validity);
   }
 
   void processNewTumAck(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
@@ -758,7 +739,7 @@ class MapState extends State<MapPage> {
     //updateGraphics();
     sendPaymentReceivedMessage();
 
-    //addToReceiveLog(broker, topic, "TAM", recTime, sendTime, tam.timeStamp.getAsDateTime(), trimmedHex, source, validity); TODO: Dinosaur
+    addToReceiveLog(broker, topic, "TUMAck", recTime, sendTime, null, trimmedHex, source, validity);
   }
 
   void sendPaymentSentMessage(TollUsageMessage tum) {
@@ -772,7 +753,7 @@ class MapState extends State<MapPage> {
       autoCloseDuration: const Duration(seconds: 4),
       showProgressBar: false,
       dragToClose: true,
-      icon: Icon(Icons.monetization_on),
+      icon: const Icon(Icons.monetization_on),
     );
   }
   
@@ -786,7 +767,7 @@ class MapState extends State<MapPage> {
       autoCloseDuration: const Duration(seconds: 4),
       showProgressBar: false,
       dragToClose: true,
-      icon: Icon(Icons.monetization_on),
+      icon: const Icon(Icons.monetization_on),
     );
   }
 
@@ -797,7 +778,7 @@ class MapState extends State<MapPage> {
         bool sent = sendTumMessage(mappableTam.tam!);
         inTamZone = true; 
         if (sent) {
-          Future.delayed(Duration(seconds: 2), () { //TODO: remove
+          Future.delayed(Duration(seconds: 2), () { //TODO: remove once sending and receiving TUMAck is implemented
             sendPaymentReceivedMessage();
           });
         }
@@ -809,8 +790,8 @@ class MapState extends State<MapPage> {
 
   bool checkPositionInTam(List<LatLng> tamBorder, Position? position) {
     if (position == null) return false;
-    // check if position is within the polygon that is defined by tamBorder
 
+    // check if position is within the polygon that is defined by tamBorder
     int i, j = tamBorder.length - 1;
     bool inside = false;
     for (i = 0; i < tamBorder.length; j = i++) {
@@ -977,7 +958,7 @@ class MapState extends State<MapPage> {
 
     if (tumHex != "") {
       List<int> tumBytes = ASNService.hexToBytes(tumHex);
-      //mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false); //TODO: Add back once it can be handled
+      // mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false); // Uncomment when ETX can handle TUM messages.
       sendPaymentSentMessage(tum);
       int connectionCount = mqttAgents.getConnectionCount();
       if( connectionCount == mqttAgents.agents.length){
@@ -1288,9 +1269,7 @@ class MapState extends State<MapPage> {
           rotate: true,
           child: GestureDetector(
             onTap: () {
-              // if (mappableTam.tam != null) {
-              //   tumBuilder.generateTumFromTam(mappableTam.tam!, historicalVehiclePath, vehicleId); //TODO: Check !
-              // }
+              // Location to add functionality when TAM marker is tapped
             },
             child: Container(
               decoration: BoxDecoration(
@@ -1561,7 +1540,6 @@ class MapState extends State<MapPage> {
         }
       }
 
-      //List<MappableTam> mappableTams = tamManager.getActiveTamGeometry();
       for (MappableTam mappableTam in mappableTamList) {
         for (List<LatLng> lanePoints in mappableTam.tollZonePolylinePoints) {
           Polyline<PolyLineHitValue> hitPoly = Polyline(
@@ -1612,7 +1590,6 @@ class MapState extends State<MapPage> {
       }
     }
 
-    //List<MappableTam> mappableTams = tamManager.getActiveTamGeometry();
     for (MappableTam mappableTam in mappableTamList) {
       Polygon<HitValue> hitPoly = Polygon(  
         points: mappableTam.tollZoneBorder,
@@ -1621,18 +1598,6 @@ class MapState extends State<MapPage> {
         hitValue: null,
       );
       polygons.add(hitPoly);
-      // for (List<Polygon> polygonPoints in mappableTam.tollZonePolygons) {
-      //   for (Polygon polygon in polygonPoints) {
-      //     Polygon<HitValue> hitPoly = Polygon(
-      //       points: polygon.points,
-      //       borderColor: Colors.white,
-      //       //color: Colors.blue.withValues(alpha: 0.5),
-      //       borderStrokeWidth: 5,
-      //       hitValue: null,
-      //     );
-      //     polygons.add(hitPoly);
-      //   }
-      // }
     }
 
     return polygons;
