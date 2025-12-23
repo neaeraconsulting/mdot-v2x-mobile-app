@@ -37,6 +37,7 @@ import 'package:cv_mec/models/test_data.dart';
 import 'package:cv_mec/models/vehicle.dart';
 import 'package:cv_mec/services/geometry_service.dart';
 import 'package:cv_mec/services/vehicle_mapping_service.dart';
+import 'package:dart_jts/dart_jts.dart' hide Position;
 import 'package:ffi/ffi.dart';
 import 'package:asn1_plugin/generated_bindings.dart' as C;
 import 'package:cv_mec/services/asn_service.dart';
@@ -44,13 +45,16 @@ import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator_platform_interface/src/models/position.dart';
 
+
 class TumBuilder{
 
   ASNService asnService = Get.find<ASNService>();
   Random random = Random();
   TumBuilder();
   ConfigurationController configController = Get.find<ConfigurationController>();
+  GeometryService geometryService = Get.find<GeometryService>();
   final List<Pointer> _allocatedPointers = [];
+  final double margin = 0.00001;
 
   C.TollUsageMessage buildCTum(TollUsageMessage tum) {
     final tumPtr = _allocate(calloc<C.TollUsageMessage>());
@@ -256,25 +260,6 @@ class TumBuilder{
     return randomId;
   }
 
-  VehicleTypes convertVehicleClassificationToVehicleTypes(VehicleType classification) {
-    switch (classification) {
-      case VehicleType.PASSENGER_VEHICLE:
-        return VehicleTypes.passengerCars;
-      case VehicleType.BUS:
-        return VehicleTypes.buses;
-      case VehicleType.LIGHT_TRUCK:
-        return VehicleTypes.fourTireSingleUnit;
-      case VehicleType.TRUCK:
-        return VehicleTypes.fourOrMoreAxleSingleUnit;
-      case VehicleType.MOTORCYCLE:
-        return VehicleTypes.motorcycles;
-      case VehicleType.FIRE:
-        return VehicleTypes.twoAxleSixTireSingleUnit;
-      default:
-        return VehicleTypes.fourTireSingleUnit;
-    }
-  }
-
   List<T> takeLast<T>(List<T> list, int count) {
     if (list.isEmpty) return [];
     final start = list.length > count ? list.length - count : 0;
@@ -389,108 +374,18 @@ class TumBuilder{
   int? getLaneId(TollAdvertisementMessage tam, Position currentPosition) {
     TollZoneLanesMap tollZoneLanesMap = tam.tollAdvInfo!.tollPointMap.tollZoneLanesMap;
     double laneWidth = tam.tollAdvInfo!.tollPointMap.laneWidth.laneWidth * 0.01;
-    GeometryService geometryService = Get.find<GeometryService>();
     for (var lane in tollZoneLanesMap.tollZoneLanesMap) {
       NodeListXY nodeList = lane.nodeList;
-      if (nodeList.nodeListXY is NodeSetXY) {
-          NodeSetXY nodeSet = nodeList.nodeListXY as NodeSetXY;
-          List<LatLng> lanePoints = geometryService.getLatLngCoordinatesFromNodeSetXY(nodeSet, tam.tollAdvInfo!.tollPointMap.referencePoint);
-          List<LatLng> lanePolygon = generateLanePolygon(lanePoints, laneWidth);
-          lanePolygon.add(lanePolygon.first); // Close the polygon
-          bool isInLane = isPointInPolygon(currentPosition, lanePolygon);
-          if (isInLane) {
-            return lane.laneID.laneID;
-          }
+      Geometry? lanePolygon = geometryService.getGeometryFromNodeListXY(nodeList, tam.tollAdvInfo!.tollPointMap.referencePoint, laneWidth);
+      if (lanePolygon == null) {
+        continue;
+      }
+      bool isInLane = geometryService.isPointInPolygonWithMargin(lanePolygon, currentPosition.longitude, currentPosition.latitude, margin);
+      if (isInLane) {
+        return lane.laneID.laneID;
       }
     }
     return null; 
-  }
-
-  List<LatLng> generateLanePolygon(List<LatLng> centerlinePoints, double laneWidthMeters) {
-    if (centerlinePoints.length < 2) return [];
-    
-    List<LatLng> leftBoundary = [];
-    List<LatLng> rightBoundary = [];
-    
-    for (int i = 0; i < centerlinePoints.length; i++) {
-      LatLng current = centerlinePoints[i];
-      
-      // Calculate perpendicular direction
-      double bearing;
-      if (i == 0) {
-        // First point: use direction to next point
-        bearing = _calculateBearing(current, centerlinePoints[i + 1]);
-      } else if (i == centerlinePoints.length - 1) {
-        // Last point: use direction from previous point
-        bearing = _calculateBearing(centerlinePoints[i - 1], current);
-      } else {
-        // Middle points: average of incoming and outgoing directions
-        double bearing1 = _calculateBearing(centerlinePoints[i - 1], current);
-        double bearing2 = _calculateBearing(current, centerlinePoints[i + 1]);
-        bearing = (bearing1 + bearing2) / 2;
-      }
-      
-      // Calculate perpendicular bearings (90 degrees left and right)
-      double leftBearing = bearing + 90;
-      double rightBearing = bearing - 90;
-      
-      // Calculate offset points
-      LatLng leftPoint = _offsetLatLng(current, leftBearing, laneWidthMeters / 2);
-      LatLng rightPoint = _offsetLatLng(current, rightBearing, laneWidthMeters / 2);
-      
-      leftBoundary.add(leftPoint);
-      rightBoundary.add(rightPoint);
-    }
-    
-    // Create closed polygon: left boundary + reversed right boundary
-    List<LatLng> polygon = [...leftBoundary, ...rightBoundary.reversed];
-    return polygon;
-  }
-  
-  LatLng _offsetLatLng(LatLng start, double bearingDegrees, double distanceMeters) {
-    const double earthRadius = 6378137.0; // Earth's radius in meters
-    double bearingRad = bearingDegrees * (pi / 180);
-    double latRad = start.latitude * (pi / 180);
-    double lonRad = start.longitude * (pi / 180);
-    
-    double newLatRad = asin(sin(latRad) * cos(distanceMeters / earthRadius) +
-        cos(latRad) * sin(distanceMeters / earthRadius) * cos(bearingRad));
-    
-    double newLonRad = lonRad + atan2(
-        sin(bearingRad) * sin(distanceMeters / earthRadius) * cos(latRad),
-        cos(distanceMeters / earthRadius) - sin(latRad) * sin(newLatRad));
-    
-    return LatLng(newLatRad * (180 / pi), newLonRad * (180 / pi));
-  }
-  
-  double _calculateBearing(LatLng start, LatLng end) {
-    double lat1Rad = start.latitude * (pi / 180);
-    double lat2Rad = end.latitude * (pi / 180);
-    double deltaLonRad = (end.longitude - start.longitude) * (pi / 180);
-    
-    double y = sin(deltaLonRad) * cos(lat2Rad);
-    double x = cos(lat1Rad) * sin(lat2Rad) - sin(lat1Rad) * cos(lat2Rad) * cos(deltaLonRad);
-    
-    return atan2(y, x) * (180 / pi);
-  }
-  
-  // point-in-polygon check (ray casting algorithm)
-  bool isPointInPolygon(Position point, List<LatLng> laneBorder) {
-    
-    LatLng position = LatLng(point.latitude, point.longitude);
-    // check if position is within the polygon that is defined by laneBorder
-    int i, j = laneBorder.length - 1;
-    bool inside = false;
-    for (i = 0; i < laneBorder.length; j = i++) {
-      if (((laneBorder[i].longitude > position.longitude) != (laneBorder[j].longitude > position.longitude)) &&
-          (position.latitude <
-              (laneBorder[j].latitude - laneBorder[i].latitude) * (position.longitude - laneBorder[i].longitude) /
-                      (laneBorder[j].longitude - laneBorder[i].longitude) +
-                  laneBorder[i].latitude)) {
-        inside = !inside;
-      }
-    }
-    return inside;
   }
 }
 

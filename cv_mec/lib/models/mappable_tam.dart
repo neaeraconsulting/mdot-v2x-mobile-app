@@ -19,6 +19,7 @@ class MappableTam {
   List<LatLng> markerPoints = [];
   List<LatLng> approachMarkerPoints = [];
   double approachMarkerRotation = 0.0;
+  GeometryService geometryService = Get.find<GeometryService>();
 
 
   MappableTam(
