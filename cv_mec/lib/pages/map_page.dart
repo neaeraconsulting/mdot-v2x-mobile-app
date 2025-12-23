@@ -947,14 +947,6 @@ class MapState extends State<MapPage> {
       List<int> tumBytes = ASNService.hexToBytes(tumHex);
       // mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false); // Uncomment when ETX can handle TUM messages.
       sendPaymentMessage("Payment Sent", description: "Amount Sent: ${tum.encryptedTumData.tumData!.tollUserData.charge!.paymentFeeAmount} ${tum.encryptedTumData.tumData!.tollUserData.charge!.paymentFeeUnit.payUnit}");
-      int connectionCount = mqttAgents.getConnectionCount();
-      if( connectionCount == mqttAgents.agents.length){
-        updateConnectedStatus(ConnectedStatus.CONNECTED);
-      }else if(connectionCount > 0){
-        updateConnectedStatus(ConnectedStatus.PARTIAL);
-      }else{
-        updateConnectedStatus(ConnectedStatus.DISCONNECTED);
-      }
       return true;
     }
     return false;
