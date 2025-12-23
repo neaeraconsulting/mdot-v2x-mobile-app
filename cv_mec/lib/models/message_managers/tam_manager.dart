@@ -19,6 +19,7 @@ class TamManager {
   }
 
   void addOrUpdate(TollAdvertisementMessage tam) {
+    if (tam.tollAdvInfo == null) return;
     storedTams[tam.tollAdvInfo!.tollChargerInfo.tollPointId.tollPointID] = MappableTam.fromTam(tam);
   }
 
@@ -47,13 +48,23 @@ class TamManager {
   }
 
   MappableTam? checkIfInTam(Position? currentPosition) {
+    bool isInTam = false; 
+    MappableTam? currentTam;
     for (MappableTam mappableTam in storedTams.values) {
-      bool isInTam = checkPositionInTam(mappableTam.tollZoneBorder, currentPosition);
-      if (isInTam & !inTamZone) {
-        return mappableTam;
-      } else if (!isInTam & inTamZone) {
-        inTamZone = false;
+      isInTam = checkPositionInTam(mappableTam.tollZoneBorder, currentPosition);
+      if (isInTam) {
+        currentTam = mappableTam;
+        break;
       }
+    }
+    if (isInTam) {
+      if (!inTamZone) {
+        inTamZone = true;
+        return currentTam;
+      } 
+    } else {
+      inTamZone = false;
+      return null;
     }
     return null;
   }

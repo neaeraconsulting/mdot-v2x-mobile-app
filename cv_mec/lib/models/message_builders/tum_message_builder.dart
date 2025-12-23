@@ -191,19 +191,17 @@ class TumMessageBuilder{
       VehicleTypes vehicleType = VehicleMappingService.getVehicleTypes(selectedVehicle.classification);
       
       //VehicleAxlesAndWeightInfo
-      int vehNumAxles = VehicleMappingService.getAxles(selectedVehicle.classification); //TODO: set based on vehicle config, create a mapping
-      int vehWeight = VehicleMappingService.getWeight(selectedVehicle.classification); //TODO: set based on vehicle config, create a mapping
+      int vehNumAxles = VehicleMappingService.getAxles(selectedVehicle.classification); 
+      int vehWeight = VehicleMappingService.getWeight(selectedVehicle.classification); 
       VehicleAxlesAndWeightInfo vehicleAxlesAndWeightInfo = VehicleAxlesAndWeightInfo(vehNumAxles, null, vehWeight, VehicleMappingService.getDefaultWeightUnit(selectedVehicle.classification));
       int? numOccupants;
       if (configController.isHovOn.value) {
-        numOccupants = VehicleMappingService.getNumOccupants(selectedVehicle.classification); //TODO: set based on vehicle config, create a mapping
+        numOccupants = VehicleMappingService.getNumOccupants(selectedVehicle.classification); 
         if (numOccupants > 5) {
           numOccupants = 5; //Based on J3217 saying if numOccupants is 5 or greater, then set numOccupants to 5
         }
       }
 
-      // Skipping entrytollpointid for the moment
-      // skipping entryTimestamp for the moment
 
       // locAndTimeStamps
       int maxNumberOfLocTimeStamps = tam.tollAdvInfo!.tumInstructions!.maxNumOfLocTimeStamps.maxNumOfLocTimeStampsInteger;
@@ -304,12 +302,8 @@ class TumMessageBuilder{
   PaymentFeeResult getPaymentFeeFromTam(TollAdvertisementMessage tam, Position currentPosition, int? numOccupants) {
     TollTypeChargeChoice tollTypeCharge = tam.tollChargesTable.tollTypeCharge;
     if (tollTypeCharge.tollTypeCharge is TimeChargesTable) {
-      //TimeChargesTable pointCharges = tollTypeCharge.tollTypeCharge as TimeChargesTable;
-      //ChargesTable chargesTable = pointCharges.chargesTable;
-      //PaymentFeeResult paymentFeeResult = getPaymentFeeFromChargesTable(chargesTable, numOccupants); 
       return PaymentFeeResult.error("Time based charging not implemented"); //This fee is charge per minute. Time based chargine isn't implemented yet
     } else if (tollTypeCharge.tollTypeCharge is PerClosedNetworkChargesTable) {
-      //PerClosedNetworkChargesTable perClosedNetworkChargesTable = tollTypeCharge.tollTypeCharge as PerClosedNetworkChargesTable;
       return PaymentFeeResult.error("Per closed network charging not implemented");
     } else if (tollTypeCharge.tollTypeCharge is PerLaneChargesTable) {
       PerLaneChargesTable perLaneChargesTable = tollTypeCharge.tollTypeCharge as PerLaneChargesTable;

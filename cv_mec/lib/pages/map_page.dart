@@ -217,9 +217,7 @@ class MapState extends State<MapPage> {
 
   DateTime lastRedrawTime = DateTime.now();
 
-  // List<LocAndTimeStamp> historicalVehiclePath = [];
   List<int> vehicleId = [];
-
 
   @override
   void initState() {
@@ -317,6 +315,7 @@ class MapState extends State<MapPage> {
     // For testing TAM rendering
     tamManager.addOrUpdateFromString(TestData.testTam);
     tamManager.addOrUpdateFromString(TestData.testTamTwo);
+    tamManager.addOrUpdateFromString(TestData.tfhrcTamThree);
 
     updateGraphics();
     
@@ -732,14 +731,11 @@ class MapState extends State<MapPage> {
     if (currentTam == null) {
       return;
     }
-    if (!tamManager.inTamZone) {
-      bool sent = sendTumMessage(currentTam.tam!);
-      if (sent) {
-        tamManager.inTamZone = true;
-        Future.delayed(Duration(seconds: 2), () { //TODO: remove once sending and receiving TUMAck is implemented
-          VehicleNotificationManager.sendPaymentMessage("Payment Received");
-        });
-      }
+    bool sent = sendTumMessage(currentTam.tam!);
+    if (sent) {
+      Future.delayed(Duration(seconds: 2), () { //TODO: remove once sending and receiving TUMAck is implemented
+        VehicleNotificationManager.sendPaymentMessage("Payment Received");
+      });
     }
   }
 
@@ -893,7 +889,6 @@ class MapState extends State<MapPage> {
     TollUsageMessage tum = tumResult.tollUsageMessage!;
     String tumHex = tumBuilder.convertTumToHex(tum);
     _logger.i("Generated TUM Hex ${tumHex}");
-    
 
     if (tumHex != "") {
       List<int> tumBytes = ASNService.hexToBytes(tumHex);
@@ -928,7 +923,9 @@ class MapState extends State<MapPage> {
 
     tumBuilder.addLocation(position, kronos);
 
-    checkAndSendTum();
+    if (settingsController.tollingEnabled.value) {
+      checkAndSendTum();
+    }
 
     updateGraphics();
     updateTimeToChange();
