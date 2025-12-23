@@ -2,6 +2,8 @@ import 'dart:ffi';
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:asn1_plugin/j2735/2024/common/d_date_time.dart';
+import 'package:asn1_plugin/j2735/2024/common/latitude.dart';
+import 'package:asn1_plugin/j2735/2024/common/longitude.dart';
 import 'package:asn1_plugin/j2735/2024/common/msg_count.dart';
 import 'package:asn1_plugin/j2735/2024/common/node_list_xy.dart';
 import 'package:asn1_plugin/j2735/2024/common/node_set_xy.dart';
@@ -55,11 +57,24 @@ class TumMessageBuilder{
   GeometryService geometryService = Get.find<GeometryService>();
   final List<Pointer> _allocatedPointers = [];
   final double margin = 0.00001;
+  List<LocAndTimeStamp> historicalVehiclePath = [];
 
   C.TollUsageMessage buildCTum(TollUsageMessage tum) {
     final tumPtr = _allocate(calloc<C.TollUsageMessage>());
     tum.toC(tumPtr);
     return tumPtr.ref;
+  }
+
+  void addLocation(Position position, DateTime kronos) {
+    LocAndTimeStamp locAndTime = LocAndTimeStamp(
+      latitude: Latitude((position.latitude * 1E7).toInt()),
+      longitude: Longitude((position.longitude * 1E7).toInt()),
+      timeStamp: DDateTime.fromDateTime(kronos),
+    );
+    historicalVehiclePath.add(locAndTime); 
+    if (historicalVehiclePath.length > 50) {
+      historicalVehiclePath.removeAt(0);
+    }
   }
 
   TollUsageMessage getSampleTum() {
@@ -147,7 +162,7 @@ class TumMessageBuilder{
     return ptrPtr;
   }
 
-  TollUsageMessageResult generateTumFromTam(TollAdvertisementMessage tam, List<LocAndTimeStamp> historicalVehiclePath, Position currentPosition, List<int> vehicleIdList, DateTime sendTime){
+  TollUsageMessageResult generateTumFromTam(TollAdvertisementMessage tam, Position currentPosition, List<int> vehicleIdList, DateTime sendTime){
     try {
     Vehicle selectedVehicle = configController.selectedVehicle.value;
     if (tam.tollAdvInfo == null) {

@@ -2,9 +2,12 @@ import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/toll_advertise
 import 'package:cv_mec/models/mappable_tam.dart';
 import 'package:cv_mec/services/asn_service.dart';
 import 'package:get/get.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:geolocator/geolocator.dart';
 
 class TamManager {
   Map<int, MappableTam> storedTams = <int, MappableTam>{};
+  bool inTamZone = false;
 
   List<MappableTam> getActiveTamGeometry() {
     List<MappableTam> activeTams = [];
@@ -23,5 +26,35 @@ class TamManager {
     ASNService asnService = Get.find<ASNService>();
     TollAdvertisementMessage tam = asnService.decodeTam(tamHex);
     addOrUpdate(tam);
+  }
+
+  bool checkPositionInTam(List<LatLng> tamBorder, Position? position) {
+    if (position == null) return false;
+
+    // check if position is within the polygon that is defined by tamBorder
+    int i, j = tamBorder.length - 1;
+    bool inside = false;
+    for (i = 0; i < tamBorder.length; j = i++) {
+      if (((tamBorder[i].longitude > position.longitude) != (tamBorder[j].longitude > position.longitude)) &&
+          (position.latitude <
+              (tamBorder[j].latitude - tamBorder[i].latitude) * (position.longitude - tamBorder[i].longitude) /
+                      (tamBorder[j].longitude - tamBorder[i].longitude) +
+                  tamBorder[i].latitude)) {
+        inside = !inside;
+      }
+    }
+    return inside;
+  }
+
+  MappableTam? checkIfInTam(Position? currentPosition) {
+    for (MappableTam mappableTam in storedTams.values) {
+      bool isInTam = checkPositionInTam(mappableTam.tollZoneBorder, currentPosition);
+      if (isInTam & !inTamZone) {
+        return mappableTam;
+      } else if (!isInTam & inTamZone) {
+        inTamZone = false;
+      }
+    }
+    return null;
   }
 }

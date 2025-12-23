@@ -217,11 +217,9 @@ class MapState extends State<MapPage> {
 
   DateTime lastRedrawTime = DateTime.now();
 
-  List<LocAndTimeStamp> historicalVehiclePath = [];
+  // List<LocAndTimeStamp> historicalVehiclePath = [];
   List<int> vehicleId = [];
 
-  List<MappableTam> mappableTamList = [];
-  bool inTamZone = false;
 
   @override
   void initState() {
@@ -318,7 +316,7 @@ class MapState extends State<MapPage> {
 
     // For testing TAM rendering
     tamManager.addOrUpdateFromString(TestData.testTam);
-    //tamManager.addOrUpdateFromString(TestData.testTamTwo);
+    tamManager.addOrUpdateFromString(TestData.testTamTwo);
 
     updateGraphics();
     
@@ -408,7 +406,6 @@ class MapState extends State<MapPage> {
     if (mounted) {
       if (!settingsController.tollingEnabled.value && tamManager.storedTams.isNotEmpty) {
         tamManager.storedTams.clear();
-        mappableTamList.clear();
       }
       if (!settingsController.showTims.value && timManager.geometryMap.isNotEmpty) {
         timManager.storedTims.clear();
@@ -715,85 +712,35 @@ class MapState extends State<MapPage> {
   }
 
   void processNewTam(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
-
-    // Trim the Hex
     String trimmedHex = asnService.trimMessageHeaders(hex, asnService.TAM_START_FLAG)!; 
-    
-    //ASN service decodes the TAM
     TollAdvertisementMessage tam = asnService.decodeTam(trimmedHex);
-    
-    //Add the Tam message to the TAM manager
     tamManager.addOrUpdate(tam);
-
     updateGraphics();
-
     addToReceiveLog(broker, topic, "TAM", recTime, sendTime, tam.tollAdvInfo!.timestamp.getAsDateTime(), trimmedHex, source, validity);
   }
 
   void processNewTumAck(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
-
-    // Trim the Hex
     String trimmedHex = asnService.trimMessageHeaders(hex, asnService.TUMACK_START_FLAG)!; 
-    
-    //ASN service decodes the TAM
     TollUsageAckMessage tumAck = asnService.decodeTumAck(trimmedHex);
-    
-    //Add the Tam message to the TAM manager
     tumAckManager.add(tumAck);
-
-    sendPaymentMessage("Payment Received");
-
+    VehicleNotificationManager.sendPaymentMessage("Payment Received");
     addToReceiveLog(broker, topic, "TUMAck", recTime, sendTime, null, trimmedHex, source, validity);
   }
 
-  void sendPaymentMessage(String title, {String? description}) {
-    toastification.show(
-      context: context,
-      type: ToastificationType.success,
-      style: ToastificationStyle.flatColored,
-      title: Text(title),
-      description: description != null ? Text(description) : null,
-      alignment: Alignment.topCenter,
-      autoCloseDuration: const Duration(seconds: 4),
-      showProgressBar: false,
-      dragToClose: true,
-      icon: const Icon(Icons.monetization_on),
-    );
-  }
-
   void checkAndSendTum() {
-    for (MappableTam mappableTam in mappableTamList) {
-      bool isInTam = checkPositionInTam(mappableTam.tollZoneBorder, currentPosition);
-      if (isInTam & !inTamZone) {
-        bool sent = sendTumMessage(mappableTam.tam!);
-        inTamZone = true; 
-        if (sent) {
-          Future.delayed(Duration(seconds: 2), () { //TODO: remove once sending and receiving TUMAck is implemented
-            sendPaymentMessage("Payment Received");
-          });
-        }
-      } else if (!isInTam & inTamZone) {
-        inTamZone = false;
+    MappableTam? currentTam = tamManager.checkIfInTam(currentPosition);
+    if (currentTam == null) {
+      return;
+    }
+    if (!tamManager.inTamZone) {
+      bool sent = sendTumMessage(currentTam.tam!);
+      if (sent) {
+        tamManager.inTamZone = true;
+        Future.delayed(Duration(seconds: 2), () { //TODO: remove once sending and receiving TUMAck is implemented
+          VehicleNotificationManager.sendPaymentMessage("Payment Received");
+        });
       }
     }
-  }
-
-  bool checkPositionInTam(List<LatLng> tamBorder, Position? position) {
-    if (position == null) return false;
-
-    // check if position is within the polygon that is defined by tamBorder
-    int i, j = tamBorder.length - 1;
-    bool inside = false;
-    for (i = 0; i < tamBorder.length; j = i++) {
-      if (((tamBorder[i].longitude > position.longitude) != (tamBorder[j].longitude > position.longitude)) &&
-          (position.latitude <
-              (tamBorder[j].latitude - tamBorder[i].latitude) * (position.longitude - tamBorder[i].longitude) /
-                      (tamBorder[j].longitude - tamBorder[i].longitude) +
-                  tamBorder[i].latitude)) {
-        inside = !inside;
-      }
-    }
-    return inside;
   }
 
   void addToReceiveLog(String? broker, String topic, String msgType, DateTime recTime, DateTime? sendTime, DateTime? generationTime,
@@ -937,7 +884,7 @@ class MapState extends State<MapPage> {
     DateTime sendTime = timingService.getTime();
     MsgType messageType = MsgType.TUM;
 
-    TollUsageMessageResult tumResult = tumBuilder.generateTumFromTam(tam, historicalVehiclePath, currentPosition!, vehicleId, sendTime);
+    TollUsageMessageResult tumResult = tumBuilder.generateTumFromTam(tam, currentPosition!, vehicleId, sendTime);
     if (!tumResult.isSuccess) {
       showError(tumResult.errorMessage!);
       return false;
@@ -950,8 +897,8 @@ class MapState extends State<MapPage> {
 
     if (tumHex != "") {
       List<int> tumBytes = ASNService.hexToBytes(tumHex);
-      // mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false); // Uncomment when ETX can handle TUM messages.
-      sendPaymentMessage("Payment Sent", description: "Amount Sent: ${tum.encryptedTumData.tumData!.tollUserData.charge!.paymentFeeAmount} ${tum.encryptedTumData.tumData!.tollUserData.charge!.paymentFeeUnit.payUnit}");
+      //mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false); // Uncomment when ETX can handle TUM messages.
+      VehicleNotificationManager.sendPaymentMessage("Payment Sent", description: "Amount Sent: ${tum.encryptedTumData.tumData!.tollUserData.charge!.paymentFeeAmount} ${tum.encryptedTumData.tumData!.tollUserData.charge!.paymentFeeUnit.payUnit}");
       return true;
     }
     return false;
@@ -979,15 +926,7 @@ class MapState extends State<MapPage> {
     prevKronos = kronos;
     prevLocal = now;
 
-    LocAndTimeStamp locAndTime = LocAndTimeStamp(
-      latitude: Latitude((position.latitude * 1E7).toInt()),
-      longitude: Longitude((position.longitude * 1E7).toInt()),
-      timeStamp: DDateTime.fromDateTime(kronos),
-    );
-    historicalVehiclePath.add(locAndTime); 
-    if (historicalVehiclePath.length > 50) {
-      historicalVehiclePath.removeAt(0);
-    }
+    tumBuilder.addLocation(position, kronos);
 
     checkAndSendTum();
 
@@ -1241,10 +1180,8 @@ class MapState extends State<MapPage> {
         messageManager.shown.remove(key);
       }
     }
-    if (settingsController.tollingEnabled.value) {
-      mappableTamList = tamManager.getActiveTamGeometry();
-    }
-    for (MappableTam mappableTam in mappableTamList) {
+
+    for (MappableTam mappableTam in tamManager.storedTams.values) {
       for (LatLng coord in mappableTam.markerPoints) {
         markerList.add(Marker(
           width: 40.0,
@@ -1524,7 +1461,7 @@ class MapState extends State<MapPage> {
         }
       }
 
-      for (MappableTam mappableTam in mappableTamList) {
+      for (MappableTam mappableTam in tamManager.storedTams.values) {
         for (List<LatLng> lanePoints in mappableTam.tollZonePolylinePoints) {
           Polyline<PolyLineHitValue> hitPoly = Polyline(
             points: lanePoints,
@@ -1574,7 +1511,7 @@ class MapState extends State<MapPage> {
       }
     }
 
-    for (MappableTam mappableTam in mappableTamList) {
+    for (MappableTam mappableTam in tamManager.storedTams.values) {
       if (mappableTam.tollZoneBorder.isEmpty) {
         continue;
       }

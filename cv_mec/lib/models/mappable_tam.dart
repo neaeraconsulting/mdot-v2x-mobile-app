@@ -87,10 +87,8 @@ class MappableTam {
     double laneWidth = tollPointMap.laneWidth.laneWidth * 0.01;
     Position3D anchorPoint = tollPointMap.referencePoint;
     if (tollZoneLanes.length == 1) {
-      //return _generateBorderAroundLane(tollZonePolylinePoints.first, laneWidth);
       Geometry? laneGeometry = geometryService.getGeometryFromNodeListXY(tollZoneLanes.first.nodeList, tollPointMap.referencePoint, laneWidth);
       if (laneGeometry != null) {
-        print("dinosaur: laneGeometry is not null");
         return geometryService.convertGeometryToLatLngList(laneGeometry);
       }
       return [];
@@ -123,16 +121,12 @@ class MappableTam {
       (startPointOne.y + startPointTwo.y) / 2,
     );    
 
-    LatLng centerLatLng = geometryService.coordinateToLatLng(centerPoint, anchorPoint);
-    markerPoints.add(centerLatLng);
-
     double distanceOne = geometryService.calculateDistanceBetweenCoordinates(testPointOne, centerPoint);
     double distanceTwo = geometryService.calculateDistanceBetweenCoordinates(testPointTwo, centerPoint);
     double distanceThree = geometryService.calculateDistanceBetweenCoordinates(testPointThree, centerPoint);
     double distanceFour = geometryService.calculateDistanceBetweenCoordinates(testPointFour, centerPoint);
 
     List<LatLng> outerBorderPoints = [];
-
 
     if (distanceOne > distanceTwo) {
       outerBorderPoints.addAll(topBorderPoints.sublist(0, (topBorderPoints.length ~/ 2)));
@@ -156,103 +150,6 @@ class MappableTam {
 
     return outerBorderPoints;
   }
-
-  // double _calculateDistance(LatLng pointA, LatLng pointB) {
-  //   double latDiff = pointA.latitude - pointB.latitude;
-  //   double lonDiff = pointA.longitude - pointB.longitude;
-  //   return sqrt(latDiff * latDiff + lonDiff * lonDiff);
-  // }
-
-  // List<LatLng> _generateBorderAroundLane(List<LatLng> points, int laneWidth) {
-  //   double widthInMeters = (laneWidth.toDouble()) / 10; // Should be divided by 100 but making the border bigger for testing
-  //   double widthInDegreesLat =
-  //       widthInMeters / 111320.0; // Approximate conversion factor for latitude
-  //   double widthInDegreesLon = widthInMeters /
-  //       (111320.0 *
-  //           cos(points[0].latitude *
-  //               (pi / 180.0))); // Approximate conversion factor for longitude
-  //   List<List<LatLng>> borderZonePieces = <List<LatLng>>[];
-  //   for (int i = 0; i < points.length - 1; i++) {
-  //     double x1 = points[i].latitude;
-  //     double y1 = points[i].longitude;
-  //     double x2 = points[i + 1].latitude;
-  //     double y2 = points[i + 1].longitude;
-  //     double angle = (x1 == x2)
-  //         ? pi / 2
-  //         : (y1 == y2)
-  //             ? 0.0
-  //             : atan((y2 - y1) / (x2 - x1));
-  //     double angle1 = angle + (pi / 2);
-  //     double angle2 = angle - (pi / 2);
-  //     double offsetX = widthInDegreesLat;
-  //     double offsetY = widthInDegreesLon;
-  //     double x3 = x1 + (offsetX / 2) * cos(angle1);
-  //     double y3 = y1 + (offsetY / 2) * sin(angle1);
-  //     double x4 = x1 + (offsetX / 2) * cos(angle2);
-  //     double y4 = y1 + (offsetY / 2) * sin(angle2);
-  //     double x5 = x3 + (x2 - x1);
-  //     double y5 = y3 + (y2 - y1);
-  //     double x6 = x4 + (x2 - x1);
-  //     double y6 = y4 + (y2 - y1);
-  //     borderZonePieces.add([
-  //       LatLng(x3, y3),
-  //       LatLng(x5, y5),
-  //       LatLng(x6, y6),
-  //       LatLng(x4, y4)
-  //     ]);
-  //   }
-  //   return cleanUpBorderZonePieces(borderZonePieces);
-  // }
-
-  // List<LatLng> cleanUpBorderZonePieces(List<List<LatLng>> borderZonePieces) {
-  //   List<LatLng> cleanedUpPoints = [];
-  //   for (var piece in borderZonePieces) {
-  //     cleanedUpPoints.add(piece[0]);
-  //     cleanedUpPoints.add(piece[1]);
-  //   }
-
-  //   for (var piece in borderZonePieces) {
-  //     cleanedUpPoints.add(piece[2]);
-  //     cleanedUpPoints.add(piece[3]);
-  //   }
-
-  //   //go through the points and check for any line crossings. If the line crosses, create a new point at the intersection and remove the surrounding point
-  //   for (int i = 0; i < cleanedUpPoints.length - 3; i++) {
-  //     LatLng p1 = cleanedUpPoints[i];
-  //     LatLng p2 = cleanedUpPoints[i + 1];
-  //     LatLng p3 = cleanedUpPoints[i + 2];
-  //     LatLng p4 = cleanedUpPoints[i + 3];
-
-  //     // Check for line intersection between (p1, p2) and (p3, p4)
-  //     double denom = (p4.longitude - p3.longitude) * (p2.latitude - p1.latitude) -
-  //         (p4.latitude - p3.latitude) * (p2.longitude - p1.longitude);
-  //     if (denom == 0) {
-  //       continue; // Lines are parallel
-  //     }
-
-  //     double ua = ((p4.latitude - p3.latitude) * (p1.longitude - p3.longitude) -
-  //             (p4.longitude - p3.longitude) * (p1.latitude - p3.latitude)) /
-  //         denom;
-  //     double ub = ((p2.latitude - p1.latitude) * (p1.longitude - p3.longitude) -
-  //             (p2.longitude - p1.longitude) * (p1.latitude - p3.latitude)) /
-  //         denom;
-
-  //     if (ua >= 0 && ua <= 1 && ub >= 0 && ub <= 1) {
-  //       // Lines intersect
-  //       double intersectionX =
-  //           p1.latitude + ua * (p2.latitude - p1.latitude);
-  //       double intersectionY =
-  //           p1.longitude + ua * (p2.longitude - p1.longitude);
-  //       LatLng intersectionPoint = LatLng(intersectionX, intersectionY);
-
-  //       // Replace surrounding points with the intersection point
-  //       cleanedUpPoints[i + 1] = intersectionPoint;
-  //       cleanedUpPoints.removeAt(i + 2);
-  //     }
-  //   }
-
-  //   return cleanedUpPoints;
-  // }
 
   void _addMidPointMarker() {
     if (tollZoneBorder.isEmpty) return;

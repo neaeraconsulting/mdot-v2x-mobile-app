@@ -149,6 +149,9 @@ class EtxMqttAgent extends MqttAgent{
       case MsgType.PSM:
         topic = "vzimp/1/GeoRelevance/$clientType/$clientSubtype/Public/${paramController.messageFormat}/PSM";
         break;
+      case MsgType.TUM:
+        topic = "vzimp/1/GeoRelevance/$clientType/$clientSubtype/Public/${paramController.messageFormat}/TUM";
+        break;
       default:
         logger.e('$agentName does not support sending ${messageType.name} messages');
         break;
