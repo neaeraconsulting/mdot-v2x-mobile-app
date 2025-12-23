@@ -87,12 +87,8 @@ enum USState {
   static List<String> get allCodes => USState.values.map((state) => state.code).toList();
   
   static List<String> get allNames => USState.values.map((state) => state.fullName).toList();
-
-  @override
-  String toString() => code;
 }
 
-// Alternative simpler enum if you only need codes:
 enum StateCode {
   AL, AK, AZ, AR, CA, CO, CT, DE, FL, GA,
   HI, ID, IL, IN, IA, KS, KY, LA, ME, MD,

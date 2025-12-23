@@ -99,7 +99,6 @@ class ASNService extends GetxController {
         messageType = messageTypeMap[checkStartFlags[i]] ?? MsgType.UNKNOWN;
       }
     }
-    print("dinosaur: ${messageType.name}");
     return messageType;
   }
 

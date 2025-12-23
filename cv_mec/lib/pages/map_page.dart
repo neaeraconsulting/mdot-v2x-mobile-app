@@ -736,33 +736,18 @@ class MapState extends State<MapPage> {
     //Add the Tam message to the TAM manager
     tumAckManager.add(tumAck);
 
-    //updateGraphics();
-    sendPaymentReceivedMessage();
+    sendPaymentMessage("Payment Received");
 
     addToReceiveLog(broker, topic, "TUMAck", recTime, sendTime, null, trimmedHex, source, validity);
   }
 
-  void sendPaymentSentMessage(TollUsageMessage tum) {
+  void sendPaymentMessage(String title, {String? description}) {
     toastification.show(
       context: context,
       type: ToastificationType.success,
       style: ToastificationStyle.flatColored,
-      title: const Text("Payment Sent"),
-      description: Text("Amount Sent: ${tum.encryptedTumData.tumData!.tollUserData.charge!.paymentFeeAmount} ${tum.encryptedTumData.tumData!.tollUserData.charge!.paymentFeeUnit.payUnit}"),
-      alignment: Alignment.topCenter,
-      autoCloseDuration: const Duration(seconds: 4),
-      showProgressBar: false,
-      dragToClose: true,
-      icon: const Icon(Icons.monetization_on),
-    );
-  }
-  
-  void sendPaymentReceivedMessage() {
-    toastification.show(
-      context: context,
-      type: ToastificationType.success,
-      style: ToastificationStyle.flatColored,
-      title: const Text("Payment Received"),
+      title: Text(title),
+      description: description != null ? Text(description) : null,
       alignment: Alignment.topCenter,
       autoCloseDuration: const Duration(seconds: 4),
       showProgressBar: false,
@@ -779,7 +764,7 @@ class MapState extends State<MapPage> {
         inTamZone = true; 
         if (sent) {
           Future.delayed(Duration(seconds: 2), () { //TODO: remove once sending and receiving TUMAck is implemented
-            sendPaymentReceivedMessage();
+            sendPaymentMessage("Payment Received");
           });
         }
       } else if (!isInTam & inTamZone) {
@@ -955,11 +940,13 @@ class MapState extends State<MapPage> {
     
     TollUsageMessage tum = tumResult.tollUsageMessage!;
     String tumHex = tumBuilder.convertTumToHex(tum);
+    _logger.w("Generated TUM Hex: $tumHex");
+    
 
     if (tumHex != "") {
       List<int> tumBytes = ASNService.hexToBytes(tumHex);
       // mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false); // Uncomment when ETX can handle TUM messages.
-      sendPaymentSentMessage(tum);
+      sendPaymentMessage("Payment Sent", description: "Amount Sent: ${tum.encryptedTumData.tumData!.tollUserData.charge!.paymentFeeAmount} ${tum.encryptedTumData.tumData!.tollUserData.charge!.paymentFeeUnit.payUnit}");
       int connectionCount = mqttAgents.getConnectionCount();
       if( connectionCount == mqttAgents.agents.length){
         updateConnectedStatus(ConnectedStatus.CONNECTED);
@@ -1000,7 +987,7 @@ class MapState extends State<MapPage> {
       longitude: Longitude((position.longitude * 1E7).toInt()),
       timeStamp: DDateTime.fromDateTime(kronos),
     );
-    historicalVehiclePath.add(locAndTime); //DINOSAUR
+    historicalVehiclePath.add(locAndTime); 
     if (historicalVehiclePath.length > 50) {
       historicalVehiclePath.removeAt(0);
     }
