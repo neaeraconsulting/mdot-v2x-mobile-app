@@ -70,7 +70,7 @@ class SecureStorage {
   static final _startOBUIP = dotenv.env['OBU_IP'] ?? '';
   static final _startPathToFollow = '';
 
-  static final _startTollingEnabled = dotenv.env['TOLLING_ENABLED'] != null ? (dotenv.env['TOLLING_ENABLED']!.toLowerCase() == 'true') : false;
+  static final _startTollingEnabled = dotenv.env['TOLLING_ENABLED'] != null ? (dotenv.env['TOLLING_ENABLED']!.toLowerCase() == 'true') : true;
   static final _startShowTims = dotenv.env['SHOW_TIMS'] != null ? (dotenv.env['SHOW_TIMS']!.toLowerCase() == 'true') : true;
 
   static final _startS3AccessKey = dotenv.env['S3_ACCESS_KEY'] ?? "";
