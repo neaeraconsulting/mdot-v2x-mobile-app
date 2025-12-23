@@ -158,7 +158,7 @@ class MapState extends State<MapPage> {
   Timer? sendMessageTimer;
   late BsmMessageBuilder bsmBuilder;
   late PsmMessageBuilder psmBuilder;
-  late TumBuilder tumBuilder;
+  late TumMessageBuilder tumBuilder;
 
   Timer? uploadTimer;
 
@@ -236,7 +236,7 @@ class MapState extends State<MapPage> {
     bsmBuilder = BsmMessageBuilder(vehicleId.sublist(0, 4));
     psmBuilder = PsmMessageBuilder();
 
-    tumBuilder = TumBuilder();
+    tumBuilder = TumMessageBuilder();
 
     if (mounted) {
       setState(() {
@@ -316,8 +316,9 @@ class MapState extends State<MapPage> {
       
     });
 
-    String sampleTam = "0025809544000401080052aa9900002aaa9b0400002a01f7fbf4a2d22000234020400ee6b2801c4fecbfca3e802da000004000000003116fb485cca307f73116fdb4a4ca2f3fb02000200000000188b7ed89e6517ab0188b80842a6516c6a0001000000000622dfb5e79945e8c4622e020bd9945b0200600000000000001d00002002df0c00000000000000000000000000000000000000000";
-    tamManager.addOrUpdateFromString(sampleTam);
+    // For testing TAM rendering
+    tamManager.addOrUpdateFromString(TestData.testTam);
+    //tamManager.addOrUpdateFromString(TestData.testTamTwo);
 
     updateGraphics();
     
@@ -572,7 +573,9 @@ class MapState extends State<MapPage> {
         break;
       case MsgType.TIM:
         addToAppLog("Identified Message as TIM");
-        processNewTim(broker, topic, hex, recTime, sendTime, source, validity);
+        if (settingsController.showTims.value) {
+          processNewTim(broker, topic, hex, recTime, sendTime, source, validity);
+        }
         break;
       case MsgType.SDSM:
         addToAppLog("Identified Message as SDSM");
@@ -580,7 +583,9 @@ class MapState extends State<MapPage> {
         break;
       case MsgType.TAM:
         addToAppLog("Identified Message as TAM");
-        processNewTam(broker, topic, hex, recTime, sendTime, source, validity);
+        if (settingsController.tollingEnabled.value) {
+          processNewTam(broker, topic, hex, recTime, sendTime, source, validity);
+        }
         break;
       case MsgType.TUMACK:
         addToAppLog("Identified Message as TUMACK");
@@ -940,7 +945,7 @@ class MapState extends State<MapPage> {
     
     TollUsageMessage tum = tumResult.tollUsageMessage!;
     String tumHex = tumBuilder.convertTumToHex(tum);
-    _logger.w("Generated TUM Hex: $tumHex");
+    _logger.i("Generated TUM Hex ${tumHex}");
     
 
     if (tumHex != "") {
@@ -1570,6 +1575,9 @@ class MapState extends State<MapPage> {
     }
 
     for (MappableTam mappableTam in mappableTamList) {
+      if (mappableTam.tollZoneBorder.isEmpty) {
+        continue;
+      }
       Polygon<HitValue> hitPoly = Polygon(  
         points: mappableTam.tollZoneBorder,
         borderColor: Colors.white,

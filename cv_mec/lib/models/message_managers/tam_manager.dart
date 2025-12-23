@@ -4,20 +4,19 @@ import 'package:cv_mec/services/asn_service.dart';
 import 'package:get/get.dart';
 
 class TamManager {
-  Map<int, TollAdvertisementMessage> storedTams = <int, TollAdvertisementMessage>{};
-
+  Map<int, MappableTam> storedTams = <int, MappableTam>{};
 
   List<MappableTam> getActiveTamGeometry() {
     List<MappableTam> activeTams = [];
     for (int key in storedTams.keys) {
-      TollAdvertisementMessage tam = storedTams[key]!;
-      activeTams.add(MappableTam.fromTam(tam));
+      MappableTam tam = storedTams[key]!;
+      activeTams.add(tam);
     }
     return activeTams;
   }
 
   void addOrUpdate(TollAdvertisementMessage tam) {
-    storedTams[tam.tollAdvInfo!.tollChargerInfo.tollPointId.tollPointID] = tam;
+    storedTams[tam.tollAdvInfo!.tollChargerInfo.tollPointId.tollPointID] = MappableTam.fromTam(tam);
   }
 
   void addOrUpdateFromString(String tamHex) {

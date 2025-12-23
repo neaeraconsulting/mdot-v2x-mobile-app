@@ -46,11 +46,11 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator_platform_interface/src/models/position.dart';
 
 
-class TumBuilder{
+class TumMessageBuilder{
 
   ASNService asnService = Get.find<ASNService>();
   Random random = Random();
-  TumBuilder();
+  TumMessageBuilder();
   ConfigurationController configController = Get.find<ConfigurationController>();
   GeometryService geometryService = Get.find<GeometryService>();
   final List<Pointer> _allocatedPointers = [];
