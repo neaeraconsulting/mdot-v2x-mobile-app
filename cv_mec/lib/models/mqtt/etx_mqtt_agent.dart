@@ -26,6 +26,9 @@ class EtxMqttAgent extends MqttAgent{
   ConfigurationController configController = Get.find<ConfigurationController>();
   Timing timingService = Get.find<Timing>();
   ASNService asnService = Get.find<ASNService>();
+  Map<String, bool> allowedTopicCache = {};
+
+  MqttPermission? aclRules;
   
   FullRegistration? fullRegistration;
 
@@ -93,7 +96,7 @@ class EtxMqttAgent extends MqttAgent{
   @override
   Future<int> setupSubscribers() async{
 
-    MqttPermission? aclRules = await apiService.getAclRules();
+    aclRules = await apiService.getAclRules();
 
     if(aclRules == null){
       logger.w("Unable to retrieve ACL Rules from Partner API. Using Default topic names");
@@ -103,7 +106,7 @@ class EtxMqttAgent extends MqttAgent{
       mqttService.subscribe("vzimp/1/GeoRelevance/+/+/Public/j2735_gr/+/+", onGeoRelevanceMessage);
       return 1;
     }else{
-      List<String> topics = getSubscriptions(aclRules);
+      List<String> topics = getSubscriptions(aclRules!);
       for(String topic in topics){
         if(topic.contains("j2735_gr")){
           mqttService.subscribe(topic, onGeoRelevanceMessage);
@@ -172,9 +175,58 @@ class EtxMqttAgent extends MqttAgent{
         logger.e('$agentName does not support sending ${messageType.name} messages');
         break;
     }
-    mqttService.publishBytes(buffer, topic);
+
+    if(aclRules != null){
+      bool isAllowed = false;
+      if(allowedTopicCache.containsKey(topic)){
+        isAllowed = allowedTopicCache[topic]!;
+      }else{
+        isAllowed = isTopicAllowed(topic, aclRules!);
+        allowedTopicCache[topic] = isAllowed;
+      }
+
+      if(isAllowed){
+        mqttService.publishBytes(buffer, topic);
+      }else{
+        logger.w("Topic $topic is not allowed by ACL Rules. Message not sent.");
+      }
+        
+    }
     return topic;
   }
+
+  bool isTopicAllowed(String topic, MqttPermission aclRules){
+    List<String> topicParts = topic.split('/');
+    for(String allowedTopic in aclRules.publish){
+      List<String> allowedParts = allowedTopic.split('/');
+      if(doTopicsMatch(topicParts, allowedParts)){
+        return true;
+      } 
+    }
+    return false;
+  }
+
+  bool doTopicsMatch(List<String> topicParts, List<String> allowedParts){
+    if (topicParts.length != allowedParts.length){
+      return false;
+    }
+    for(int i =0; i< topicParts.length; i++){
+      if(allowedParts[i] == '*'){
+        continue;
+      }else if(allowedParts[i].contains('|')){
+        List<String> options = allowedParts[i].split('|');
+        if(!options.contains(topicParts[i])){
+          return false;
+        }
+      }else if(allowedParts[i] != topicParts[i]){
+        return false;
+      }
+    }
+    return true;
+
+  }
+
+
 
   void onGeoRelevanceMessage(MqttReceivedMessage<MqttMessage?> message, DateTime recTime) async {
     final recMess = message.payload as MqttPublishMessage;
