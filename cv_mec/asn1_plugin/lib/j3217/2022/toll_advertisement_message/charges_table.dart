@@ -29,9 +29,6 @@ import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/weight_charges
 
 
 class ChargesTable extends Choice_TollTypeCharge{
-  late VehTypeChargesTable vehTypeBased; 
-  late AxlesChargesTable numAxlesBased; 
-  late WeightChargesTable weightBased; 
   late ChargesTableChoice chargesTableChoice;
   ChargesTable.fromC(C.ChargesTable c_obj){
     chargesTableChoice = ChargesTableChoice.fromC(c_obj);
@@ -47,6 +44,8 @@ class ChargesTableChoice {
       chargesTableChoice = AxlesChargesTable.fromC(c_chargesTable.choice.numAxlesBased);
     } else if (c_chargesTable.present == C.ChargesTable_PR.ChargesTable_PR_weightBased) {
       chargesTableChoice = WeightChargesTable.fromC(c_chargesTable.choice.weightBased);
+    } else {
+      throw Exception("Unknown Charges Table Type");
     }
   }
 }

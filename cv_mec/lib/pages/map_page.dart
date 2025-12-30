@@ -318,7 +318,6 @@ class MapState extends State<MapPage> {
     tamManager.addOrUpdateFromString(TestData.tfhrcTamThree);
 
     updateGraphics();
-    
 
     obdController.checkRootStatus();
   }
@@ -893,11 +892,11 @@ class MapState extends State<MapPage> {
       showError("Failed to convert TUM to Hex");
       return false;
     }
-    _logger.i("Generated TUM Hex ${tumHex}");
+    _logger.i("Generated TUM Hex $tumHex");
 
     if (tumHex != "") {
       List<int> tumBytes = ASNService.hexToBytes(tumHex);
-      //mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false); // Uncomment when ETX can handle TUM messages. dinosaur
+      mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false);
       VehicleNotificationManager.sendPaymentMessage("Payment Sent", description: "Amount Sent: ${tum.encryptedTumData.tumData!.tollUserData.charge!.paymentFeeAmount} ${tum.encryptedTumData.tumData!.tollUserData.charge!.paymentFeeUnit.payUnit}");
       return true;
     }

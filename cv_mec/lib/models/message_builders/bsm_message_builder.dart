@@ -22,7 +22,6 @@ class BsmMessageBuilder extends MessageBuilder {
   Pointer<C.BSMpartIIExtension> specialVehicleExtension = nullptr;
 
   ASNService asnService = Get.find<ASNService>();
-  Random random = Random();
 
   BsmMessageBuilder(List<int> randomId) {
     msgPtr = getNewTemplate();
@@ -31,7 +30,7 @@ class BsmMessageBuilder extends MessageBuilder {
     C.MessageFrame messageFrame = messageFrameValuePtr.ref;
     bsm = messageFrame.value.choice.BasicSafetyMessage;
 
-    randomizeId(randomId);
+    setId(randomId);
   }
 
   @override
@@ -126,7 +125,7 @@ class BsmMessageBuilder extends MessageBuilder {
     bsm.coreData.msgCnt = msgCnt;
   }
 
-  void randomizeId(List<int> randomNumbers) {
+  void setId(List<int> randomNumbers) {
     Uint8List dataBuffer = bsm.coreData.id.buf.asTypedList(randomNumbers.length);
     bsm.coreData.id.size = 4;
     dataBuffer.setAll(0, randomNumbers);
