@@ -106,7 +106,7 @@ class TollUserData {
       }
     }
 
-    C.TollUserData toC(Pointer<C.TollUserData> pointer) {
+    void toC(Pointer<C.TollUserData> pointer) {
       final c_tollUserData = pointer.ref;
       
       final timestampPtr = calloc<C.DDateTime>();
@@ -193,8 +193,6 @@ class TollUserData {
       } else {
         c_tollUserData.charge = nullptr;
       }
-
-      return c_tollUserData;
     }
 
     void free(Pointer<C.TollUserData> pointer) {

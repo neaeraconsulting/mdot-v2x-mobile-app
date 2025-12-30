@@ -60,14 +60,12 @@ class VehicleId {
     void toC(Pointer<C.TumVehicleId> pointer) {
       final c_vehicleId = pointer.ref;
       
-      // Zero-initialize the struct
       pointer.cast<Uint8>().asTypedList(sizeOf<C.TumVehicleId>()).fillRange(0, sizeOf<C.TumVehicleId>(), 0);
       
       if (vehicleIdentity != null) {
         final vehicleIdentityPtr = calloc<C.OCTET_STRING>();
         vehicleIdentityPtr.cast<Uint8>().asTypedList(sizeOf<C.OCTET_STRING>()).fillRange(0, sizeOf<C.OCTET_STRING>(), 0);
         
-        // Convert hex string to bytes
         final bytes = <int>[];
         for (int i = 0; i < vehicleIdentity!.length; i += 2) {
           bytes.add(int.parse(vehicleIdentity!.substring(i, i + 2), radix: 16));
