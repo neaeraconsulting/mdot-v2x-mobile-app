@@ -23,21 +23,19 @@ class TemporaryID{
 
   void toC(Pointer<OCTET_STRING> pointer) {
     final c_tempID = pointer.ref;
-    
-    // Free previous buffer if needed
+
     if (c_tempID.buf != nullptr && c_tempID.size > 0) {
       calloc.free(c_tempID.buf);
-      c_tempID.buf = nullptr;  // Reset pointer
-      c_tempID.size = 0;       // Reset size
+      c_tempID.buf = nullptr;  
+      c_tempID.size = 0;      
     }
 
     if (temporaryID.isEmpty) {
       c_tempID.size = 0;
       c_tempID.buf = nullptr;
-      return; // Just return without a value
+      return; 
     }
 
-    // Use correct allocation method
     c_tempID.buf = calloc<Uint8>(temporaryID.length);
     for (int i = 0; i < temporaryID.length; i++) {
       c_tempID.buf[i] = temporaryID[i];

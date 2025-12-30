@@ -50,7 +50,6 @@ class SignedTumHash{
   SignedTumHash.fromOctetString(C.OCTET_STRING string ){
     final Uint8List byteList = string.buf.asTypedList(string.size);
 
-    // Convert the byte list to a String (assuming UTF-8 encoding)
     signedTumHash = utf8.decode(byteList);
   }
 }

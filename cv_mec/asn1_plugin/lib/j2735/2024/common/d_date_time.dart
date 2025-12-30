@@ -62,10 +62,8 @@ class DDateTime {
   void toC(Pointer<C.DDateTime> pointer) {
     final c_dDateTime = pointer.ref;
     
-    // Zero-initialize the struct
     pointer.cast<Uint8>().asTypedList(sizeOf<C.DDateTime>()).fillRange(0, sizeOf<C.DDateTime>(), 0);
     
-    // Handle year
     if (year != null) {
       final yearPtr = calloc<Int32>();
       yearPtr.value = year!.dYear;
@@ -74,7 +72,6 @@ class DDateTime {
       c_dDateTime.year = nullptr;
     }
     
-    // Handle month
     if (month != null) {
       final monthPtr = calloc<Int32>();
       monthPtr.value = month!.dMonth;
@@ -83,7 +80,6 @@ class DDateTime {
       c_dDateTime.month = nullptr;
     }
     
-    // Handle day
     if (day != null) {
       final dayPtr = calloc<Int32>();
       dayPtr.value = day!.dDay;
@@ -92,7 +88,6 @@ class DDateTime {
       c_dDateTime.day = nullptr;
     }
     
-    // Handle hour
     if (hour != null) {
       final hourPtr = calloc<Int32>();
       hourPtr.value = hour!.dHour;
@@ -101,7 +96,6 @@ class DDateTime {
       c_dDateTime.hour = nullptr;
     }
     
-    // Handle minute
     if (minute != null) {
       final minutePtr = calloc<Int32>();
       minutePtr.value = minute!.dMinute;
@@ -110,7 +104,6 @@ class DDateTime {
       c_dDateTime.minute = nullptr;
     }
     
-    // Handle second
     if (second != null) {
       final secondPtr = calloc<Int32>();
       secondPtr.value = second!.dSecond;
@@ -119,7 +112,6 @@ class DDateTime {
       c_dDateTime.second = nullptr;
     }
     
-    // Handle offset
     if (offset != null) {
       final offsetPtr = calloc<Int32>();
       offsetPtr.value = offset!.dOffset;
@@ -132,49 +124,41 @@ class DDateTime {
   void free(Pointer<C.DDateTime> pointer) {
     final c_dDateTime = pointer.ref;
 
-    // Free year
     if (c_dDateTime.year != nullptr) {
       calloc.free(c_dDateTime.year);
       c_dDateTime.year = nullptr;
     }
 
-    // Free month
     if (c_dDateTime.month != nullptr) {
       calloc.free(c_dDateTime.month);
       c_dDateTime.month = nullptr;
     }
 
-    // Free day
     if (c_dDateTime.day != nullptr) {
       calloc.free(c_dDateTime.day);
       c_dDateTime.day = nullptr;
     }
 
-    // Free hour
     if (c_dDateTime.hour != nullptr) {
       calloc.free(c_dDateTime.hour);
       c_dDateTime.hour = nullptr;
     }
 
-    // Free minute
     if (c_dDateTime.minute != nullptr) {
       calloc.free(c_dDateTime.minute);
       c_dDateTime.minute = nullptr;
     }
 
-    // Free second
     if (c_dDateTime.second != nullptr) {
       calloc.free(c_dDateTime.second);
       c_dDateTime.second = nullptr;
     }
 
-    // Free offset
     if (c_dDateTime.offset != nullptr) {
       calloc.free(c_dDateTime.offset);
       c_dDateTime.offset = nullptr;
     }
 
-    // free the DDateTime struct itself
     calloc.free(pointer);
   }
 

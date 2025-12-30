@@ -1941,7 +1941,7 @@ class MapState extends State<MapPage> {
                 style: ToastificationStyle.flatColored,
                 title: const Text("HOV Enabled"),
                 alignment: Alignment.topCenter,
-                autoCloseDuration: const Duration(seconds: 1),
+                autoCloseDuration: const Duration(seconds: 5),
                 showProgressBar: false,
                 dragToClose: true,
                 icon: Icon(Icons.group),

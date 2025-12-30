@@ -46,12 +46,6 @@ class TollChargerInfo{
       
       _fillTollChargerId(tollChargerId, pointer);
       c_info.tollPointId = tollPointId.tollPointID;
-
-      // Clean up existing descriptiveName allocation first
-      if (c_info.descriptiveName != nullptr) {
-        calloc.free(c_info.descriptiveName);
-        c_info.descriptiveName = nullptr;
-      }
       
       if(descriptiveName != null){
         final descriptiveNamePtr = calloc<C.OCTET_STRING>();
@@ -120,7 +114,6 @@ class TollChargerInfo{
     void _fillTollChargerId(String oidString, Pointer<C.TollChargerInfo> tollChargerInfoPtr) {
       final tollChargerIdField = tollChargerInfoPtr.ref.tollChargerId;
       
-      // Free existing buffer if present
       if (tollChargerIdField.buf != nullptr) {
         calloc.free(tollChargerIdField.buf);
         tollChargerIdField.buf = nullptr;
@@ -130,7 +123,7 @@ class TollChargerInfo{
       // Encode OID
       List<String> nodeStrings = oidString.split('.');
       if (nodeStrings.length < 2) {
-        return; // Leave empty on invalid OID
+        return; 
       }
       
       List<int> nodes = nodeStrings.map(int.parse).toList();

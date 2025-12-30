@@ -127,8 +127,7 @@ class VehicleId {
 
     void free(Pointer<C.TumVehicleId> pointer) {
       final c_vehicleId = pointer.ref;
-      
-      // Free vehicleIdentity
+
       if (c_vehicleId.vehicleIdentity != nullptr) {
         if (c_vehicleId.vehicleIdentity.ref.buf != nullptr) {
           calloc.free(c_vehicleId.vehicleIdentity.ref.buf);
@@ -136,8 +135,7 @@ class VehicleId {
         calloc.free(c_vehicleId.vehicleIdentity);
         c_vehicleId.vehicleIdentity = nullptr;
       }
-      
-      // Free licPlateState
+
       if (c_vehicleId.licPlateState != nullptr) {
         if (c_vehicleId.licPlateState.ref.buf != nullptr) {
           calloc.free(c_vehicleId.licPlateState.ref.buf);
@@ -145,8 +143,7 @@ class VehicleId {
         calloc.free(c_vehicleId.licPlateState);
         c_vehicleId.licPlateState = nullptr;
       }
-      
-      // Free licPlateNumVeh
+
       if (c_vehicleId.licPlateNumVeh != nullptr) {
         if (c_vehicleId.licPlateNumVeh.ref.buf != nullptr) {
           calloc.free(c_vehicleId.licPlateNumVeh.ref.buf);
@@ -154,8 +151,7 @@ class VehicleId {
         calloc.free(c_vehicleId.licPlateNumVeh);
         c_vehicleId.licPlateNumVeh = nullptr;
       }
-      
-      // Free licPlateNumTrailer
+
       if (c_vehicleId.licPlateNumTrailer != nullptr) {
         if (c_vehicleId.licPlateNumTrailer.ref.buf != nullptr) {
           calloc.free(c_vehicleId.licPlateNumTrailer.ref.buf);
@@ -163,14 +159,12 @@ class VehicleId {
         calloc.free(c_vehicleId.licPlateNumTrailer);
         c_vehicleId.licPlateNumTrailer = nullptr;
       }
-      
-      // Free userId
+
       if (c_vehicleId.userId != nullptr) {
         userId!.free(c_vehicleId.userId);
         c_vehicleId.userId = nullptr;
       }
-      
-      // free the TumVehicleId struct
+
       calloc.free(pointer);
     }
 

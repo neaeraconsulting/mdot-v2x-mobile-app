@@ -85,7 +85,7 @@ class VehicleNotificationManager {
       title: Text(title),
       description: description != null ? Text(description) : null,
       alignment: Alignment.topCenter,
-      autoCloseDuration: const Duration(seconds: 4),
+      autoCloseDuration: const Duration(seconds: 10),
       showProgressBar: false,
       dragToClose: true,
       icon: const Icon(Icons.monetization_on),

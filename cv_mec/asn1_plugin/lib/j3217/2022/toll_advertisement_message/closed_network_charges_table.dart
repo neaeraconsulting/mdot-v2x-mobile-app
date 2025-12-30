@@ -41,6 +41,8 @@ class ClosedNetworkChargesTableChoice{
       closedNetworkChargesTableChoice = EntryChargesTable.fromC(c_closedNetworkChargesTable.choice.entryChargesTable);
     } else if (c_closedNetworkChargesTable.present == C.ClosedNetworkChargesTable_PR.ClosedNetworkChargesTable_PR_exitChargesTable) {
       closedNetworkChargesTableChoice = ExitChargesTable.fromC(c_closedNetworkChargesTable.choice.exitChargesTable);
+    } else {
+      throw Exception("Unknown Closed Network Charges Table Type");
     }
   }
 }
