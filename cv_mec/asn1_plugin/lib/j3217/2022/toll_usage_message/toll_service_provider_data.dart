@@ -22,6 +22,7 @@
 
 import 'package:asn1_plugin/generated_bindings.dart' as C;
 import 'dart:ffi';
+import 'package:ffi/ffi.dart';
 
 
 class TollServiceProviderData {
@@ -29,5 +30,9 @@ class TollServiceProviderData {
 
     void toC(Pointer<C.OCTET_STRING> pointer) {
       final c_tspData = pointer.ref;
+    }
+
+    void free(Pointer<C.OCTET_STRING> pointer) {    
+      calloc.free(pointer);
     }
 }

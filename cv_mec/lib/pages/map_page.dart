@@ -313,9 +313,10 @@ class MapState extends State<MapPage> {
     });
 
     // For testing TAM rendering
-    tamManager.addOrUpdateFromString(TestData.testTam);
-    tamManager.addOrUpdateFromString(TestData.testTamTwo);
-    tamManager.addOrUpdateFromString(TestData.tfhrcTamThree);
+    //tamManager.addOrUpdateFromString(TestData.testTam);
+    //tamManager.addOrUpdateFromString(TestData.testTamTwo);
+    //tamManager.addOrUpdateFromString(TestData.tfhrcTamThree);
+    tamManager.addOrUpdateFromString(TestData.testTamFour);
 
     updateGraphics();
     
@@ -887,12 +888,17 @@ class MapState extends State<MapPage> {
     }
     
     TollUsageMessage tum = tumResult.tollUsageMessage!;
+
     String tumHex = tumBuilder.convertTumToHex(tum);
+    if(tumHex == ""){
+      showError("Failed to convert TUM to Hex");
+      return false;
+    }
     _logger.i("Generated TUM Hex ${tumHex}");
 
     if (tumHex != "") {
       List<int> tumBytes = ASNService.hexToBytes(tumHex);
-      //mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false); // Uncomment when ETX can handle TUM messages.
+      //mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false); // Uncomment when ETX can handle TUM messages. dinosaur
       VehicleNotificationManager.sendPaymentMessage("Payment Sent", description: "Amount Sent: ${tum.encryptedTumData.tumData!.tollUserData.charge!.paymentFeeAmount} ${tum.encryptedTumData.tumData!.tollUserData.charge!.paymentFeeUnit.payUnit}");
       return true;
     }

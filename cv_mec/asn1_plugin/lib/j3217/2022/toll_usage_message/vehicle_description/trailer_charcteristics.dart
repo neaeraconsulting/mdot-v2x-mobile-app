@@ -16,16 +16,20 @@ class TrailerCharacteristics {
     void toC(Pointer<C.TrailerCharacteristics> pointer) {
         final c_trailerChar = pointer.ref;
         
-        // Handle trailerDetails (embedded struct)
         trailerDetails.toC(Pointer.fromAddress(
-            pointer.address // trailerDetails is likely the first field
+            pointer.address
         ));
         
-        // Handle trailerMaxLadenWeight (direct int field)
         c_trailerChar.trailerMaxLadenWeight = trailerMaxLadenWeight;
-        
-        // Handle trailerWeightUnladen (direct int field)
         c_trailerChar.trailerWeightUnladen = trailerWeightUnladen;
+    }
+
+    void free(Pointer<C.TrailerCharacteristics> pointer) {
+        trailerDetails.free(Pointer.fromAddress(
+            pointer.address
+        ));
+        
+        calloc.free(pointer);
     }
 
     

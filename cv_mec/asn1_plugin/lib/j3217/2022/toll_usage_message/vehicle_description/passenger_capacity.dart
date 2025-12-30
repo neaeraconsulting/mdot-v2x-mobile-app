@@ -13,8 +13,11 @@ class PassengerCapacity {
     void toC(Pointer<C.PassengerCapacity> pointer) {
         final c_passengerCap = pointer.ref;
         
-        // These are direct struct fields (not pointers), so assign directly
         c_passengerCap.numberOfSeats = numberOfSeats;
         c_passengerCap.numberOfStandingPlaces = numberOfStandingPlaces;
+    }
+
+    void free(Pointer<C.PassengerCapacity> pointer) {
+        calloc.free(pointer);
     }
 }

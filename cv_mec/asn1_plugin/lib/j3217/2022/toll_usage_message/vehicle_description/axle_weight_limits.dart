@@ -25,4 +25,8 @@ class AxleWeightLimits {
         c_axleWeights.maxLadenweightOnAxle4 = maxLadenweightOnAxle4;
         c_axleWeights.maxLadenweightOnAxle5 = maxLadenweightOnAxle5;
     }
+
+    void free(Pointer<C.AxleWeightLimits> pointer) {
+        calloc.free(pointer);
+    }
 }

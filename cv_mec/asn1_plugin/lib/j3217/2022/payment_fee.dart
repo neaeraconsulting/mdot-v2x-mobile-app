@@ -16,13 +16,8 @@ class PaymentFee {
   void toC(Pointer<C.PaymentFee> pointer) {
     final c_paymentFee = pointer.ref;
     
-    // Clean up existing allocations first
-    _cleanupExistingAllocations(c_paymentFee);
-    
-    // Zero-initialize the struct
     pointer.cast<Uint8>().asTypedList(sizeOf<C.PaymentFee>()).fillRange(0, sizeOf<C.PaymentFee>(), 0);
     
-    // Handle paymentFeeAmount (direct int field)
     c_paymentFee.paymentFeeAmount = paymentFeeAmount;
     
     final paymentFeeUnitPtr = calloc<C.PayUnit_t>();
@@ -32,13 +27,8 @@ class PaymentFee {
   }
 
 
-  void _cleanupExistingAllocations(C.PaymentFee c_paymentFee) {
-    // Clean up paymentFeeUnit buffer
-    if (c_paymentFee.paymentFeeUnit.buf != nullptr) {
-      calloc.free(c_paymentFee.paymentFeeUnit.buf);
-      c_paymentFee.paymentFeeUnit.buf = nullptr;
-      c_paymentFee.paymentFeeUnit.size = 0;
-    }
+  void free(Pointer<C.PaymentFee> pointer) {    
+    calloc.free(pointer);
   }
 
   PaymentFee(this.paymentFeeAmount, String payUnitStr){

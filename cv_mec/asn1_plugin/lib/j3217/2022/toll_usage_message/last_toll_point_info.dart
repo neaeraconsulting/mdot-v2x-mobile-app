@@ -37,15 +37,12 @@ class LastTollPointInfo {
     void toC(Pointer<C.LastTollPointInfo> pointer) {
       final c_info = pointer.ref;
       
-      // Zero-initialize the entire struct first
       pointer.cast<Uint8>().asTypedList(sizeOf<C.LastTollPointInfo>()).fillRange(0, sizeOf<C.LastTollPointInfo>(), 0);
 
-      // Handle tollChargerInfo
       final tollChargerInfoPtr = calloc<C.TollChargerInfo>();
       tollChargerInfo.toC(tollChargerInfoPtr);
       c_info.tollChargerInfo = tollChargerInfoPtr.ref;
 
-      // Handle timeStamp
       final timeStampPtr = calloc<C.DDateTime>();
       timeStamp.toC(timeStampPtr);
       c_info.timeStamp = timeStampPtr.ref;

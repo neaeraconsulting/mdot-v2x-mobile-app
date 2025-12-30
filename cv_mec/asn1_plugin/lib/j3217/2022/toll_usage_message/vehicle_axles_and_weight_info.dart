@@ -20,17 +20,21 @@
  * the License.
  *============================================================================*/
 
+
 import 'package:asn1_plugin/generated_bindings.dart' as C;
 import 'dart:ffi';
 
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/veh_weight_units.dart';
-
+import 'package:ffi/ffi.dart';
 
 class VehicleAxlesAndWeightInfo {
     late int vehNumAxles; 
     List<int>? vehWeightPerAxle; 
     int? vehTotalWeight; 
     late VehWeightUnits vehWeightUnits; 
+
+    VehicleAxlesAndWeightInfo(this.vehNumAxles, this.vehWeightPerAxle, this.vehTotalWeight, this.vehWeightUnits);
+
     VehicleAxlesAndWeightInfo.fromC(C.VehicleAxlesAndWeightInfo c_obj){
         vehNumAxles = c_obj.vehNumAxles;
         vehWeightPerAxle = getVehWeightPerAxleList(c_obj.vehWeightPerAxle);
@@ -38,7 +42,39 @@ class VehicleAxlesAndWeightInfo {
         vehWeightUnits = VehWeightUnits.values[c_obj.vehWeightUnits];
     }
 
-    VehicleAxlesAndWeightInfo(this.vehNumAxles, this.vehWeightPerAxle, this.vehTotalWeight, this.vehWeightUnits);
+    void toC(Pointer<C.VehicleAxlesAndWeightInfo> pointer) {
+      if (pointer == nullptr) return;
+      
+      final c_info = pointer.ref;
+      
+      pointer.cast<Uint8>().asTypedList(sizeOf<C.VehicleAxlesAndWeightInfo>()).fillRange(0, sizeOf<C.VehicleAxlesAndWeightInfo>(), 0);
+      
+      c_info.vehNumAxles = vehNumAxles;
+      c_info.vehWeightUnits = vehWeightUnits.index;
+      
+      if (vehTotalWeight != null) {
+        c_info.vehTotalWeight = vehTotalWeight!;
+      } 
+
+      if (vehWeightPerAxle != null && vehWeightPerAxle!.isNotEmpty) {
+        final count = vehWeightPerAxle!.length;
+        final arrayPtr = calloc<Pointer<Long>>(count);
+
+        for (int i = 0; i < count; i++) {
+          final longPtr = calloc<Long>();
+          longPtr.value = vehWeightPerAxle![i];
+          arrayPtr[i] = longPtr;
+        }
+        
+        c_info.vehWeightPerAxle.list.array = arrayPtr;
+        c_info.vehWeightPerAxle.list.count = count;
+        c_info.vehWeightPerAxle.list.size = count;
+      }
+    }
+
+    void free(Pointer<C.VehicleAxlesAndWeightInfo> pointer) {
+      calloc.free(pointer);
+    }
 
     List<int> getVehWeightPerAxleList(C.VehicleAxlesAndWeightInfo__vehWeightPerAxle c_list){
         List<int> list = [];

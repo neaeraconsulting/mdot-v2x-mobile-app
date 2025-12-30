@@ -55,7 +55,6 @@ class LocAndTimeStamp {
       c_locAndTimeStamp.latitude = latitude.latitude;
       c_locAndTimeStamp.longitude = longitude.longitude;
 
-      // Handle optional elevation
       if (elevation != null) {
         final elevationPtr = calloc<Int32>();
         elevationPtr.value = elevation!.elevation;
@@ -64,12 +63,10 @@ class LocAndTimeStamp {
         c_locAndTimeStamp.elevation = nullptr;
       }
 
-      // Handle timeStamp
       final timeStampPtr = calloc<C.DDateTime>();
       timeStamp.toC(timeStampPtr);
       c_locAndTimeStamp.timeStamp = timeStampPtr.ref;
 
-      // Handle optional currentLane
       if (currentLane != null) {
         final currentLanePtr = calloc<Int32>();
         currentLanePtr.value = currentLane!.laneID;
@@ -80,13 +77,10 @@ class LocAndTimeStamp {
 
     }
 
-    LocAndTimeStamp({required Latitude latitude, required Longitude longitude, int? elevation, required DDateTime timeStamp, int? currentLane}){
-        this.latitude = latitude;
-        this.longitude = longitude;
+    LocAndTimeStamp({required this.latitude, required this.longitude, int? elevation, required this.timeStamp, int? currentLane}){
         if(elevation != null){
             this.elevation = Elevation(elevation);
         }
-        this.timeStamp = timeStamp;
         if(currentLane != null){
             this.currentLane = LaneID(currentLane);
         }

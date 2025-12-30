@@ -28,13 +28,13 @@ import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/operator_defin
 
 
 class SpecialCharges{
-    PaymentFee? hov2Charge = null; 
-    PaymentFee? hov3Charge = null; 
-    PaymentFee? hov4Charge = null; 
-    PaymentFee? hov5PlusCharge = null; 
-    PaymentFee? cleanAirCharge = null; 
-    OperatorDefined? operatorDefined = null; 
-    EngineCharacteristics? engineCharacteristics = null; 
+    PaymentFee? hov2Charge; 
+    PaymentFee? hov3Charge; 
+    PaymentFee? hov4Charge; 
+    PaymentFee? hov5PlusCharge; 
+    PaymentFee? cleanAirCharge; 
+    OperatorDefined? operatorDefined; 
+    EngineCharacteristics? engineCharacteristics; 
     SpecialCharges.fromC(C.SpecialCharges c_obj){
         if(c_obj.hov2Charge.address != 0){
             hov2Charge = PaymentFee.fromC(c_obj.hov2Charge.ref);

@@ -17,4 +17,8 @@ class VehicleWeightLimits {
         c_weightLimits.vehicleTrainMaximumWeight = vehicleTrainMaximumWeight;
         c_weightLimits.vehicleWeightUnladen = vehicleWeightUnladen;
     }
+
+    void free(Pointer<C.VehicleWeightLimits> pointer) {
+        calloc.free(pointer);
+    }
 }

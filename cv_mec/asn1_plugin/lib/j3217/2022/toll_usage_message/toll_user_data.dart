@@ -20,6 +20,8 @@
  * the License.
  *============================================================================*/
 
+import 'dart:math';
+
 import 'package:asn1_plugin/generated_bindings.dart' as C;
 import 'package:asn1_plugin/j2735/2024/common/d_date_time.dart';
 import 'package:asn1_plugin/j3217/2022/payment_fee.dart';
@@ -45,55 +47,67 @@ class TollUserData {
     TollPointID? entryTollPointId; 
     DDateTime? entryTimeStamp; 
     LocAndTimeStamps? locAndTimeStamps; 
-    LastTollPointInfos? lastTollPoints = null; 
-    PaymentFee? charge = null; 
+    LastTollPointInfos? lastTollPoints; 
+    PaymentFee? charge; 
+
+    TollUserData({
+      required this.timestamp,
+      required this.tspId,
+      required this.vehicleId,
+      this.vehType,
+      this.vehicleDescription,
+      this.vehAxlesAndWeight,
+      this.numOccupants,
+      this.entryTollPointId,
+      this.entryTimeStamp,
+      this.locAndTimeStamps,
+      this.lastTollPoints,
+      this.charge
+    });
+
     TollUserData.fromC(C.TollUserData c_obj){
-        timestamp = DDateTime.fromC(c_obj.timeStamp);
-        tspId = _oidBufferToString(c_obj.tspId);
-        vehicleId = VehicleId.fromC(c_obj.vehicleId);
-        if(c_obj.vehType.address != 0){
-            vehType = VehicleTypes.values[c_obj.vehType.value];
-        }
+      timestamp = DDateTime.fromC(c_obj.timeStamp);
+      tspId = _oidBufferToString(c_obj.tspId);
+      vehicleId = VehicleId.fromC(c_obj.vehicleId);
+      if(c_obj.vehType.address != 0){
+          vehType = VehicleTypes.values[c_obj.vehType.value];
+      }
 
-        if(c_obj.vehicleDescription.address != 0){
-            vehicleDescription = VehicleDescription.fromC(c_obj.vehicleDescription.ref);
-        }
+      if(c_obj.vehicleDescription.address != 0){
+          vehicleDescription = VehicleDescription.fromC(c_obj.vehicleDescription.ref);
+      }
 
-        if(c_obj.vehAxlesAndWeight.address != 0){
-            vehAxlesAndWeight = VehicleAxlesAndWeightInfo.fromC(c_obj.vehAxlesAndWeight.ref);
-        }
+      if(c_obj.vehAxlesAndWeight.address != 0){
+          vehAxlesAndWeight = VehicleAxlesAndWeightInfo.fromC(c_obj.vehAxlesAndWeight.ref);
+      }
 
-        if(c_obj.numOccupants.address != 0){
-            numOccupants = c_obj.numOccupants.value;
-        }
+      if(c_obj.numOccupants.address != 0){
+          numOccupants = c_obj.numOccupants.value;
+      }
 
-        if(c_obj.entryTollPointId.address != 0){
-            entryTollPointId = TollPointID(c_obj.entryTollPointId.value);
-        }
+      if(c_obj.entryTollPointId.address != 0){
+          entryTollPointId = TollPointID(c_obj.entryTollPointId.value);
+      }
 
-        if(c_obj.entryTimeStamp.address != 0){
-            entryTimeStamp = DDateTime.fromC(c_obj.entryTimeStamp.ref);
-        }
+      if(c_obj.entryTimeStamp.address != 0){
+          entryTimeStamp = DDateTime.fromC(c_obj.entryTimeStamp.ref);
+      }
 
-        if(c_obj.locAndTimeStamps.address != 0){
-            locAndTimeStamps = LocAndTimeStamps.fromC(c_obj.locAndTimeStamps.ref);
-        }
+      if(c_obj.locAndTimeStamps.address != 0){
+          locAndTimeStamps = LocAndTimeStamps.fromC(c_obj.locAndTimeStamps.ref);
+      }
 
-        if(c_obj.lastTollPoints.address != 0){
-            lastTollPoints = LastTollPointInfos.fromC(c_obj.lastTollPoints.ref);
-        }
+      if(c_obj.lastTollPoints.address != 0){
+          lastTollPoints = LastTollPointInfos.fromC(c_obj.lastTollPoints.ref);
+      }
 
-        if(c_obj.charge.address != 0){
-            charge = PaymentFee.fromC(c_obj.charge.ref);
-        }
-
+      if(c_obj.charge.address != 0){
+          charge = PaymentFee.fromC(c_obj.charge.ref);
+      }
     }
 
     C.TollUserData toC(Pointer<C.TollUserData> pointer) {
       final c_tollUserData = pointer.ref;
-      
-      // Clean up existing allocations first
-      _cleanupExistingAllocations(c_tollUserData);
       
       final timestampPtr = calloc<C.DDateTime>();
       timestampPtr.cast<Uint8>().asTypedList(sizeOf<C.DDateTime>()).fillRange(0, sizeOf<C.DDateTime>(), 0);
@@ -121,6 +135,15 @@ class TollUserData {
         c_tollUserData.vehicleDescription = vehicleDescriptionPtr;
       } else {
         c_tollUserData.vehicleDescription = nullptr;
+      }
+
+      if(vehAxlesAndWeight != null){
+        final vehAxlesAndWeightPtr = calloc<C.VehicleAxlesAndWeightInfo>();
+        vehAxlesAndWeightPtr.cast<Uint8>().asTypedList(sizeOf<C.VehicleAxlesAndWeightInfo>()).fillRange(0, sizeOf<C.VehicleAxlesAndWeightInfo>(), 0);
+        vehAxlesAndWeight!.toC(vehAxlesAndWeightPtr);
+        c_tollUserData.vehAxlesAndWeight = vehAxlesAndWeightPtr;
+      } else {
+        c_tollUserData.vehAxlesAndWeight = nullptr;
       }
 
       if(numOccupants != null){
@@ -174,15 +197,60 @@ class TollUserData {
       return c_tollUserData;
     }
 
+    void free(Pointer<C.TollUserData> pointer) {
+      final c_tollUserData = pointer.ref;
+
+      {
+        final timestampPtr = calloc<C.DDateTime>();
+        timestamp.free(timestampPtr);
+      }
+
+      {
+        if (c_tollUserData.tspId.buf != nullptr) {
+          calloc.free(c_tollUserData.tspId.buf);
+          c_tollUserData.tspId.buf = nullptr;
+          c_tollUserData.tspId.size = 0;
+        }
+      }
+
+      {
+        final vehicleIdPtr = calloc<C.TumVehicleId>();
+        vehicleId.free(vehicleIdPtr);
+      }
+
+      if (c_tollUserData.vehicleDescription != nullptr) {
+        vehicleDescription!.free(c_tollUserData.vehicleDescription);
+        c_tollUserData.vehicleDescription = nullptr;
+      }
+
+      if (c_tollUserData.vehAxlesAndWeight != nullptr) {
+        vehAxlesAndWeight!.free(c_tollUserData.vehAxlesAndWeight);
+        c_tollUserData.vehAxlesAndWeight = nullptr;
+      }
+
+      if (c_tollUserData.entryTimeStamp != nullptr) {
+        entryTimeStamp!.free(c_tollUserData.entryTimeStamp);
+        c_tollUserData.entryTimeStamp = nullptr;
+      }
+
+      if (c_tollUserData.locAndTimeStamps != nullptr) {
+        locAndTimeStamps!.free(c_tollUserData.locAndTimeStamps);
+        c_tollUserData.locAndTimeStamps = nullptr;
+      }
+
+      if (c_tollUserData.lastTollPoints != nullptr) {
+        lastTollPoints!.free(c_tollUserData.lastTollPoints);
+        c_tollUserData.lastTollPoints = nullptr;
+      }
+
+      if (c_tollUserData.charge != nullptr) {
+        charge!.free(c_tollUserData.charge);
+        c_tollUserData.charge = nullptr;
+      }
+    }
+
     void _fillTspId(String tspId, Pointer<C.TollUserData> pointer) {
       final c_tollUserData = pointer.ref;
-      
-      // Clean up existing allocation
-      if (c_tollUserData.tspId.buf != nullptr) {
-        calloc.free(c_tollUserData.tspId.buf);
-        c_tollUserData.tspId.buf = nullptr;
-        c_tollUserData.tspId.size = 0;
-      }
       
       // Encode the OID string to bytes
       List<int> oidBytes = _encodeOid(tspId);
@@ -230,7 +298,7 @@ class TollUserData {
         value >>= 7;
       }
       
-      // Set continuation bit on all bytes except the last
+
       for (int i = 0; i < bytes.length - 1; i++) {
         bytes[i] |= 0x80;
       }
@@ -238,73 +306,16 @@ class TollUserData {
       return bytes;
     }
 
-    void _cleanupExistingAllocations(C.TollUserData c_tollUserData) {
-      // Clean up tspId
-      if (c_tollUserData.tspId.buf != nullptr) {
-        calloc.free(c_tollUserData.tspId.buf);
-        c_tollUserData.tspId.buf = nullptr;
-        c_tollUserData.tspId.size = 0;
-      }
-      
-      // Clean up pointer fields
-      if (c_tollUserData.vehType != nullptr) {
-        calloc.free(c_tollUserData.vehType);
-        c_tollUserData.vehType = nullptr;
-      }
-      
-      if (c_tollUserData.vehicleDescription != nullptr) {
-        calloc.free(c_tollUserData.vehicleDescription);
-        c_tollUserData.vehicleDescription = nullptr;
-      }
-      
-      if (c_tollUserData.numOccupants != nullptr) {
-        calloc.free(c_tollUserData.numOccupants);
-        c_tollUserData.numOccupants = nullptr;
-      }
-      
-      if (c_tollUserData.entryTollPointId != nullptr) {
-        calloc.free(c_tollUserData.entryTollPointId);
-        c_tollUserData.entryTollPointId = nullptr;
-      }
-      
-    }
-
-    TollUserData({
-      required this.timestamp,
-      required this.tspId,
-      required this.vehicleId,
-      this.vehType,
-      this.vehicleDescription,
-      this.vehAxlesAndWeight,
-      this.numOccupants,
-      this.entryTollPointId,
-      this.entryTimeStamp,
-      this.locAndTimeStamps,
-      this.lastTollPoints,
-      this.charge
-    });
-
     String _oidBufferToString(C.ASN__PRIMITIVE_TYPE_s oid) {
-      if (oid.size == 0 || oid.buf == nullptr) {
-        return "1.2.3"; // Default OID
+      List<int> bytes = [];
+      for (int i = 0; i < oid.size; i++) {
+        bytes.add(oid.buf[i]);
       }
       
-      try {
-        List<int> bytes = [];
-        for (int i = 0; i < oid.size; i++) {
-          bytes.add(oid.buf[i]);
-        }
-        
-        return _decodeOid(bytes);
-      } catch (e) {
-        print("Error decoding OID: $e");
-        return "1.2.3"; // Fallback
-      }
+      return _decodeOid(bytes);
     }
 
     String _decodeOid(List<int> bytes) {
-      if (bytes.isEmpty) return "1.2.3";
-      
       List<int> nodes = [];
       
       // Decode first byte: (first * 40) + second
@@ -325,7 +336,6 @@ class TollUserData {
         } while ((currentByte & 0x80) != 0);
         nodes.add(value);
       }
-      
       return nodes.join('.');
     }
 }

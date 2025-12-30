@@ -32,6 +32,9 @@ class VehicleId {
     String? licPlateNumVeh; 
     String? licPlateNumTrailer; 
     UserId? userId; 
+
+    VehicleId.fromDetails(String this.vehicleIdentity, String this.licPlateState, String this.licPlateNumVeh);
+
     VehicleId.fromC(C.TumVehicleId c_obj){
         if(c_obj.vehicleIdentity.address != 0){
             vehicleIdentity = c_obj.vehicleIdentity.ref.buf.asTypedList(c_obj.vehicleIdentity.ref.size).map((e) => e.toRadixString(16).padLeft(2, '0')).join();
@@ -52,14 +55,10 @@ class VehicleId {
         if(c_obj.userId.address != 0){
             userId = UserId.fromC(c_obj.userId.ref);
         }
-
     }
 
     void toC(Pointer<C.TumVehicleId> pointer) {
       final c_vehicleId = pointer.ref;
-
-      // Clean up existing allocations first
-      _cleanupExistingAllocations(c_vehicleId);
       
       // Zero-initialize the struct
       pointer.cast<Uint8>().asTypedList(sizeOf<C.TumVehicleId>()).fillRange(0, sizeOf<C.TumVehicleId>(), 0);
@@ -128,6 +127,55 @@ class VehicleId {
       }
     }
 
+    void free(Pointer<C.TumVehicleId> pointer) {
+      final c_vehicleId = pointer.ref;
+      
+      // Free vehicleIdentity
+      if (c_vehicleId.vehicleIdentity != nullptr) {
+        if (c_vehicleId.vehicleIdentity.ref.buf != nullptr) {
+          calloc.free(c_vehicleId.vehicleIdentity.ref.buf);
+        }
+        calloc.free(c_vehicleId.vehicleIdentity);
+        c_vehicleId.vehicleIdentity = nullptr;
+      }
+      
+      // Free licPlateState
+      if (c_vehicleId.licPlateState != nullptr) {
+        if (c_vehicleId.licPlateState.ref.buf != nullptr) {
+          calloc.free(c_vehicleId.licPlateState.ref.buf);
+        }
+        calloc.free(c_vehicleId.licPlateState);
+        c_vehicleId.licPlateState = nullptr;
+      }
+      
+      // Free licPlateNumVeh
+      if (c_vehicleId.licPlateNumVeh != nullptr) {
+        if (c_vehicleId.licPlateNumVeh.ref.buf != nullptr) {
+          calloc.free(c_vehicleId.licPlateNumVeh.ref.buf);
+        }
+        calloc.free(c_vehicleId.licPlateNumVeh);
+        c_vehicleId.licPlateNumVeh = nullptr;
+      }
+      
+      // Free licPlateNumTrailer
+      if (c_vehicleId.licPlateNumTrailer != nullptr) {
+        if (c_vehicleId.licPlateNumTrailer.ref.buf != nullptr) {
+          calloc.free(c_vehicleId.licPlateNumTrailer.ref.buf);
+        }
+        calloc.free(c_vehicleId.licPlateNumTrailer);
+        c_vehicleId.licPlateNumTrailer = nullptr;
+      }
+      
+      // Free userId
+      if (c_vehicleId.userId != nullptr) {
+        userId!.free(c_vehicleId.userId);
+        c_vehicleId.userId = nullptr;
+      }
+      
+      // free the TumVehicleId struct
+      calloc.free(pointer);
+    }
+
     void _stringToIA5String(String str, Pointer<C.IA5String_t> ia5Ptr) {
       List<int> bytes = str.codeUnits;
       
@@ -144,67 +192,9 @@ class VehicleId {
       }
     }
 
-      void _cleanupExistingAllocations(C.TumVehicleId c_vehicleId) {
-        // Clean up vehicleIdentity
-        if (c_vehicleId.vehicleIdentity != nullptr) {
-          if (c_vehicleId.vehicleIdentity.ref.buf != nullptr) {
-            calloc.free(c_vehicleId.vehicleIdentity.ref.buf);
-            c_vehicleId.vehicleIdentity.ref.buf = nullptr;
-            c_vehicleId.vehicleIdentity.ref.size = 0;
-          }
-          calloc.free(c_vehicleId.vehicleIdentity);
-          c_vehicleId.vehicleIdentity = nullptr;
-        }
-        
-        // Clean up licPlateState
-        if (c_vehicleId.licPlateState != nullptr) {
-          if (c_vehicleId.licPlateState.ref.buf != nullptr) {
-            calloc.free(c_vehicleId.licPlateState.ref.buf);
-            c_vehicleId.licPlateState.ref.buf = nullptr;
-            c_vehicleId.licPlateState.ref.size = 0;
-          }
-          calloc.free(c_vehicleId.licPlateState);
-          c_vehicleId.licPlateState = nullptr;
-        }
-        
-        // Clean up licPlateNumVeh
-        if (c_vehicleId.licPlateNumVeh != nullptr) {
-          if (c_vehicleId.licPlateNumVeh.ref.buf != nullptr) {
-            calloc.free(c_vehicleId.licPlateNumVeh.ref.buf);
-            c_vehicleId.licPlateNumVeh.ref.buf = nullptr;
-            c_vehicleId.licPlateNumVeh.ref.size = 0;
-          }
-          calloc.free(c_vehicleId.licPlateNumVeh);
-          c_vehicleId.licPlateNumVeh = nullptr;
-        }
-        
-        // Clean up licPlateNumTrailer
-        if (c_vehicleId.licPlateNumTrailer != nullptr) {
-          if (c_vehicleId.licPlateNumTrailer.ref.buf != nullptr) {
-            calloc.free(c_vehicleId.licPlateNumTrailer.ref.buf);
-            c_vehicleId.licPlateNumTrailer.ref.buf = nullptr;
-            c_vehicleId.licPlateNumTrailer.ref.size = 0;
-          }
-          calloc.free(c_vehicleId.licPlateNumTrailer);
-          c_vehicleId.licPlateNumTrailer = nullptr;
-        }
-        
-        // Clean up userId
-        if (c_vehicleId.userId != nullptr) {
-          calloc.free(c_vehicleId.userId);
-          c_vehicleId.userId = nullptr;
-        }
-      }
-    
-    VehicleId.fromDetails(String vehicleIdentity, String licPlateState, String licPlateNumVeh){
-        this.vehicleIdentity = vehicleIdentity;
-        this.licPlateState = licPlateState;
-        this.licPlateNumVeh = licPlateNumVeh;
-    }
-
-    String? convertIA5ToString(Pointer<C.IA5String_t> ia5Ptr) {  // Changed IA5STRING_t to IA5String_t
+    String? convertIA5ToString(Pointer<C.IA5String_t> ia5Ptr) { 
       if (ia5Ptr.address != 0) {
-          C.IA5String_t ia5 = ia5Ptr.ref;  // Changed IA5STRING_t to IA5String_t
+          C.IA5String_t ia5 = ia5Ptr.ref; 
           if (ia5.buf != nullptr && ia5.size > 0) {
               final byteList = ia5.buf.asTypedList(ia5.size);
               return String.fromCharCodes(byteList);

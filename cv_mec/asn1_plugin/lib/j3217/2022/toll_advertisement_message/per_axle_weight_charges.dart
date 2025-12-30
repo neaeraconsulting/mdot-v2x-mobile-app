@@ -38,11 +38,11 @@ class PerAxleWeightCharges extends Choice_WeightCharge{
         axleWeightCharge = PaymentFee.fromC(c_obj.axleWeightCharge);
     }
 }
+
 class TotalWeightLimitInteger {
     late int totalWeightLimitInteger;
     TotalWeightLimitInteger(int value): totalWeightLimitInteger = value;
 }
-
 
 class MaxLadenWeightOnAxleInteger {
     late int maxLadenWeightOnAxleInteger;

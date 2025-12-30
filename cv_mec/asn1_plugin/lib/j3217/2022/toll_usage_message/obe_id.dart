@@ -18,16 +18,10 @@ class ObeId {
   void toC(Pointer<C.ObeId> pointer) {
     final c_obeId = pointer.ref;
     
-    // Clean up existing allocations first
-    _cleanupExistingAllocations(c_obeId);
-    
-    // Zero-initialize the struct
     pointer.cast<Uint8>().asTypedList(sizeOf<C.ObeId>()).fillRange(0, sizeOf<C.ObeId>(), 0);
     
-    // Handle manufacturerId (direct int value)
     c_obeId.manufacturerId = manufacturerId ?? 0;
     
-    // Handle equipmentObuId (OCTET_STRING)
     if (equipmentObuId != null) {
       List<int> bytes = equipmentObuId!.codeUnits;
       if (bytes.isNotEmpty) {
@@ -47,12 +41,15 @@ class ObeId {
     }
   }
   
-  void _cleanupExistingAllocations(C.ObeId c_obeId) {
-    // Clean up equipmentObuId buffer
+  void free(Pointer<C.ObeId> pointer) {
+    final c_obeId = pointer.ref;
+    
     if (c_obeId.equipmentObuId.buf != nullptr) {
       calloc.free(c_obeId.equipmentObuId.buf);
       c_obeId.equipmentObuId.buf = nullptr;
       c_obeId.equipmentObuId.size = 0;
     }
+    
+    calloc.free(pointer);
   }
 }

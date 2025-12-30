@@ -29,7 +29,7 @@ import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/toll_point_id.
 
 
 class ExitChargesTable extends Choice_NetworkChargeTable{
-    TollPointID? entryInfo = null; 
+    TollPointID? entryInfo; 
     late ChargesTable chargesTable; 
     ExitChargesTable.fromC(C.ExitChargesTable c_obj){
         if(c_obj.entryInfo.address != 0){

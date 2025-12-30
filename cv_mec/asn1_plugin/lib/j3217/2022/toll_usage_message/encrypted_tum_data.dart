@@ -44,12 +44,6 @@ class EncryptedTumData{
   void toC(Pointer<C.OCTET_STRING> pointer) {
     final c_encryptedTumData = pointer.ref;
 
-    // Free previous buffer if needed
-    if (c_encryptedTumData.buf != nullptr && c_encryptedTumData.size > 0) {
-      calloc.free(c_encryptedTumData.buf);
-      c_encryptedTumData.buf = nullptr;
-    }
-
     // Convert hex string to bytes
     final bytes = <int>[];
     for (int i = 0; i < encryptedTumData.length; i += 2) {
@@ -59,14 +53,22 @@ class EncryptedTumData{
     if (bytes.isEmpty) {
       c_encryptedTumData.size = 0;
       c_encryptedTumData.buf = nullptr;
-      return; // Just return without a value
+      return; 
     }
 
-    // Allocate new buffer - fix deprecated allocation method
     c_encryptedTumData.buf = calloc<Uint8>(bytes.length);
     for (int i = 0; i < bytes.length; i++) {
       c_encryptedTumData.buf[i] = bytes[i];
     }
     c_encryptedTumData.size = bytes.length;
+  }
+
+  void free(Pointer<C.OCTET_STRING> pointer) {
+    final c_encryptedTumData = pointer.ref;
+    if (c_encryptedTumData.buf != nullptr) {
+      calloc.free(c_encryptedTumData.buf);
+      c_encryptedTumData.buf = nullptr;
+      c_encryptedTumData.size = 0;
+    }
   }
 }

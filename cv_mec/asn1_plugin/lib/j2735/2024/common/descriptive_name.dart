@@ -31,7 +31,6 @@ class DescriptiveName{
       return pointer;
     }
 
-    // Allocate new buffer and copy bytes
     final buf = calloc.allocate<Uint8>(utf8Bytes.length);
     for (int i = 0; i < utf8Bytes.length; i++) {
       buf[i] = utf8Bytes[i];

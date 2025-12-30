@@ -44,4 +44,14 @@ class TemporaryID{
     }
     c_tempID.size = temporaryID.length; 
   }
+
+  void free(Pointer<OCTET_STRING> pointer) {
+    if (pointer == nullptr) return;
+    final c_tempID = pointer.ref;
+    if (c_tempID.buf != nullptr) {
+      calloc.free(c_tempID.buf);
+      c_tempID.buf = nullptr;
+      c_tempID.size = 0;
+    }
+  }
 }

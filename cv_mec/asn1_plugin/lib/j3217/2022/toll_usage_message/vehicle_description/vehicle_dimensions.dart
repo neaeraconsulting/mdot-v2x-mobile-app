@@ -13,10 +13,13 @@ class VehicleDimensions {
 
     void toC(Pointer<C.VehicleDimensions> pointer) {
         final c_dimensions = pointer.ref;
-        
-        // These are direct struct fields (not pointers), so assign directly
+
         c_dimensions.vehicleLengthOverall = vehicleLengthOverall;
         c_dimensions.vehicleHeigthOverall = vehicleHeigthOverall;
         c_dimensions.vehicleWidthOverall = vehicleWidthOverall;
+    }
+
+    void free(Pointer<C.VehicleDimensions> pointer) {
+        calloc.free(pointer);
     }
 }

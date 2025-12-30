@@ -53,13 +53,9 @@ class TollUsageMessage{
     void toC(Pointer<C.TollUsageMessage> pointer) {
       final c_tum = pointer.ref;
       
-      _cleanupExistingAllocations(c_tum);
-      
-      // Zero-initialize the entire struct first
       pointer.cast<Uint8>().asTypedList(sizeOf<C.TollUsageMessage>()).fillRange(0, sizeOf<C.TollUsageMessage>(), 0);
       
       final tollPointInfoPtr = calloc<C.TollChargerInfo>();
-      // Zero-initialize nested struct
       tollPointInfoPtr.cast<Uint8>().asTypedList(sizeOf<C.TollChargerInfo>()).fillRange(0, sizeOf<C.TollChargerInfo>(), 0);
       tollPointInfo.toC(tollPointInfoPtr);
       c_tum.tollPointInfo = tollPointInfoPtr.ref;
@@ -87,24 +83,37 @@ class TollUsageMessage{
       c_tum.encryptedTumData = encryptedDataPtr.ref;
     }
 
-    void _cleanupExistingAllocations(C.TollUsageMessage c_tum) {
-      // Clean up tumHash if it was previously allocated
+    void free(Pointer<C.TollUsageMessage> pointer) {
+      if (pointer == nullptr) return;
+      final c_tum = pointer.ref;
+
+      {
+        final tollPointInfoPtr = calloc<C.TollChargerInfo>();
+        tollPointInfo.free(tollPointInfoPtr);
+      }
+
+      {
+        final tempIdPtr = calloc<C.OCTET_STRING>();
+        tempID.free(tempIdPtr);
+        calloc.free(tempIdPtr);
+      }
+
+      // Free tumHash
       if (c_tum.tumHash != nullptr) {
-        calloc.free(c_tum.tumHash);
-        c_tum.tumHash = nullptr;
+        final tumHashPtr = calloc<C.OCTET_STRING>();
+        tumHash!.free(tumHashPtr);
+        calloc.free(tumHashPtr);
+      }
+
+      // Free encryptedTumData
+      {
+        final encryptedDataPtr = calloc<C.OCTET_STRING>();
+        encryptedTumData.free(encryptedDataPtr);
+        calloc.free(encryptedDataPtr);
       }
     }
 
-    void backFromC(C.TollUsageMessage c_obj) {
-      tollPointInfo = TollChargerInfo.fromC(c_obj.tollPointInfo);
-      tempID = TemporaryID.fromOctetString(c_obj.tempID);
-      tumSequenceNum = MsgCount(c_obj.tumSequenceNum);
-      tamSequenceNum = MsgCount(c_obj.tamSequenceNum);
-      if(c_obj.tumHash.address != 0){
-          tumHash = TumHash.fromOctetString(c_obj.tumHash.ref);
-      }
-      encryptedTumData = EncryptedTumData.fromOctetString(c_obj.encryptedTumData);
-    }
+
 
     TollUsageMessage ({
       required this.tollPointInfo,

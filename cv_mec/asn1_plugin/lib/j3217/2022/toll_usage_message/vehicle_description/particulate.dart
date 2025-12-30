@@ -16,4 +16,8 @@ class Particulate {
         c_particulate.unitType = unitType;
         c_particulate.value = value;
     }
+
+    void free(Pointer<C.Particulate> pointer) {
+        calloc.free(pointer);
+    }
 }

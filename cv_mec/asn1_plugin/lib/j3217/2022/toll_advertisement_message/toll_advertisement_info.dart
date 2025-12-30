@@ -61,6 +61,7 @@ class TollAdvertisementInfo{
 
     }
 }
+
 class TotalTamsInteger {
     late int totalTamsInteger;
     TotalTamsInteger(int value): totalTamsInteger = value;

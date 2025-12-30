@@ -62,9 +62,6 @@ class DDateTime {
   void toC(Pointer<C.DDateTime> pointer) {
     final c_dDateTime = pointer.ref;
     
-    // Clean up existing allocations first
-    _cleanupExistingAllocations(c_dDateTime);
-    
     // Zero-initialize the struct
     pointer.cast<Uint8>().asTypedList(sizeOf<C.DDateTime>()).fillRange(0, sizeOf<C.DDateTime>(), 0);
     
@@ -132,42 +129,53 @@ class DDateTime {
     }
   }
 
-  // Helper method to clean up existing allocations
-  void _cleanupExistingAllocations(C.DDateTime c_dDateTime) {
+  void free(Pointer<C.DDateTime> pointer) {
+    final c_dDateTime = pointer.ref;
+
+    // Free year
     if (c_dDateTime.year != nullptr) {
       calloc.free(c_dDateTime.year);
       c_dDateTime.year = nullptr;
     }
-    
+
+    // Free month
     if (c_dDateTime.month != nullptr) {
       calloc.free(c_dDateTime.month);
       c_dDateTime.month = nullptr;
     }
-    
+
+    // Free day
     if (c_dDateTime.day != nullptr) {
       calloc.free(c_dDateTime.day);
       c_dDateTime.day = nullptr;
     }
-    
+
+    // Free hour
     if (c_dDateTime.hour != nullptr) {
       calloc.free(c_dDateTime.hour);
       c_dDateTime.hour = nullptr;
     }
-    
+
+    // Free minute
     if (c_dDateTime.minute != nullptr) {
       calloc.free(c_dDateTime.minute);
       c_dDateTime.minute = nullptr;
     }
-    
+
+    // Free second
     if (c_dDateTime.second != nullptr) {
       calloc.free(c_dDateTime.second);
       c_dDateTime.second = nullptr;
     }
-    
+
+    // Free offset
     if (c_dDateTime.offset != nullptr) {
       calloc.free(c_dDateTime.offset);
       c_dDateTime.offset = nullptr;
     }
+
+    // free the DDateTime struct itself
+    calloc.free(pointer);
   }
 
   DateTime getAsDateTime() {

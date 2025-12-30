@@ -12,8 +12,11 @@ class TrailerDetails {
     void toC(Pointer<C.TrailerDetails> pointer) {
         final c_trailerDetails = pointer.ref;
         
-        // These are direct struct fields (not pointers), so assign directly
         c_trailerDetails.trailerType = trailerType;
         c_trailerDetails.trailerAxles = trailerAxles;
+    }
+
+    void free(Pointer<C.TrailerDetails> pointer) {
+        calloc.free(pointer);
     }
 }

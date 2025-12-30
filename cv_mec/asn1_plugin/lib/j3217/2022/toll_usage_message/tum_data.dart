@@ -41,21 +41,15 @@ class TumData {
     void toC(Pointer<C.TumData> pointer) {
       final c_tumData = pointer.ref;
 
-      // Clean up existing allocations first
-      _cleanupExistingAllocations(c_tumData);
-
-      // Zero-initialize the entire struct first
       pointer.cast<Uint8>().asTypedList(sizeOf<C.TumData>()).fillRange(0, sizeOf<C.TumData>(), 0);
 
-      // // Handle tollUserData - allocate and assign pointer
       final tollUserDataPtr = calloc<C.TollUserData>();
 
       tollUserDataPtr.cast<Uint8>().asTypedList(sizeOf<C.TollUserData>()).fillRange(0, sizeOf<C.TollUserData>(), 0);
       tollUserData.toC(tollUserDataPtr);
-      c_tumData.tollUserData = tollUserDataPtr.ref;  // This is correct for struct value
+      c_tumData.tollUserData = tollUserDataPtr.ref;  
      
 
-      // Handle tollServiceProviderData - allocate and assign pointer
       if(tollServiceProviderData != null){
         final tollServiceProviderDataPtr = calloc<C.OCTET_STRING>();
         tollServiceProviderDataPtr.cast<Uint8>().asTypedList(sizeOf<C.OCTET_STRING>()).fillRange(0, sizeOf<C.OCTET_STRING>(), 0);
@@ -66,21 +60,19 @@ class TumData {
       }
     }
 
-    void _cleanupExistingAllocations(C.TumData c_tumData) {
-      
-      // Clean up tollServiceProviderData
+    void free(Pointer<C.TumData> pointer) {
+      final c_tumData = pointer.ref;
+
+      Pointer<C.TollUserData> tollUserDataPtr = Pointer<C.TollUserData>.fromAddress(pointer.address);
+
+      tollUserData.free(tollUserDataPtr);
+
       if (c_tumData.tollServiceProviderData != nullptr) {
-        // Clean up the OCTET_STRING buffer if it exists
-        if (c_tumData.tollServiceProviderData.ref.buf != nullptr) {
-          calloc.free(c_tumData.tollServiceProviderData.ref.buf);
-        }
-        calloc.free(c_tumData.tollServiceProviderData);
+        tollServiceProviderData!.free(c_tumData.tollServiceProviderData);
         c_tumData.tollServiceProviderData = nullptr;
       }
-    }
 
-    void cleanup(Pointer<C.TumData> pointer) {
-      _cleanupExistingAllocations(pointer.ref);
+      calloc.free(pointer);
     }
 
     TumData ({

@@ -38,49 +38,35 @@ class LastTollPointInfos{
   void toC(Pointer<C.LastTollPointInfos> pointer) {
     final c_lastTollPointInfos = pointer.ref;
 
-    // Clean up existing allocations first
-    _cleanupExistingAllocations(c_lastTollPointInfos);
-
-    // Zero-initialize the entire struct first
     pointer.cast<Uint8>().asTypedList(sizeOf<C.LastTollPointInfos>()).fillRange(0, sizeOf<C.LastTollPointInfos>(), 0);
 
-    // Handle empty list
     if (lastTollPointInfos.isEmpty) {
       c_lastTollPointInfos.list.count = 0;
       c_lastTollPointInfos.list.array = nullptr;
       return;
     }
 
-    // Set count directly on the existing struct
     c_lastTollPointInfos.list.count = lastTollPointInfos.length;
     
-    // Allocate array of pointers
     final arrayPtr = calloc<Pointer<C.LastTollPointInfo>>(lastTollPointInfos.length);
 
     for (int i = 0; i < lastTollPointInfos.length; i++) {
       final itemPtr = calloc<C.LastTollPointInfo>();
-      // Zero-initialize nested struct
       itemPtr.cast<Uint8>().asTypedList(sizeOf<C.LastTollPointInfo>()).fillRange(0, sizeOf<C.LastTollPointInfo>(), 0);
       lastTollPointInfos[i].toC(itemPtr);
       arrayPtr[i] = itemPtr;
     }
 
-    // Set array pointer directly on the existing struct
     c_lastTollPointInfos.list.array = arrayPtr;
   }
 
-  void _cleanupExistingAllocations(C.LastTollPointInfos c_lastTollPointInfos) {
-    if (c_lastTollPointInfos.list.array != nullptr) {
-      // Free individual items first
-      for (int i = 0; i < c_lastTollPointInfos.list.count; i++) {
-        if (c_lastTollPointInfos.list.array[i] != nullptr) {
-          calloc.free(c_lastTollPointInfos.list.array[i]);
-        }
-      }
-      // Free the array itself
-      calloc.free(c_lastTollPointInfos.list.array);
-      c_lastTollPointInfos.list.array = nullptr;
+  void free(Pointer<C.LastTollPointInfos> pointer) {
+    final c_lastTollPointInfos = pointer.ref;
+
+    for (int i = 0; i < c_lastTollPointInfos.list.count; i++) {
+      calloc.free(c_lastTollPointInfos.list.array[i]);
     }
-    c_lastTollPointInfos.list.count = 0;
+    calloc.free(c_lastTollPointInfos.list.array);
+    calloc.free(pointer);
   }
 }

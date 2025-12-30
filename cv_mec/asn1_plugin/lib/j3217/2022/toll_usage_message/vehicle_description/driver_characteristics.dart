@@ -16,4 +16,8 @@ class DriverCharacteristics {
         c_driverChar.driverClass = driverClass;
         c_driverChar.tripPurpose = tripPurpose;
     }
+
+    void free(Pointer<C.DriverCharacteristics> pointer) {
+        calloc.free(pointer);
+    }
 }

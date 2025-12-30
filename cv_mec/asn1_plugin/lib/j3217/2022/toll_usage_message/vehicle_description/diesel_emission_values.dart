@@ -20,4 +20,12 @@ class DieselEmissionValues {
         
         c_dieselEmissions.absorptionCoeff = absorptionCoeff;
     }
+
+    void free(Pointer<C.DieselEmissionValues> pointer) {
+        particulate.free(Pointer.fromAddress(
+            pointer.address 
+        ));
+        
+        calloc.free(pointer);
+    }
 }

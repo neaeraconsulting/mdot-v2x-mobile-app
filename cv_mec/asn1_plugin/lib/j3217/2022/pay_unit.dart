@@ -13,13 +13,6 @@ class PayUnit {
   void toC(Pointer<C.PayUnit_t> pointer) {
     final c_payUnit = pointer.ref;
     
-    // Clean up existing allocation
-    if (c_payUnit.buf != nullptr) {
-      calloc.free(c_payUnit.buf);
-      c_payUnit.buf = nullptr;
-      c_payUnit.size = 0;
-    }
-    
     // Convert string to bytes (treating as regular string, not hex)
     final bytes = payUnit.codeUnits;  // Get UTF-16 code units as bytes
     
@@ -37,7 +30,5 @@ class PayUnit {
     }
   }
 
-  PayUnit(String payUnit){
-    this.payUnit = payUnit;
-  }
+  PayUnit(this.payUnit);
 }

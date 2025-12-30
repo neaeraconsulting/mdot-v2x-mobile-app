@@ -62,26 +62,36 @@ class TollChargerInfo{
       }
     }
 
+    void free(Pointer<C.TollChargerInfo> pointer) {
+      final c_info = pointer.ref;
+      
+      if (c_info.tollChargerId.buf != nullptr) {
+        calloc.free(c_info.tollChargerId.buf);
+        c_info.tollChargerId.buf = nullptr;
+        c_info.tollChargerId.size = 0;
+      }
+
+      if (c_info.descriptiveName != nullptr) {
+        if (c_info.descriptiveName.ref.buf != nullptr) {
+          calloc.free(c_info.descriptiveName.ref.buf);
+        }
+        calloc.free(c_info.descriptiveName);
+        c_info.descriptiveName = nullptr;
+      }
+
+      calloc.free(pointer);
+    }
+
     String _oidBufferToString(C.ASN__PRIMITIVE_TYPE_s oid) {
-      if (oid.size == 0 || oid.buf == nullptr) {
-        return "1.2.3"; // Default OID
+      List<int> bytes = [];
+      for (int i = 0; i < oid.size; i++) {
+        bytes.add(oid.buf[i]);
       }
       
-      try {
-        List<int> bytes = [];
-        for (int i = 0; i < oid.size; i++) {
-          bytes.add(oid.buf[i]);
-        }
-        
-        return _decodeOid(bytes);
-      } catch (e) {
-        print("Error decoding OID: $e");
-        return "1.2.3"; // Fallback
-      }
+      return _decodeOid(bytes);
     }
 
     String _decodeOid(List<int> bytes) {
-      if (bytes.isEmpty) return "1.2.3";
       
       List<int> nodes = [];
       
@@ -162,12 +172,7 @@ class TollChargerInfo{
       
       List<int> nodes = nodeStrings.map(int.parse).toList();
       
-      // Free existing buffer if present
-      if (target.ref.buf != nullptr) {
-        calloc.free(target.ref.buf);
-      }
-      
-      // Encode OID bytes (your existing logic is correct)
+      // Encode OID bytes
       List<int> encodedBytes = [];
       int firstByte = (nodes[0] * 40) + nodes[1];
       encodedBytes.add(firstByte);
@@ -188,7 +193,6 @@ class TollChargerInfo{
         encodedBytes.addAll(tempBytes);
       }
       
-      // Fill the target struct
       target.ref.size = encodedBytes.length;
       target.ref.buf = calloc<Uint8>(encodedBytes.length);
       

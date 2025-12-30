@@ -19,11 +19,14 @@ class ExhaustEmissionValues {
     void toC(Pointer<C.ExhaustEmissionValues> pointer) {
         final c_exhaustEmissions = pointer.ref;
         
-        // These are direct struct fields (not pointers), so assign directly
         c_exhaustEmissions.unitType = unitType;
         c_exhaustEmissions.emissionCo = emissionCo;
         c_exhaustEmissions.emissionHc = emissionHc;
         c_exhaustEmissions.emissionNox = emissionNox;
         c_exhaustEmissions.emissionHcNox = emissionHcNox;
+    }
+
+    void free(Pointer<C.ExhaustEmissionValues> pointer) {
+        calloc.free(pointer);
     }
 }

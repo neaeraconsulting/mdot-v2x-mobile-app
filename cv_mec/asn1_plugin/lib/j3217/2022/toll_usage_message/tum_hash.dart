@@ -44,32 +44,33 @@ class TumHash{
   }
 
   void toC(Pointer<C.TumHash_t> pointer) {
-      final c_tumHash = pointer.ref;
-      
-      // Free previous buffer if needed
-      if (c_tumHash.buf != nullptr && c_tumHash.size > 0) {
-        calloc.free(c_tumHash.buf);
-        c_tumHash.buf = nullptr;
-        c_tumHash.size = 0;
-      }
-      
-      if (tumHash == null || tumHash!.isEmpty) {
-        c_tumHash.buf = nullptr;
-        c_tumHash.size = 0;
-      }
-      
-      // Convert hex string to bytes
-      final bytes = <int>[];
-      for (int i = 0; i < tumHash!.length; i += 2) {
-        bytes.add(int.parse(tumHash!.substring(i, i + 2), radix: 16));
-      }
-      
-      // Allocate new buffer
-      c_tumHash.buf = calloc.allocate<Uint8>(bytes.length);
-      for (int i = 0; i < bytes.length; i++) {
-        c_tumHash.buf[i] = bytes[i];
-      }
-      c_tumHash.size = bytes.length;
+    final c_tumHash = pointer.ref;
+    
+    if (tumHash == null || tumHash!.isEmpty) {
+      c_tumHash.buf = nullptr;
+      c_tumHash.size = 0;
     }
+    
+    // Convert hex string to bytes
+    final bytes = <int>[];
+    for (int i = 0; i < tumHash!.length; i += 2) {
+      bytes.add(int.parse(tumHash!.substring(i, i + 2), radix: 16));
+    }
+    
+    c_tumHash.buf = calloc.allocate<Uint8>(bytes.length);
+    for (int i = 0; i < bytes.length; i++) {
+      c_tumHash.buf[i] = bytes[i];
+    }
+    c_tumHash.size = bytes.length;
+  }
 
+  void free(Pointer<C.TumHash_t> pointer) {
+    if (pointer == nullptr) return;
+    final c_tumHash = pointer.ref;
+    if (c_tumHash.buf != nullptr) {
+      calloc.free(c_tumHash.buf);
+      c_tumHash.buf = nullptr;
+      c_tumHash.size = 0;
+    }
+  }
 }

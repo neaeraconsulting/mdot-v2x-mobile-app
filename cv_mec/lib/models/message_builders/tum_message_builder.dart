@@ -55,12 +55,11 @@ class TumMessageBuilder{
   TumMessageBuilder();
   ConfigurationController configController = Get.find<ConfigurationController>();
   GeometryService geometryService = Get.find<GeometryService>();
-  final List<Pointer> _allocatedPointers = [];
   final double margin = 0.00001;
   List<LocAndTimeStamp> historicalVehiclePath = [];
 
   C.TollUsageMessage buildCTum(TollUsageMessage tum) {
-    final tumPtr = _allocate(calloc<C.TollUsageMessage>());
+    final tumPtr = calloc<C.TollUsageMessage>();
     tum.toC(tumPtr);
     return tumPtr.ref;
   }
@@ -118,31 +117,14 @@ class TumMessageBuilder{
     return (estimatedSize * 1.5).round();
   }
 
-  T _allocate<T extends Pointer>(T pointer) {
-    _allocatedPointers.add(pointer);
-    return pointer;
-  }
-
-  void _cleanup() {
-    for (var pointer in _allocatedPointers) {
-      try {
-        calloc.free(pointer);
-      } catch (e) {
-        print("Error freeing pointer: $e");
-      }
-    }
-    _allocatedPointers.clear();
-  }
-
   Pointer<Pointer<Void>> tollUsageMessageToPtrPtr(C.TollUsageMessage message) {
 
-    final Pointer<C.MessageFrame> messageFramePtr = _allocate(calloc<C.MessageFrame>());
-
+    final Pointer<C.MessageFrame> messageFramePtr = calloc<C.MessageFrame>();
     messageFramePtr.ref.messageId = 38;
     messageFramePtr.ref.value.present = C.MessageFrame__value_PR.MessageFrame__value_PR_TollUsageMessage;
     messageFramePtr.ref.value.choice.TollUsageMessage = message;
 
-    final Pointer<Pointer<Void>> ptrPtr = _allocate(calloc<Pointer<Void>>());
+    final Pointer<Pointer<Void>> ptrPtr = calloc<Pointer<Void>>();
     
     ptrPtr.value = messageFramePtr.cast<Void>();
     
@@ -151,11 +133,11 @@ class TumMessageBuilder{
 
   Pointer<Pointer<Void>> tumDataToPtrPtr(C.TumData message) {
 
-    final Pointer<C.TumData> tumDataFramePtr = _allocate(calloc<C.TumData>());
+    final Pointer<C.TumData> tumDataFramePtr = calloc<C.TumData>();
 
     tumDataFramePtr.ref = message;
 
-    final Pointer<Pointer<Void>> ptrPtr = _allocate(calloc<Pointer<Void>>());
+    final Pointer<Pointer<Void>> ptrPtr = calloc<Pointer<Void>>();
     
     ptrPtr.value = tumDataFramePtr.cast<Void>();
     
@@ -164,105 +146,109 @@ class TumMessageBuilder{
 
   TollUsageMessageResult generateTumFromTam(TollAdvertisementMessage tam, Position currentPosition, List<int> vehicleIdList, DateTime sendTime){
     try {
-    Vehicle selectedVehicle = configController.selectedVehicle.value;
-    if (tam.tollAdvInfo == null) {
-      throw Exception("TollAdvertisementMessage does not contain toll advertisement info");
-    } else {
-      TollChargerInfo tollPointInfo = tam.tollAdvInfo!.tollChargerInfo;
-      TemporaryID tempId = TemporaryID(randomizeId()); 
-      MsgCount tumSequenceNum = MsgCount(0);
-      MsgCount tamSequenceNum = tam.tollAdvInfo!.tamSequenceNum; 
+      Vehicle selectedVehicle = configController.selectedVehicle.value;
+      if (tam.tollAdvInfo == null) {
+        throw Exception("TollAdvertisementMessage does not contain toll advertisement info");
+      } else {
+        TollChargerInfo tollPointInfo = tam.tollAdvInfo!.tollChargerInfo;
+        TemporaryID tempId = TemporaryID(randomizeId()); 
+        MsgCount tumSequenceNum = MsgCount(0);
+        MsgCount tamSequenceNum = tam.tollAdvInfo!.tamSequenceNum; 
 
-      // Skipping tumhash for now
+        // Skipping tumhash for now
 
-      // EncryptedTumData
-      // TollUserData
-      DDateTime timestamp = DDateTime.fromDateTime(sendTime.toUtc()); 
-      String tspId = tam.tollAdvInfo!.tollChargerInfo.tollChargerId; 
-      
-      // VehicleId
-      String vehicleidentity =  vehicleIdList.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join().toUpperCase();
-      String licensePlateState = configController.selectedVehicle.value.licensePlateState.code;
-      String licensePlateNumber = configController.selectedVehicle.value.licensePlateNumber;
-      //skipping license plate num trailer for now
-      //skipping user id 
-      VehicleId vehicleId = VehicleId.fromDetails(vehicleidentity, licensePlateState, licensePlateNumber);
-      
-      VehicleTypes vehicleType = VehicleMappingService.getVehicleTypes(selectedVehicle.classification);
-      
-      //VehicleAxlesAndWeightInfo
-      int vehNumAxles = VehicleMappingService.getAxles(selectedVehicle.classification); 
-      int vehWeight = VehicleMappingService.getWeight(selectedVehicle.classification); 
-      VehicleAxlesAndWeightInfo vehicleAxlesAndWeightInfo = VehicleAxlesAndWeightInfo(vehNumAxles, null, vehWeight, VehicleMappingService.getDefaultWeightUnit(selectedVehicle.classification));
-      int? numOccupants;
-      if (configController.isHovOn.value) {
-        numOccupants = VehicleMappingService.getNumOccupants(selectedVehicle.classification); 
-        if (numOccupants > 5) {
-          numOccupants = 5; //Based on J3217 saying if numOccupants is 5 or greater, then set numOccupants to 5
+        // EncryptedTumData
+        // TollUserData
+        DDateTime timestamp = DDateTime.fromDateTime(sendTime.toUtc()); 
+        String tspId = tam.tollAdvInfo!.tollChargerInfo.tollChargerId; 
+        
+        // VehicleId
+        String vehicleidentity =  vehicleIdList.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join().toUpperCase();
+        String licensePlateState = configController.selectedVehicle.value.licensePlateState.code;
+        String licensePlateNumber = configController.selectedVehicle.value.licensePlateNumber;
+        //skipping license plate num trailer for now
+        //skipping user id 
+        VehicleId vehicleId = VehicleId.fromDetails(vehicleidentity, licensePlateState, licensePlateNumber);
+        
+        VehicleTypes vehicleType = VehicleMappingService.getVehicleTypes(selectedVehicle.classification);
+        
+        //VehicleAxlesAndWeightInfo
+        int vehNumAxles = VehicleMappingService.getAxles(selectedVehicle.classification); 
+        int vehWeight = VehicleMappingService.getWeight(selectedVehicle.classification); 
+        VehicleAxlesAndWeightInfo vehicleAxlesAndWeightInfo = VehicleAxlesAndWeightInfo(vehNumAxles, null, vehWeight, VehicleMappingService.getDefaultWeightUnit(selectedVehicle.classification));
+        int? numOccupants;
+        if (configController.isHovOn.value) {
+          numOccupants = VehicleMappingService.getNumOccupants(selectedVehicle.classification); 
+          if (numOccupants > 5) {
+            numOccupants = 5; //Based on J3217 saying if numOccupants is 5 or greater, then set numOccupants to 5
+          }
         }
-      }
 
 
-      // locAndTimeStamps
-      int maxNumberOfLocTimeStamps = tam.tollAdvInfo!.tumInstructions!.maxNumOfLocTimeStamps.maxNumOfLocTimeStampsInteger;
-      int locTimeStampRate = tam.tollAdvInfo!.tumInstructions!.locTimeStampRate.locTimeStampRateInteger; //in Hz
-      List<LocAndTimeStamp> locAndTimeStampslist = getLocAndTimeStampsList(historicalVehiclePath, maxNumberOfLocTimeStamps, locTimeStampRate);
-      LocAndTimeStamps locAndTimeStamps = LocAndTimeStamps(locAndTimeStampslist);
-      
-      //charge
-      PaymentFeeResult paymentFeeResult = getPaymentFeeFromTam(tam, currentPosition, numOccupants);
-      if (paymentFeeResult.paymentFee == null) {
-        return TollUsageMessageResult.error(paymentFeeResult.errorMessage!);
-      } 
-      PaymentFee charge = paymentFeeResult.paymentFee!;
+        // locAndTimeStamps
+        int maxNumberOfLocTimeStamps = tam.tollAdvInfo!.tumInstructions!.maxNumOfLocTimeStamps.maxNumOfLocTimeStampsInteger;
+        int locTimeStampRate = tam.tollAdvInfo!.tumInstructions!.locTimeStampRate.locTimeStampRateInteger; //in Hz
+        List<LocAndTimeStamp> locAndTimeStampslist = getLocAndTimeStampsList(historicalVehiclePath, maxNumberOfLocTimeStamps, locTimeStampRate);
+        LocAndTimeStamps locAndTimeStamps = LocAndTimeStamps(locAndTimeStampslist);
+        
+        //charge
+        PaymentFeeResult paymentFeeResult = getPaymentFeeFromTam(tam, currentPosition, numOccupants);
+        if (!paymentFeeResult.isSuccess) {
+          return TollUsageMessageResult.error(paymentFeeResult.errorMessage!);
+        } 
+        PaymentFee charge = paymentFeeResult.paymentFee!;
 
 
-      // build toll user data
-      TollUserData tollUserData = TollUserData(
-        timestamp: timestamp,
-        tspId: tspId,
-        vehicleId: vehicleId,
-        vehType: vehicleType,
-        vehAxlesAndWeight: vehicleAxlesAndWeightInfo,
-        numOccupants: numOccupants,
-        locAndTimeStamps: locAndTimeStamps,
-        charge: charge,
-      );
-      TumData tumData = TumData(
-        tollUserData: tollUserData,
-      );
-      
-      //Pointer for tumdata
-      Pointer<C.TumData> tumDataPtr = _allocate(calloc<C.TumData>());
-      tumData.toC(tumDataPtr);  // This modifies tumDataPtr.ref in-place
-      C.TumData cTumData = tumDataPtr.ref; 
-      
-      String encodedTumData = encodeTumData(cTumData);
+        // build toll user data
+        TollUserData tollUserData = TollUserData(
+          timestamp: timestamp,
+          tspId: tspId,
+          vehicleId: vehicleId,
+          vehType: vehicleType,
+          vehAxlesAndWeight: vehicleAxlesAndWeightInfo,
+          numOccupants: numOccupants,
+          locAndTimeStamps: locAndTimeStamps,
+          charge: charge,
+        );
+        TumData tumData = TumData(
+          tollUserData: tollUserData,
+        );
+        
+        //Pointer for tumdata
+        Pointer<C.TumData> tumDataPtr = calloc<C.TumData>();
+        tumData.toC(tumDataPtr);  // This modifies tumDataPtr.ref in-place
+        C.TumData cTumData = tumDataPtr.ref; 
+        
+        String encodedTumData = encodeTumData(cTumData);
+        tumData.free(tumDataPtr); 
 
-      EncryptedTumData encryptedTumData = EncryptedTumData(encodedTumData, tumData: tumData);
+        EncryptedTumData encryptedTumData = EncryptedTumData(encodedTumData, tumData: tumData);
 
-      TollUsageMessage tum = TollUsageMessage(
-        tollPointInfo: tollPointInfo,
-        tempID: tempId,
-        tumSequenceNum: tumSequenceNum,
-        tamSequenceNum: tamSequenceNum,
-        encryptedTumData: encryptedTumData,
-      );
+        TollUsageMessage tum = TollUsageMessage(
+          tollPointInfo: tollPointInfo,
+          tempID: tempId,
+          tumSequenceNum: tumSequenceNum,
+          tamSequenceNum: tamSequenceNum,
+          encryptedTumData: encryptedTumData,
+        );
 
-      return TollUsageMessageResult.success(tum);
+        return TollUsageMessageResult.success(tum);
 
     }} catch (e) {
       return TollUsageMessageResult.error("Error generating TUM from TAM: $e");
-    } finally {
-      _cleanup();
-    }
+    } 
   }
 
   String convertTumToHex(TollUsageMessage tum) {
-    C.TollUsageMessage cTum = buildCTum(tum);
+    Pointer<C.TollUsageMessage> cTumPtr = calloc<C.TollUsageMessage>();
+    tum.toC(cTumPtr);
+    C.TollUsageMessage cTum = cTumPtr.ref;
     String encoded = encodeTum(cTum);
+    tum.free(cTumPtr); 
+    calloc.free(cTumPtr);
     return encoded;
   }
+
 
   String convertVehicleIdToOctetString(List<int> vehicleId) {
     return vehicleId.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join().toUpperCase();

@@ -10,9 +10,10 @@ class EngineDetails {
         enginePower = c_obj.enginePower;
     void toC(Pointer<C.EngineDetails> pointer) {
         final c_engineDetails = pointer.ref;
-
-        // These are direct struct fields (not pointers), so assign directly
         c_engineDetails.engineCapacity = engineCapacity;
         c_engineDetails.enginePower = enginePower;
+    }
+    void free(Pointer<C.EngineDetails> pointer) {
+        calloc.free(pointer);
     }
 }
