@@ -1,5 +1,7 @@
 import 'package:cv_mec/controllers/configuration_controller.dart';
 import 'package:cv_mec/controllers/settings_controller.dart';
+import 'package:cv_mec/models/api_responses/mqtt_permission.dart';
+
 import 'package:cv_mec/models/etx/full_registration.dart';
 import 'package:cv_mec/models/etx/registration.dart';
 import 'package:cv_mec/models/mqtt/mqtt_agent.dart';
@@ -24,6 +26,9 @@ class EtxMqttAgent extends MqttAgent{
   ConfigurationController configController = Get.find<ConfigurationController>();
   Timing timingService = Get.find<Timing>();
   ASNService asnService = Get.find<ASNService>();
+  Map<String, bool> allowedTopicCache = {};
+
+  MqttPermission? aclRules;
   
   FullRegistration? fullRegistration;
 
@@ -38,7 +43,6 @@ class EtxMqttAgent extends MqttAgent{
       logger.i("Loading Registration from Cache");
       registration = await fileService.getRegistration();
       fullRegistration = await apiService.checkRegistration(registration.deviceID);
-      
     }
 
     if(registration == null || fullRegistration == null){
@@ -91,10 +95,28 @@ class EtxMqttAgent extends MqttAgent{
 
   @override
   Future<int> setupSubscribers() async{
-    mqttService.subscribe("vzimp/1/Private/+/+/+/j2735/+/+", onRawAsnMessage); //MAP / TIM
-    mqttService.subscribe("vzimp/1/Private/+/+/+/j2735_gr/+/+", onGeoRelevanceMessage);
-    mqttService.subscribe("vzimp/1/GeoRelevance/+/+/Public/j2735/+/+", onRawAsnMessage); // SPaT
-    mqttService.subscribe("vzimp/1/GeoRelevance/+/+/Public/j2735_gr/+/+", onGeoRelevanceMessage);
+
+    aclRules = await apiService.getAclRules();
+
+    if(aclRules == null){
+      logger.w("Unable to retrieve ACL Rules from Partner API. Using Default topic names");
+      mqttService.subscribe("vzimp/1/Private/+/+/+/j2735/+/+", onRawAsnMessage); //MAP / TIM
+      mqttService.subscribe("vzimp/1/Private/+/+/+/j2735_gr/+/+", onGeoRelevanceMessage);
+      mqttService.subscribe("vzimp/1/GeoRelevance/+/+/Public/j2735/+/+", onRawAsnMessage); // SPaT
+      mqttService.subscribe("vzimp/1/GeoRelevance/+/+/Public/j2735_gr/+/+", onGeoRelevanceMessage);
+      return 1;
+    }else{
+      List<String> topics = getSubscriptions(aclRules!);
+      for(String topic in topics){
+        if(topic.contains("j2735_gr")){
+          mqttService.subscribe(topic, onGeoRelevanceMessage);
+        }else{
+          mqttService.subscribe(topic, onRawAsnMessage);
+        }
+      }
+    }
+
+    
     return 0;
   }
 
@@ -153,9 +175,58 @@ class EtxMqttAgent extends MqttAgent{
         logger.e('$agentName does not support sending ${messageType.name} messages');
         break;
     }
-    mqttService.publishBytes(buffer, topic);
+
+    if(aclRules != null){
+      bool isAllowed = false;
+      if(allowedTopicCache.containsKey(topic)){
+        isAllowed = allowedTopicCache[topic]!;
+      }else{
+        isAllowed = isTopicAllowed(topic, aclRules!);
+        allowedTopicCache[topic] = isAllowed;
+      }
+
+      if(isAllowed){
+        mqttService.publishBytes(buffer, topic);
+      }else{
+        logger.w("Topic $topic is not allowed by ACL Rules. Message not sent.");
+      }
+        
+    }
     return topic;
   }
+
+  bool isTopicAllowed(String topic, MqttPermission aclRules){
+    List<String> topicParts = topic.split('/');
+    for(String allowedTopic in aclRules.publish){
+      List<String> allowedParts = allowedTopic.split('/');
+      if(doTopicsMatch(topicParts, allowedParts)){
+        return true;
+      } 
+    }
+    return false;
+  }
+
+  bool doTopicsMatch(List<String> topicParts, List<String> allowedParts){
+    if (topicParts.length != allowedParts.length){
+      return false;
+    }
+    for(int i =0; i< topicParts.length; i++){
+      if(allowedParts[i] == '*'){
+        continue;
+      }else if(allowedParts[i].contains('|')){
+        List<String> options = allowedParts[i].split('|');
+        if(!options.contains(topicParts[i])){
+          return false;
+        }
+      }else if(allowedParts[i] != topicParts[i]){
+        return false;
+      }
+    }
+    return true;
+
+  }
+
+
 
   void onGeoRelevanceMessage(MqttReceivedMessage<MqttMessage?> message, DateTime recTime) async {
     final recMess = message.payload as MqttPublishMessage;
@@ -168,5 +239,80 @@ class EtxMqttAgent extends MqttAgent{
     final recMess = message.payload as MqttPublishMessage;
     processingFunction(connectionUrl, message.topic, recMess.payload.message, recTime, null, "ETX");
   }
+
+
+  List<String> getSubscriptions(MqttPermission aclRules){
+
+    Set<String> subscribeTopics = {};
+    for(String sub in aclRules.subscribe){
+      if(sub.contains("Small") || sub.contains("RegionalStatic") || sub.contains("Regional")){
+        print("Skipping Listening to Topic: $sub");
+        // Skip Small Vehicle Subscriptions since we will always use the large versions
+        // Skip JSON format since there is not currently a standard encoding for JSON j2735 messages
+        continue;
+      }
+      List<String> components = sub.split('/');
+      List<String> topics = extractSubscriptions(components);
+
+      subscribeTopics.addAll(topics);
+    }
+    return subscribeTopics.toList(); 
+  }
+
+  List<String> extractSubscriptions(List<String> components){
+    if(components.isEmpty){
+      return ["+"];
+    }
+    if(components[0] == '*'){
+      List<String> results = extractSubscriptions(components.sublist(1));
+      for(int i =0; i< results.length; i++){
+        results[i] = "+/${results[i]}";
+      }
+      return results;
+    }
+    else if(components[0].contains('|')){
+      List<String> parts = components[0].split('|');
+      List<String> results = [];
+      for(int i =0; i< parts.length; i++){
+        if(parts[i] != 'JSON' && parts[i] != 'VzTrafficDensity'&& parts[i] != 'VzMapManager'){
+          // Skip JSON format since there is not currently a standard encoding for JSON j2735 messages
+          List<String> part_results = extractSubscriptions(components.sublist(1));
+          for(int j =0; j< part_results.length; j++){
+            results.add("${parts[i]}/${part_results[j]}");
+          } 
+        }
+      }
+      
+      return results;
+    }else{
+      List<String> results = extractSubscriptions(components.sublist(1));
+      for(int i =0; i< results.length; i++){
+        results[i] = "${components[0]}/${results[i]}";
+      }
+      return results;
+    }
+  }
+
+
+  List<String> getSupportedMessageTypes(String topic){
+    List<String> messageTypes = [];
+    if(topic.contains('BSM')){
+      messageTypes.add(MsgType.BSM.name);
+    }
+    if(topic.contains('PSM')){
+      messageTypes.add(MsgType.PSM.name);
+    }
+    if(topic.contains('SPaT')){
+      messageTypes.add(MsgType.SPAT.name);
+    }
+    if(topic.contains('MAP')){
+      messageTypes.add(MsgType.MAP.name);
+    }
+    if(topic.contains('TIM')){
+      messageTypes.add(MsgType.TIM.name);
+    }
+    return messageTypes;
+  }
+
 }
 
