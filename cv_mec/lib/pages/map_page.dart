@@ -283,10 +283,12 @@ class MapState extends State<MapPage> {
       }
 
       if(settingsController.enableIssScmsSigning.value){
-        scmsActive = await scms.activateScms(settingsController.issScmsToken.value);
-        if(!scmsActive){
-          showError("Unable to Activate SCMS Signing");
-        }
+        scms.activateScms(settingsController.issScmsToken.value).then((result) {
+          scmsActive = result;
+          if(!scmsActive){
+            showError("Unable to Activate SCMS Signing");
+          }
+        });
       }else{
         scmsActive = false;
       }
