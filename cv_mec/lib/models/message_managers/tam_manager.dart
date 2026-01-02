@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/toll_advertisement_message.dart';
 import 'package:cv_mec/models/mappable_tam.dart';
+import 'package:cv_mec/models/test_data.dart';
 import 'package:cv_mec/services/asn_service.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
@@ -7,7 +10,17 @@ import 'package:geolocator/geolocator.dart';
 
 class TamManager {
   Map<int, MappableTam> storedTams = <int, MappableTam>{};
+  Map<int, DateTime> tamTimestamps = <int, DateTime>{};
   bool inTamZone = false;
+
+  static const Duration tamExpiryDuration = Duration(seconds: 30);
+  static const Duration cleanupInterval = Duration(seconds: 10);
+  Timer? _cleanupTimer;
+
+  TamManager() {
+    _startPeriodicCleanup();
+    _startPeriodicTUM();
+  }
 
   List<MappableTam> getActiveTamGeometry() {
     List<MappableTam> activeTams = [];
@@ -21,12 +34,42 @@ class TamManager {
   void addOrUpdate(TollAdvertisementMessage tam) {
     if (tam.tollAdvInfo == null) return;
     storedTams[tam.tollAdvInfo!.tollChargerInfo.tollPointId.tollPointID] = MappableTam.fromTam(tam);
+    tamTimestamps[tam.tollAdvInfo!.tollChargerInfo.tollPointId.tollPointID] = DateTime.now();
   }
 
   void addOrUpdateFromString(String tamHex) {
     ASNService asnService = Get.find<ASNService>();
     TollAdvertisementMessage tam = asnService.decodeTam(tamHex);
     addOrUpdate(tam);
+  }
+
+  void _startPeriodicCleanup() {
+    _cleanupTimer = Timer.periodic(cleanupInterval, (timer) {
+      _cleanupExpiredTams();
+    });
+  }
+
+  void _cleanupExpiredTams() {
+    DateTime now = DateTime.now();
+    List<int> keysToRemove = [];
+
+    storedTams.forEach((key, tam) {
+      DateTime? timestamp = tamTimestamps[key];
+      if (timestamp != null && now.difference(timestamp) > tamExpiryDuration) {
+        keysToRemove.add(key);
+      }
+    });
+
+    for (int key in keysToRemove) {
+      storedTams.remove(key);
+      tamTimestamps.remove(key);
+    }
+  }
+
+  void _startPeriodicTUM() {
+    Timer.periodic(const Duration(seconds: 5), (timer) {
+      addOrUpdateFromString(TestData.testTamTwo);
+    });
   }
 
   bool checkPositionInTam(List<LatLng> tamBorder, Position? position) {
