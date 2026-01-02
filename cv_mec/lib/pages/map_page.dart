@@ -314,11 +314,6 @@ class MapState extends State<MapPage> {
       
     });
 
-    // For testing TAM rendering
-    tamManager.addOrUpdateFromString(TestData.testTam);
-    tamManager.addOrUpdateFromString(TestData.testTamTwo);
-    tamManager.addOrUpdateFromString(TestData.tfhrcTamThree);
-
     updateGraphics();
 
     obdController.checkRootStatus();
