@@ -167,9 +167,6 @@ class EtxMqttAgent extends MqttAgent{
     switch (messageType) {
       case MsgType.BSM:
         topic = "vzimp/1/GeoRelevance/$clientType/$clientSubtype/Public/${paramController.messageFormat}/BSM";
-        // Oddly the ETX seems to accept BSM messages even when it doesn't appear in the ACL. 
-        // Since sending some type of message (typically a BSM) is required to establish position for receiving GeoRelevance messages, BSM messages are always allowed.
-        allowedTopicCache[topic] = true; 
         break;
       case MsgType.PSM:
         topic = "vzimp/1/GeoRelevance/$clientType/$clientSubtype/Public/${paramController.messageFormat}/PSM";
@@ -221,6 +218,8 @@ class EtxMqttAgent extends MqttAgent{
     for(int i =0; i< topicParts.length; i++){
       if(allowedParts[i] == '*'){
         continue;
+      }else if (allowedParts[i][0] == '\$'){
+        continue;
       }else if(allowedParts[i].contains('|')){
         List<String> options = allowedParts[i].split('|');
         if(!options.contains(topicParts[i])){
@@ -254,7 +253,6 @@ class EtxMqttAgent extends MqttAgent{
     Set<String> subscribeTopics = {};
     for(String sub in aclRules.subscribe){
       if(sub.contains("Small") || sub.contains("RegionalStatic") || sub.contains("Regional")){
-        print("Skipping Listening to Topic: $sub");
         // Skip Small Vehicle Subscriptions since we will always use the large versions
         // Skip JSON format since there is not currently a standard encoding for JSON j2735 messages
         continue;
