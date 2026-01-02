@@ -19,7 +19,6 @@ class TamManager {
 
   TamManager() {
     _startPeriodicCleanup();
-    _startPeriodicTUM();
   }
 
   List<MappableTam> getActiveTamGeometry() {
@@ -64,12 +63,6 @@ class TamManager {
       storedTams.remove(key);
       tamTimestamps.remove(key);
     }
-  }
-
-  void _startPeriodicTUM() {
-    Timer.periodic(const Duration(seconds: 5), (timer) {
-      addOrUpdateFromString(TestData.testTamTwo);
-    });
   }
 
   bool checkPositionInTam(List<LatLng> tamBorder, Position? position) {
