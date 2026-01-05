@@ -406,6 +406,12 @@ class GeometryService {
     return switchCoordinateListToLatLngList(convertCoordinatesToLatLng(coords, anchor));
   }
 
+  List<LatLng> getLatLngFromNodeListXY(NodeListXY nodeListXY, Position3D anchor) {
+    List<Coordinate> coords = getCoordinatesFromNodeListXY(nodeListXY, anchor);
+
+    return switchCoordinateListToLatLngList(convertCoordinatesToLatLng(coords, anchor));
+  }
+
   List<LatLng> getLatLngCoordinatesFromNodeListLL(NodeListLL nodeListLL, Position3D anchor) {
     List<Coordinate> coords = getCoordinatesNodeListLL(nodeListLL, anchor);
 
@@ -530,5 +536,14 @@ class GeometryService {
     }
 
     return geometryFactory.createPolygonFromCoords(latLngCoordinates);
+  }
+
+  double calculateBearingBetweenLatLng(LatLng start, LatLng end) {
+    num bearing = geodesy.bearingBetweenTwoGeoPoints(start, end);
+    return bearing.toDouble();
+  }
+
+  double calculateDistanceBetweenCoordinates(Coordinate start, Coordinate end) {
+    return sqrt(pow((end.x - start.x), 2) + pow((end.y - start.y), 2));
   }
 }

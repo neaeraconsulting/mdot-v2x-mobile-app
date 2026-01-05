@@ -47,7 +47,6 @@ class MqttAgentManager{
   }
 
   void sendMessage(List<int> message, MsgType messageType, DateTime sendTime, DataQueue sendQueue, bool signed){
-
     String hex = ASNService.bytesToHex(message);
     for(MqttAgent agent in agents){
       if(agent.isConnected()){

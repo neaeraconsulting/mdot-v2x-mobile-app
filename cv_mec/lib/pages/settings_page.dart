@@ -456,6 +456,22 @@ class SettingsPage extends StatelessWidget {
                   controller.soundEffectsEnabled.value = value;
                   await controller.secureStorage.setSoundEffectsEnabled(value);
                 }),
+            verticalSpaceMedium,
+            SwitchListTile(
+                title: const Text("Show Tolling"),
+                value: controller.tollingEnabled.value,
+                onChanged: (value) async {
+                  controller.tollingEnabled.value = value;
+                  await controller.secureStorage.setTollingEnabled(value);
+                }),
+            verticalSpaceMedium,
+            SwitchListTile(
+                title: const Text("Show TIMs"),
+                value: controller.showTims.value,
+                onChanged: (value) async {
+                  controller.showTims.value = value;
+                  await controller.secureStorage.setShowTims(value);
+                }),
           ],
         ));
   }
@@ -464,12 +480,12 @@ class SettingsPage extends StatelessWidget {
     return Column(
       children: [
         headerElement("Advanced", Icons.image),
-        appearanceSettings(),
+        advancedSettings(),
       ],
     );
   }
 
-  advancedSettigns(){
+  advancedSettings(){
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(

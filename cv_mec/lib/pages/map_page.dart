@@ -2,18 +2,22 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 import 'dart:core';
+import 'package:asn1_plugin/generated_bindings.dart' as C;
 import 'package:asn1_plugin/j2735/2024/basic_safety_message/basic_safety_message.dart';
 import 'package:asn1_plugin/j2735/2024/basic_safety_message/bsmpart_iiextension.dart';
 import 'package:asn1_plugin/j2735/2024/basic_safety_message/special_vehicle_extensions.dart';
 import 'package:asn1_plugin/j2735/2024/basic_safety_message/supplemental_vehicle_extensions.dart';
 import 'package:asn1_plugin/j2735/2024/common/basic_vehicle_class.dart';
+import 'package:asn1_plugin/j2735/2024/common/d_date_time.dart';
 import 'package:asn1_plugin/j2735/2024/common/d_day.dart';
 import 'package:asn1_plugin/j2735/2024/common/d_hour.dart';
 import 'package:asn1_plugin/j2735/2024/common/d_minute.dart';
 import 'package:asn1_plugin/j2735/2024/common/d_month.dart';
 import 'package:asn1_plugin/j2735/2024/common/d_second.dart';
 import 'package:asn1_plugin/j2735/2024/common/d_year.dart';
+import 'package:asn1_plugin/j2735/2024/common/latitude.dart';
 import 'package:asn1_plugin/j2735/2024/common/lightbar_in_use.dart';
+import 'package:asn1_plugin/j2735/2024/common/longitude.dart';
 import 'package:asn1_plugin/j2735/2024/common/minute_of_the_year.dart';
 import 'package:asn1_plugin/j2735/2024/common/msg_count.dart';
 import 'package:asn1_plugin/j2735/2024/common/node_set_xy.dart';
@@ -32,6 +36,10 @@ import 'package:asn1_plugin/j2735/2024/spat/spat.dart';
 import 'package:asn1_plugin/j2735/2024/spat/time_mark.dart';
 import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_data_frame.dart';
 import 'package:asn1_plugin/j2735/2024/traveler_information/traveler_information.dart';
+import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/toll_advertisement_message.dart';
+import 'package:asn1_plugin/j3217/2022/toll_usage_ack_message/toll_usage_ack_message.dart';
+import 'package:asn1_plugin/j3217/2022/toll_usage_message/loc_and_time_stamp.dart';
+import 'package:asn1_plugin/j3217/2022/toll_usage_message/toll_usage_message.dart';
 import 'package:bluetooth_classic/models/device.dart';
 import 'package:cv_mec/controllers/obd_controller.dart';
 import 'package:cv_mec/controllers/settings_controller.dart';
@@ -44,10 +52,14 @@ import 'package:cv_mec/models/itis/itis_sequence.dart';
 import 'package:cv_mec/models/data_frame_geometry.dart';
 import 'package:cv_mec/models/geo_map.dart';
 import 'package:cv_mec/models/leidos_date_extraction.dart';
+import 'package:cv_mec/models/mappable_tam.dart';
 import 'package:cv_mec/models/message_builders/bsm_message_builder.dart';
 import 'package:cv_mec/models/message_builders/psm_message_builder.dart';
+import 'package:cv_mec/models/message_builders/tum_message_builder.dart';
 import 'package:cv_mec/models/message_managers/map_manager.dart';
 import 'package:cv_mec/models/message_managers/received_message_manager.dart';
+import 'package:cv_mec/models/message_managers/tam_manager.dart';
+import 'package:cv_mec/models/message_managers/tum_ack_manager.dart';
 import 'package:cv_mec/models/mqtt/etx_mqtt_agent.dart';
 import 'package:cv_mec/models/mqtt/iss_mqtt_agent.dart';
 import 'package:cv_mec/models/mqtt/mqtt_agent_manager.dart';
@@ -133,6 +145,8 @@ class MapState extends State<MapPage> {
   MapManager mapManager = MapManager();
   SpatManager spatManager = SpatManager();
   ReceivedMessageManager messageManager = ReceivedMessageManager();
+  TamManager tamManager = TamManager(); 
+  TumAckManager tumAckManager = TumAckManager();
 
   SecureStorage secureStorage = SecureStorage();
 
@@ -144,6 +158,7 @@ class MapState extends State<MapPage> {
   Timer? sendMessageTimer;
   late BsmMessageBuilder bsmBuilder;
   late PsmMessageBuilder psmBuilder;
+  late TumMessageBuilder tumBuilder;
 
   Timer? uploadTimer;
 
@@ -202,17 +217,22 @@ class MapState extends State<MapPage> {
 
   DateTime lastRedrawTime = DateTime.now();
 
+  List<int> vehicleId = [];
+
   @override
   void initState() {
     super.initState();
 
     deviceID = uuid.v4();
 
+    vehicleId = randomizeId();
+
     _mapController = MapController();
     timingService.startAllUpdates();
-
-    bsmBuilder = BsmMessageBuilder();
+    bsmBuilder = BsmMessageBuilder(vehicleId.sublist(0, 4));
     psmBuilder = PsmMessageBuilder();
+
+    tumBuilder = TumMessageBuilder();
 
     if (mounted) {
       setState(() {
@@ -263,10 +283,12 @@ class MapState extends State<MapPage> {
       }
 
       if(settingsController.enableIssScmsSigning.value){
-        scmsActive = await scms.activateScms(settingsController.issScmsToken.value);
-        if(!scmsActive){
-          showError("Unable to Activate SCMS Signing");
-        }
+        scms.activateScms(settingsController.issScmsToken.value).then((result) {
+          scmsActive = result;
+          if(!scmsActive){
+            showError("Unable to Activate SCMS Signing");
+          }
+        });
       }else{
         scmsActive = false;
       }
@@ -293,9 +315,14 @@ class MapState extends State<MapPage> {
     });
 
     updateGraphics();
-    
 
     obdController.checkRootStatus();
+  }
+
+  List<int> randomizeId() {
+    Random random = Random();
+    List<int> randomNumbers = List.generate(16, (_) => random.nextInt(255));
+    return randomNumbers;
   }
 
   // Helper function to disconnect and reconnect all mqtt agents
@@ -372,6 +399,13 @@ class MapState extends State<MapPage> {
 
   void updateGraphics(){
     if (mounted) {
+      if (!settingsController.tollingEnabled.value && tamManager.storedTams.isNotEmpty) {
+        tamManager.storedTams.clear();
+      }
+      if (!settingsController.showTims.value && timManager.geometryMap.isNotEmpty) {
+        timManager.storedTims.clear();
+        timManager.geometryMap.clear();
+      }
       if(DateTime.now().difference(lastRedrawTime).inMilliseconds > 50){ //DateTime.now used since timing service accuracy not required, and may not be initialized yet.
         setState(() {
           drawnPolygons = getPolygons();
@@ -531,11 +565,23 @@ class MapState extends State<MapPage> {
         break;
       case MsgType.TIM:
         addToAppLog("Identified Message as TIM");
-        processNewTim(broker, topic, hex, recTime, sendTime, source, validity);
+        if (settingsController.showTims.value) {
+          processNewTim(broker, topic, hex, recTime, sendTime, source, validity);
+        }
         break;
       case MsgType.SDSM:
         addToAppLog("Identified Message as SDSM");
         processNewSdsm(broker, topic, hex, recTime, sendTime, source, validity);
+        break;
+      case MsgType.TAM:
+        addToAppLog("Identified Message as TAM");
+        if (settingsController.tollingEnabled.value) {
+          processNewTam(broker, topic, hex, recTime, sendTime, source, validity);
+        }
+        break;
+      case MsgType.TUMACK:
+        addToAppLog("Identified Message as TUMACK");
+        processNewTumAck(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       default:
         addToAppLog("Unable to Identify Message Type: $msgType");
@@ -658,6 +704,35 @@ class MapState extends State<MapPage> {
     }
 
     addToReceiveLog(broker, topic, "SDSM", recTime, sendTime, sdsm.sDSMTimeStamp.getAsDateTime(), trimmedHex, source, validity);
+  }
+
+  void processNewTam(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
+    String trimmedHex = asnService.trimMessageHeaders(hex, asnService.TAM_START_FLAG)!; 
+    TollAdvertisementMessage tam = asnService.decodeTam(trimmedHex);
+    tamManager.addOrUpdate(tam);
+    updateGraphics();
+    addToReceiveLog(broker, topic, "TAM", recTime, sendTime, tam.tollAdvInfo!.timestamp.getAsDateTime(), trimmedHex, source, validity);
+  }
+
+  void processNewTumAck(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
+    String trimmedHex = asnService.trimMessageHeaders(hex, asnService.TUMACK_START_FLAG)!; 
+    TollUsageAckMessage tumAck = asnService.decodeTumAck(trimmedHex);
+    tumAckManager.add(tumAck);
+    VehicleNotificationManager.sendPaymentMessage("Payment Received");
+    addToReceiveLog(broker, topic, "TUMAck", recTime, sendTime, null, trimmedHex, source, validity);
+  }
+
+  void checkAndSendTum() {
+    MappableTam? currentTam = tamManager.checkIfInTam(currentPosition);
+    if (currentTam == null) {
+      return;
+    }
+    bool sent = sendTumMessage(currentTam.tam!);
+    if (sent) {
+      Future.delayed(Duration(seconds: 2), () { //TODO: remove once sending and receiving TUMAck is implemented
+        VehicleNotificationManager.sendPaymentMessage("Payment Received");
+      });
+    }
   }
 
   void addToReceiveLog(String? broker, String topic, String msgType, DateTime recTime, DateTime? sendTime, DateTime? generationTime,
@@ -791,6 +866,40 @@ class MapState extends State<MapPage> {
     }
   }
 
+  bool sendTumMessage(TollAdvertisementMessage tam) {
+    if (currentPosition == null) {
+      addToAppLog("Cannot Send TUM. Location is Null");
+      updateConnectedStatus(ConnectedStatus.PARTIAL);
+      return false;
+    }
+
+    DateTime sendTime = timingService.getTime();
+    MsgType messageType = MsgType.TUM;
+
+    TollUsageMessageResult tumResult = tumBuilder.generateTumFromTam(tam, currentPosition!, vehicleId, sendTime);
+    if (!tumResult.isSuccess) {
+      showError(tumResult.errorMessage!);
+      return false;
+    }
+    
+    TollUsageMessage tum = tumResult.tollUsageMessage!;
+
+    String tumHex = tumBuilder.convertTumToHex(tum);
+    if(tumHex == ""){
+      showError("Failed to convert TUM to Hex");
+      return false;
+    }
+    _logger.i("Generated TUM Hex $tumHex");
+
+    if (tumHex != "") {
+      List<int> tumBytes = ASNService.hexToBytes(tumHex);
+      mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false);
+      VehicleNotificationManager.sendPaymentMessage("Payment Sent", description: "Amount Sent: ${tum.encryptedTumData.tumData!.tollUserData.charge!.paymentFeeAmount} ${tum.encryptedTumData.tumData!.tollUserData.charge!.paymentFeeUnit.payUnit}");
+      return true;
+    }
+    return false;
+  }
+
   void stopSendingBSM() {
     sendMessageTimer?.cancel();
   }
@@ -812,6 +921,12 @@ class MapState extends State<MapPage> {
     prevNtp = ntp;
     prevKronos = kronos;
     prevLocal = now;
+
+    tumBuilder.addLocation(position, kronos);
+
+    if (settingsController.tollingEnabled.value) {
+      checkAndSendTum();
+    }
 
     updateGraphics();
     updateTimeToChange();
@@ -1024,7 +1139,92 @@ class MapState extends State<MapPage> {
     List<Marker> markerList = [];
 
     Position? pos = currentPosition;
-    
+  
+    DateTime compTime = timingService.getTime();
+    DateTime endTime = compTime.add(const Duration(seconds: 3));
+    DateTime startTime = compTime.subtract(const Duration(seconds: 3));
+
+    List<String> removeKeys = [];
+    for (String key in messageManager.receivedMsgs.keys) {
+      ReceivedMsg msg = messageManager.receivedMsgs[key]!;
+
+      if (msg.dateTime.isAfter(startTime) && msg.dateTime.isBefore(endTime)) {
+        if (msg is ReceivedBsm) {
+          Marker remoteMarker = Marker(
+            point: msg.position,
+            width: 60,
+            height: 60,
+            child: iconBase(IconManager.getReceivedMessageIcon(msg), Colors.grey[700]!,
+                sirensOn: msg.sirens == SirenInUse.inUse, busWarningOn: msg.lights == LightbarInUse.inUse),
+          );
+          markerList.add(remoteMarker);
+        } else {
+          Marker remoteMarker = Marker(
+            point: msg.position,
+            width: 60,
+            height: 60,
+            child: iconBase(IconManager.getReceivedMessageIcon(msg), Colors.grey[700]!),
+          );
+          markerList.add(remoteMarker);
+        }
+      } else {
+        removeKeys.add(key);
+      }
+    }
+
+    for (String key in removeKeys) {
+      messageManager.receivedMsgs.remove(key);
+      if (messageManager.shown.containsKey(key)) {
+        messageManager.shown.remove(key);
+      }
+    }
+
+    for (MappableTam mappableTam in tamManager.storedTams.values) {
+      for (LatLng coord in mappableTam.markerPoints) {
+        markerList.add(Marker(
+          width: 40.0,
+          height: 40.0,
+          point: coord,
+          rotate: true,
+          child: GestureDetector(
+            onTap: () {
+              // Location to add functionality when TAM marker is tapped
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.green,
+                  width: 2,
+                ),
+              ), 
+              child: const Icon(
+                Icons.attach_money,
+                color: Colors.green,
+                size: 32,
+              ),
+            ),
+          ),
+        ));
+      }
+      for (LatLng coord in mappableTam.approachMarkerPoints) {
+        markerList.add(Marker(
+          width: 40.0,
+          height: 40.0,
+          point: coord,
+          rotate: false,
+          child: Transform.rotate(
+            angle: mappableTam.approachMarkerRotation * pi / 180, 
+            child: const Icon(
+              Icons.arrow_back_ios_new,
+              color: Colors.white,
+              size: 40,
+            )
+          ),
+        ));
+      }
+    }
 
     if (pos != null) {
       Marker userMarker = Marker(
@@ -1074,44 +1274,6 @@ class MapState extends State<MapPage> {
             }
           }
         }
-      }
-    }
-    DateTime compTime = timingService.getTime();
-    DateTime endTime = compTime.add(const Duration(seconds: 3));
-    DateTime startTime = compTime.subtract(const Duration(seconds: 3));
-
-    List<String> removeKeys = [];
-    for (String key in messageManager.receivedMsgs.keys) {
-      ReceivedMsg msg = messageManager.receivedMsgs[key]!;
-
-      if (msg.dateTime.isAfter(startTime) && msg.dateTime.isBefore(endTime)) {
-        if (msg is ReceivedBsm) {
-          Marker remoteMarker = Marker(
-            point: msg.position,
-            width: 60,
-            height: 60,
-            child: iconBase(IconManager.getReceivedMessageIcon(msg), Colors.grey[700]!,
-                sirensOn: msg.sirens == SirenInUse.inUse, busWarningOn: msg.lights == LightbarInUse.inUse),
-          );
-          markerList.add(remoteMarker);
-        } else {
-          Marker remoteMarker = Marker(
-            point: msg.position,
-            width: 60,
-            height: 60,
-            child: iconBase(IconManager.getReceivedMessageIcon(msg), Colors.grey[700]!),
-          );
-          markerList.add(remoteMarker);
-        }
-      } else {
-        removeKeys.add(key);
-      }
-    }
-
-    for (String key in removeKeys) {
-      messageManager.receivedMsgs.remove(key);
-      if (messageManager.shown.containsKey(key)) {
-        messageManager.shown.remove(key);
       }
     }
     
@@ -1296,8 +1458,32 @@ class MapState extends State<MapPage> {
           polylines.add(hitPoly);
         }
       }
-    }
 
+      for (MappableTam mappableTam in tamManager.storedTams.values) {
+        for (List<LatLng> lanePoints in mappableTam.tollZonePolylinePoints) {
+          Polyline<PolyLineHitValue> hitPoly = Polyline(
+            points: lanePoints,
+            color: Colors.white,
+            strokeWidth: 2,
+            pattern: StrokePattern.dashed(segments: [10, 10]),
+            hitValue: (name: "TAM Toll Zone"),
+          );
+          polylines.add(hitPoly);
+        }
+        for (List<LatLng> lanePoints in mappableTam.approachPolylinePoints) {
+          Polyline<PolyLineHitValue> hitPoly = Polyline(
+            points: lanePoints,
+            borderColor: Colors.green,
+            color: Colors.green,
+            borderStrokeWidth: 5,
+            strokeWidth: 5,
+            strokeCap: StrokeCap.square,
+            hitValue: (name: "TAM Approach Zone"),
+          );
+          polylines.add(hitPoly);
+        }
+      }
+    }
     return polylines;
   }
 
@@ -1305,7 +1491,6 @@ class MapState extends State<MapPage> {
     List<Polygon<HitValue>> polygons = [];
 
     List<DataFrameGeometry> dataFrames = timManager.getActiveTimGeometry(true);
-
     for (DataFrameGeometry frame in dataFrames) {
       TravelerDataFrame tdFrame = frame.frame;
 
@@ -1322,6 +1507,19 @@ class MapState extends State<MapPage> {
 
         polygons.add(hitPoly);
       }
+    }
+
+    for (MappableTam mappableTam in tamManager.storedTams.values) {
+      if (mappableTam.tollZoneBorder.isEmpty) {
+        continue;
+      }
+      Polygon<HitValue> hitPoly = Polygon(  
+        points: mappableTam.tollZoneBorder,
+        borderColor: Colors.white,
+        borderStrokeWidth: 5,
+        hitValue: null,
+      );
+      polygons.add(hitPoly);
     }
 
     return polygons;
@@ -1445,6 +1643,8 @@ class MapState extends State<MapPage> {
                     child: Column(children: [
                       managementButtons(),
                       verticalSpaceSmall,
+                      settingsController.tollingEnabled.value ? hovButton() : Container(),
+                      settingsController.tollingEnabled.value ? verticalSpaceSmall : Container(),
                       configController.hasASiren()
                           ? sirenButton()
                           : (configController.isVehicleConfig.value &&
@@ -1721,6 +1921,69 @@ class MapState extends State<MapPage> {
                     ? configController.images[configController.sirenPhotoIndex.value]
                     : "assets/images/Siren/siren_bw.png",
                 fit: BoxFit.cover,
+              ),
+            ),
+          ),
+        ));
+  }
+
+  Widget hovButton() {
+    return Obx(() => GestureDetector(
+          onTap: () {
+            configController.isHovOn.value = !configController.isHovOn.value;
+            if (configController.isHovOn.value) {
+              toastification.show(
+                context: context,
+                type: ToastificationType.success,
+                style: ToastificationStyle.flatColored,
+                title: const Text("HOV Enabled"),
+                alignment: Alignment.topCenter,
+                autoCloseDuration: const Duration(seconds: 5),
+                showProgressBar: false,
+                dragToClose: true,
+                icon: Icon(Icons.group),
+              );
+            } else {
+              toastification.show(
+                context: context,
+                type: ToastificationType.info,
+                style: ToastificationStyle.flatColored,
+                title: const Text("HOV Disabled"),
+                alignment: Alignment.topCenter,
+                autoCloseDuration: const Duration(seconds: 1),
+                showProgressBar: false,
+                dragToClose: true,
+                icon: Icon(Icons.group),
+              );
+            }
+          },
+          child: Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: lightGrey,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: configController.isHovOn.value ? Colors.green : mediumGrey,
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.8),
+                  spreadRadius: 1,
+                  blurRadius: 5,
+                  offset: const Offset(-1, 3), // changes position of shadow
+                ),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                "HOV",
+                style: TextStyle(
+                  color: configController.isHovOn.value ? Colors.green : mediumGrey,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
             ),
           ),

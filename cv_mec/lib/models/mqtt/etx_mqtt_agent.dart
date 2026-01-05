@@ -171,6 +171,9 @@ class EtxMqttAgent extends MqttAgent{
       case MsgType.PSM:
         topic = "vzimp/1/GeoRelevance/$clientType/$clientSubtype/Public/${paramController.messageFormat}/PSM";
         break;
+      case MsgType.TUM:
+        topic = "vzimp/1/GeoRelevance/$clientType/$clientSubtype/Public/${paramController.messageFormat}/TUM";
+        break;
       default:
         logger.e('$agentName does not support sending ${messageType.name} messages');
         break;
@@ -191,6 +194,8 @@ class EtxMqttAgent extends MqttAgent{
         logger.w("Topic $topic is not allowed by ACL Rules. Message not sent.");
       }
         
+    }else{
+      mqttService.publishBytes(buffer, topic);
     }
     return topic;
   }
@@ -212,6 +217,8 @@ class EtxMqttAgent extends MqttAgent{
     }
     for(int i =0; i< topicParts.length; i++){
       if(allowedParts[i] == '*'){
+        continue;
+      }else if (allowedParts[i][0] == '\$'){
         continue;
       }else if(allowedParts[i].contains('|')){
         List<String> options = allowedParts[i].split('|');
@@ -246,7 +253,6 @@ class EtxMqttAgent extends MqttAgent{
     Set<String> subscribeTopics = {};
     for(String sub in aclRules.subscribe){
       if(sub.contains("Small") || sub.contains("RegionalStatic") || sub.contains("Regional")){
-        print("Skipping Listening to Topic: $sub");
         // Skip Small Vehicle Subscriptions since we will always use the large versions
         // Skip JSON format since there is not currently a standard encoding for JSON j2735 messages
         continue;

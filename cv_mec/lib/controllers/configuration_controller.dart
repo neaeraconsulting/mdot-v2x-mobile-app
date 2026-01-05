@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:asn1_plugin/j2735/2024/personal_safety_message/personal_device_user_type.dart';
 import 'package:asn1_plugin/j2735/2024/personal_safety_message/public_safety_event_responder_worker_type.dart';
+import 'package:cv_mec/models/us_states.dart';
 import 'package:cv_mec/models/vehicle.dart';
 import 'package:cv_mec/services/file_service.dart';
 import 'package:get/get.dart';
@@ -13,7 +14,7 @@ class ConfigurationController extends GetxController {
   //Vehicle Configurations
   RxList<Vehicle> vehicleConfigs = <Vehicle>[].obs;
 
-  Rx<Vehicle> selectedVehicle = Vehicle.detailed("Default", VehicleType.PASSENGER_VEHICLE, "Blue", 187, 70, null).obs;
+  Rx<Vehicle> selectedVehicle = Vehicle.detailed("Default", VehicleType.PASSENGER_VEHICLE, "Blue", 187, 70, null, USState.ALABAMA, "123ABC").obs;
   RxInt vehicleBeingEditedIndex = (-1).obs;
   FileService fileService = Get.find<FileService>();
 
@@ -38,6 +39,9 @@ class ConfigurationController extends GetxController {
   //Is Ice Cream Song On
   RxBool isIceCreamSongOn = false.obs;
 
+  //HOV on
+  RxBool isHovOn = false.obs;
+
   //Configuration State
   RxBool isVehicleConfig = true.obs; //true for vehicle, false for pedestrian
 
@@ -61,10 +65,11 @@ class ConfigurationController extends GetxController {
 
   Future<void> deleteVehicleConfig(Vehicle vehicle) async {
     vehicleConfigs.remove(vehicle);
+    await fileService.saveVehicleConfigsToFile(vehicleConfigs);
   }
 
   void setVehicleToDefault() {
-    selectedVehicle.value = Vehicle.detailed("Default", VehicleType.PASSENGER_VEHICLE, "Blue", 187, 70, null);
+    selectedVehicle.value = Vehicle.detailed("Default", VehicleType.PASSENGER_VEHICLE, "Blue", 187, 70, null, USState.ALABAMA, "123ABC");
     vehicleBeingEditedIndex.value = -1;
   }
 

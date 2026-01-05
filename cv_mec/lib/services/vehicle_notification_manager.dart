@@ -10,6 +10,7 @@ import 'dart:ui' as ui;
 
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:toastification/toastification.dart';
 
 class VehicleNotificationManager {
   static const platform = MethodChannel('com.neaera.cv_mec/vehicle-notification');
@@ -74,6 +75,21 @@ class VehicleNotificationManager {
   static Future<void> notifyVehicleFromMessage(String message) async {
     int id = DateTime.now().millisecondsSinceEpoch;
     _sendNotificationCommand(id, message, null);
+  }
+
+  static void sendPaymentMessage(String title, {String? description}) {
+    toastification.show(
+      context: Get.context,
+      type: ToastificationType.success,
+      style: ToastificationStyle.flatColored,
+      title: Text(title),
+      description: description != null ? Text(description) : null,
+      alignment: Alignment.topCenter,
+      autoCloseDuration: const Duration(seconds: 10),
+      showProgressBar: false,
+      dragToClose: true,
+      icon: const Icon(Icons.monetization_on),
+    );
   }
 
   static void requestPermissions() async {
