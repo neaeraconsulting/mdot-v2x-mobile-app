@@ -7,14 +7,16 @@ class PayUnit {
   late String payUnit;
   PayUnit.fromOctetString(C.OCTET_STRING_t string){
     final Uint8List byteList = string.buf.asTypedList(string.size);
-    payUnit = String.fromCharCodes(byteList);
+
+    payUnit = byteList.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join().toUpperCase();
+    print('PayUnit as hex: $payUnit');
+
   }
 
   void toC(Pointer<C.PayUnit_t> pointer) {
     final c_payUnit = pointer.ref;
     
-    // Convert string to bytes (treating as regular string, not hex)
-    final bytes = payUnit.codeUnits;  // Get UTF-16 code units as bytes
+    final bytes = hexStringToBytes(payUnit);  // Get UTF-16 code units as bytes
     
     
     if (bytes.isNotEmpty) {
@@ -28,6 +30,22 @@ class PayUnit {
       c_payUnit.buf = nullptr;
       c_payUnit.size = 0;
     }
+  }
+
+  List<int> hexStringToBytes(String hexString) {
+    String cleanHex = hexString.replaceAll(RegExp(r'[^0-9A-Fa-f]'), '');
+    
+    if (cleanHex.length % 2 != 0) {
+      cleanHex = '0$cleanHex';
+    }
+    
+    List<int> bytes = [];
+    for (int i = 0; i < cleanHex.length; i += 2) {
+      String hexByte = cleanHex.substring(i, i + 2);
+      bytes.add(int.parse(hexByte, radix: 16));
+    }
+    
+    return bytes;
   }
 
   PayUnit(this.payUnit);
