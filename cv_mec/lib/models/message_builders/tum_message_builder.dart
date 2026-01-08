@@ -384,56 +384,12 @@ class TumMessageBuilder{
     return null; 
   }
 
-  (double, String) getPaymentAmountFromTam(tum) {
-    double amount = tum.encryptedTumData.tumData!.tollUserData.charge!.paymentFeeAmount.toDouble();
-    String payUnitStr = tum.encryptedTumData.tumData!.tollUserData.charge!.paymentFeeUnit.payUnit;
-    
-    String factor = payUnitStr.substring(0, 1);
-    switch (factor) {
-      case "0":
-        break;
-      case "1":
-        amount = amount * 10;
-        break;
-      case "2":
-        amount = amount * 100;
-        break;
-      case "3":
-        amount = amount * 1000;
-        break;
-      case "4": 
-        amount = amount / 10;
-        break;
-      case "5": 
-        amount = amount / 100;
-        break;
-      case "6": 
-        amount = amount / 1000;
-        break;
-      case "7": 
-        amount = amount / 10000;
-        break;
-      case "8": 
-        amount = amount / 100000;
-        break;
-      case "9": 
-        amount = amount / 1000000;
-        break;
-      case "B":
-        amount = amount * 10000;
-        break;
-      case "C":
-        amount = amount * 100000;
-        break;
-      case "D":
-        amount = amount * 1000000;
-        break;
-      default:
-        break;
-    }
+  (double, String) getPaymentAmountFromTum(TollUsageMessage tum) {
 
-    String unit = ISO4217.getAlphabeticCode(int.parse(payUnitStr.substring(1))) ?? "Unknown Units";
-    return (amount, unit);
+    (double, int) paymentAmount = tum.encryptedTumData.tumData!.tollUserData.charge!.getPaymentAmountWithUnit();
+
+    String unit = ISO4217.getAlphabeticCode(paymentAmount.$2) ?? "Unknown Units";
+    return (paymentAmount.$1, unit);
   }
 }
 

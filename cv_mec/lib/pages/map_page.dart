@@ -310,6 +310,9 @@ class MapState extends State<MapPage> {
       
     });
 
+    String sampleTam = TestData.testTamFour;
+    tamManager.addOrUpdateFromString(sampleTam);
+
     updateGraphics();
 
     obdController.checkRootStatus();
@@ -890,7 +893,7 @@ class MapState extends State<MapPage> {
     if (tumHex != "") {
       List<int> tumBytes = ASNService.hexToBytes(tumHex);
       mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false);
-      var (amount, unit) = tumBuilder.getPaymentAmountFromTam(tum);
+      var (amount, unit) = tumBuilder.getPaymentAmountFromTum(tum);
       VehicleNotificationManager.sendPaymentMessage("Payment Sent", description: "Amount Sent: ${amount.toStringAsFixed(2)} $unit");
       return true;
     }
