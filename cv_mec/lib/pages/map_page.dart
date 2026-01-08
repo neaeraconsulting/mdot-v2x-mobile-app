@@ -310,9 +310,6 @@ class MapState extends State<MapPage> {
       
     });
 
-    String sampleTam = TestData.testTamFour;
-    tamManager.addOrUpdateFromString(sampleTam);
-
     updateGraphics();
 
     obdController.checkRootStatus();

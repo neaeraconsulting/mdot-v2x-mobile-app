@@ -33,7 +33,7 @@ class VehicleId {
     String? licPlateNumTrailer; 
     UserId? userId; 
 
-    VehicleId.fromDetails(String this.vehicleIdentity, String this.licPlateState, String this.licPlateNumVeh);
+    VehicleId.fromDetails(this.vehicleIdentity, this.licPlateState, this.licPlateNumVeh, this.licPlateNumTrailer, this.userId);
 
     VehicleId.fromC(C.TumVehicleId c_obj){
         if(c_obj.vehicleIdentity.address != 0){

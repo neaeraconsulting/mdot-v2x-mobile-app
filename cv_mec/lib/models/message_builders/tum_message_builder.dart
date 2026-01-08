@@ -26,12 +26,14 @@ import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/veh_type_charg
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/vehicle_types.dart';
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/weight_charges.dart';
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/weight_charges_table.dart';
+import 'package:asn1_plugin/j3217/2022/toll_usage_message/contract_serial_number.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/encrypted_tum_data.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/loc_and_time_stamp.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/loc_and_time_stamps.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/toll_usage_message.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/toll_user_data.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/tum_data.dart';
+import 'package:asn1_plugin/j3217/2022/toll_usage_message/user_id.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/vehicle_axles_and_weight_info.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/vehicle_id.dart';
 import 'package:cv_mec/controllers/configuration_controller.dart';
@@ -168,8 +170,9 @@ class TumMessageBuilder{
         String licensePlateState = configController.selectedVehicle.value.licensePlateState.code;
         String licensePlateNumber = configController.selectedVehicle.value.licensePlateNumber;
         //skipping license plate num trailer for now
-        //skipping user id 
-        VehicleId vehicleId = VehicleId.fromDetails(vehicleidentity, licensePlateState, licensePlateNumber);
+        ContractSerialNumber contractSerialNumber = ContractSerialNumber(012345678);
+        UserId userId = UserId.fromDetails(null, contractSerialNumber, null, null, null);
+        VehicleId vehicleId = VehicleId.fromDetails(vehicleidentity, licensePlateState, licensePlateNumber, null, userId);
         
         VehicleTypes vehicleType = VehicleMappingService.getVehicleTypes(selectedVehicle.classification);
         
