@@ -295,12 +295,8 @@ class MapState extends State<MapPage> {
 
       await createGPSStream();
       await connectMqttAgents();
-
-      
-
       
       startSendingBSM();
-
       
       if (Platform.isAndroid || Platform.isIOS) {
         WakelockPlus.enable();
@@ -892,7 +888,8 @@ class MapState extends State<MapPage> {
     if (tumHex != "") {
       List<int> tumBytes = ASNService.hexToBytes(tumHex);
       mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false);
-      VehicleNotificationManager.sendPaymentMessage("Payment Sent", description: "Amount Sent: ${tum.encryptedTumData.tumData!.tollUserData.charge!.paymentFeeAmount} ${tum.encryptedTumData.tumData!.tollUserData.charge!.paymentFeeUnit.payUnit}");
+      var (amount, unit) = tumBuilder.getPaymentAmountFromTum(tum);
+      VehicleNotificationManager.sendPaymentMessage("Payment Sent", description: "Amount Sent: ${amount.toStringAsFixed(2)} $unit");
       return true;
     }
     return false;

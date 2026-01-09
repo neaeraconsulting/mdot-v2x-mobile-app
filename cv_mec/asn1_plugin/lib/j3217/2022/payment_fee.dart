@@ -34,5 +34,40 @@ class PaymentFee {
   PaymentFee(this.paymentFeeAmount, String payUnitStr){
     paymentFeeUnit = PayUnit(payUnitStr);
   }
+
+  (double, int) getPaymentAmountWithUnit() {
+    double amount = paymentFeeAmount.toDouble();
+    String payUnitStr = paymentFeeUnit.payUnit;
+    
+    String factor = payUnitStr.substring(0, 1);
+    
+    switch (factor) {
+      case "0":
+        break;
+      case "1":
+        amount *= 10;
+        break;
+      case "2":
+        amount *= 100;
+        break;
+      case "3":
+        amount *= 1000;
+        break;
+      case "4":
+        amount /= 10;
+        break;
+      case "5":
+        amount /= 100;
+        break;
+      case "6":
+        amount /= 1000;
+        break;
+      default:
+        break;
+    }
+    
+    int unit = int.parse(payUnitStr.substring(1));
+    return (amount, unit);
+  }
 }
  
