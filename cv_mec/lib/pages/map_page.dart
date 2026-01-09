@@ -724,10 +724,8 @@ class MapState extends State<MapPage> {
       return;
     }
     bool sent = sendTumMessage(currentTam.tam!);
-    if (sent) {
-      Future.delayed(Duration(seconds: 2), () { //TODO: remove once sending and receiving TUMAck is implemented
-        VehicleNotificationManager.sendPaymentMessage("Payment Received");
-      });
+    if (!sent) {
+      VehicleNotificationManager.sendPaymentMessage("Error while sending payment");
     }
   }
 
