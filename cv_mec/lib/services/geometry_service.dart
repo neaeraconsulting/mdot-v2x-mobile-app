@@ -1,7 +1,10 @@
 import 'dart:math';
 
 import 'package:asn1_plugin/j2735/2024/common/computed_lane.dart';
+import 'package:asn1_plugin/j2735/2024/common/elevation.dart';
 import 'package:asn1_plugin/j2735/2024/common/heading_slice.dart';
+import 'package:asn1_plugin/j2735/2024/common/latitude.dart';
+import 'package:asn1_plugin/j2735/2024/common/longitude.dart';
 import 'package:asn1_plugin/j2735/2024/common/node_list_xy.dart';
 import 'package:asn1_plugin/j2735/2024/common/node_llmd_64b.dart';
 import 'package:asn1_plugin/j2735/2024/common/node_set_xy.dart';
@@ -85,19 +88,21 @@ class GeometryService {
 
   Geometry? getGeometryFromPath(GeographicalPath path) {
     if (path.description is OffsetSystem) {
-      if (path.anchor != null){
-        if(path.closedPath!= null && path.closedPath!){
-          return getClosedGeometryFromOffsetSystem(
-            path.description as OffsetSystem, path.anchor!);
-        }
-        else if(path.laneWidth != null) {
-          return getGeometryFromOffsetSystem(
-            path.description as OffsetSystem, path.anchor!, path.laneWidth!.getLaneWidthMeters());
-        } else {
-        _logger.w("Unable to Parse Path. OffsetSystem requires Anchor and Lane Width");
-        return null;
-        }
-      } 
+
+      // This case will be primarily used when the anchor is missing from a path of longitude and latitudes
+      path.anchor??= Position3D(Latitude(0),Longitude(0),Elevation(0));
+      
+      if(path.closedPath!= null && path.closedPath!){
+        return getClosedGeometryFromOffsetSystem(
+          path.description as OffsetSystem, path.anchor!);
+      }
+      else if(path.laneWidth != null) {
+        return getGeometryFromOffsetSystem(
+          path.description as OffsetSystem, path.anchor!, path.laneWidth!.getLaneWidthMeters());
+      } else {
+      _logger.w("Unable to Parse Path. OffsetSystem requires Anchor and Lane Width");
+      return null;
+      }
     } else if (path.description is GeometricProjection) {
       return getGeometryFromGeometricProjection(path.description as GeometricProjection);
     } else {
