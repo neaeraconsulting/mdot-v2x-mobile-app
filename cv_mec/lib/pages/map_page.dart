@@ -310,6 +310,8 @@ class MapState extends State<MapPage> {
       
     });
 
+    tamManager.addOrUpdateFromString(TestData.tfhrcTamTwo);
+
     updateGraphics();
 
     obdController.checkRootStatus();
@@ -1505,11 +1507,11 @@ class MapState extends State<MapPage> {
     }
 
     for (MappableTam mappableTam in tamManager.storedTams.values) {
-      if (mappableTam.tollZoneBorder.isEmpty) {
+      if (mappableTam.entireTollZoneBorder.isEmpty) {
         continue;
       }
       Polygon<HitValue> hitPoly = Polygon(  
-        points: mappableTam.tollZoneBorder,
+        points: mappableTam.entireTollZoneBorder,
         borderColor: Colors.white,
         borderStrokeWidth: 5,
         hitValue: null,

@@ -1,9 +1,12 @@
 import 'dart:async';
 
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/toll_advertisement_message.dart';
+import 'package:cv_mec/models/geometry_direction.dart';
 import 'package:cv_mec/models/mappable_tam.dart';
 import 'package:cv_mec/models/test_data.dart';
 import 'package:cv_mec/services/asn_service.dart';
+import 'package:cv_mec/services/geometry_service.dart';
+import 'package:dart_jts/dart_jts.dart' hide Position;
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
@@ -13,9 +16,11 @@ class TamManager {
   Map<int, DateTime> tamTimestamps = <int, DateTime>{};
   bool inTamZone = false;
 
-  static const Duration tamExpiryDuration = Duration(seconds: 30);
+  static const Duration tamExpiryDuration = Duration(seconds: 3000);
   static const Duration cleanupInterval = Duration(seconds: 10);
+  final GeometryService geometryService = Get.find<GeometryService>();
   Timer? _cleanupTimer;
+  final double margin = 0.00001;
 
   TamManager() {
     _startPeriodicCleanup();
@@ -65,42 +70,36 @@ class TamManager {
     }
   }
 
-  bool checkPositionInTam(List<LatLng> tamBorder, Position? position) {
-    if (position == null) return false;
-
-    // check if position is within the polygon that is defined by tamBorder
-    int i, j = tamBorder.length - 1;
-    bool inside = false;
-    for (i = 0; i < tamBorder.length; j = i++) {
-      if (((tamBorder[i].longitude > position.longitude) != (tamBorder[j].longitude > position.longitude)) &&
-          (position.latitude <
-              (tamBorder[j].latitude - tamBorder[i].latitude) * (position.longitude - tamBorder[i].longitude) /
-                      (tamBorder[j].longitude - tamBorder[i].longitude) +
-                  tamBorder[i].latitude)) {
-        inside = !inside;
-      }
-    }
-    return inside;
-  }
-
   MappableTam? checkIfInTam(Position? currentPosition) {
     bool isInTam = false; 
     MappableTam? currentTam;
     for (MappableTam mappableTam in storedTams.values) {
-      isInTam = checkPositionInTam(mappableTam.tollZoneBorder, currentPosition);
-      if (isInTam) {
-        currentTam = mappableTam;
-        break;
+      for (GeometryDirection geometryDirection in mappableTam.laneTollZoneGeometries) {
+        Geometry border = geometryDirection.geometry;
+        if (currentPosition == null) continue;
+        isInTam = geometryService.isPointInPolygonWithMargin(border, currentPosition.longitude, currentPosition.latitude, margin);
+        if (isInTam) {
+          bool correctDirection = geometryDirection.isInPathDirection(currentPosition.longitude, currentPosition.latitude, currentPosition.heading);
+          if (!correctDirection) {
+            continue;
+          }
+          currentTam = mappableTam;
+          break;
+        }
       }
     }
-    if (isInTam) {
+    if (isInTam && currentTam != null) {
       if (!inTamZone) {
         inTamZone = true;
         return currentTam;
       } 
     } else {
-      inTamZone = false;
-      return null;
+      if (isInTam) {
+        return null;
+      } else {
+        inTamZone = false;
+        return null;
+      }
     }
     return null;
   }
