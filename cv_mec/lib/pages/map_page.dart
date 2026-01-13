@@ -310,8 +310,6 @@ class MapState extends State<MapPage> {
       
     });
 
-    tamManager.addOrUpdateFromString(TestData.tfhrcTamTwo);
-
     updateGraphics();
 
     obdController.checkRootStatus();
@@ -1605,79 +1603,81 @@ class MapState extends State<MapPage> {
                 ),
               ]),
             )
-          : Stack(alignment: AlignmentDirectional.topStart, children: [
-              Center(child: map(context, _mapController)),
-              Align(
-                  alignment: Alignment.topLeft,
-                  child: configController.isVehicleConfig.value ? vehicleStatsBar() : Container()),
-              Positioned(
-                top: 60,
-                right: 0,
-                child: showLightText && nextLightText.isNotEmpty
-                    ? Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: Container(
-                            width: screenWidth * 0.20,
-                            // height: screenHeight * 0.25,
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.yellow.shade600, width: 2.0), // Box border
-                              borderRadius: BorderRadius.circular(8.0), // Optional: Rounded corners
-                              color: Colors.grey.shade800, // Optional: Background color
-                            ),
-                            child: Column(mainAxisSize: MainAxisSize.min, children: [
-                              const Text("Current Light State",
-                                  textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
-                              SizedBox(
-                                  width: screenWidth * 0.15, height: screenHeight * 0.15, child: currentLightState),
-                              Text(nextLightText, textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
-                            ])))
-                    : (!showLightText && nextLightText.isNotEmpty)
-                        ? SizedBox(width: screenWidth * 0.15, height: screenHeight * 0.15, child: currentLightState)
-                        : Container(),
-              ),
-              Positioned(
-                  top: configController.isVehicleConfig.value ? 60 : 0,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(children: [
-                      managementButtons(),
-                      verticalSpaceSmall,
-                      settingsController.tollingEnabled.value ? hovButton() : Container(),
-                      settingsController.tollingEnabled.value ? verticalSpaceSmall : Container(),
-                      configController.hasASiren()
-                          ? sirenButton()
-                          : (configController.isVehicleConfig.value &&
-                                  configController.selectedVehicle.value.classification == VehicleType.BUS)
-                              ? busWarningButton()
-                              : (configController.isVehicleConfig.value &&
-                                      configController.selectedVehicle.value.classification ==
-                                          VehicleType.ICE_CREAM_TRUCK)
-                                  ? iceCreamSongButton()
-                                  : Container(width: 60),
-                    ]),
-                  )),
-              Align(
-                  alignment: Alignment.bottomLeft,
-                  child: SizedBox(
-                    height: screenHeight * 0.2,
-                    child: Row(children: [
-                      Expanded(
-                        child: timsDisplay(heightBottomDisplay, screenWidth),
-                      ),
-                      configController.isVehicleConfig.value ? speedMarker(heightBottomDisplay) : Container(),
-                    ]),
-                  )),
-              Align(
-                alignment: Alignment.center,
-                child: showLoadingIcon
-                    ? const SpinKitSpinningLines(
-                        color: Colors.white,
-                        size: 140,
-                        lineWidth: 4,
-                      )
-                    : null,
-              )
-            ]),
+          : SafeArea(
+            child: Stack(alignment: AlignmentDirectional.topStart, children: [
+                Center(child: map(context, _mapController)),
+                Align(
+                    alignment: Alignment.topLeft,
+                    child: configController.isVehicleConfig.value ? vehicleStatsBar() : Container()),
+                Positioned(
+                  top: 60,
+                  right: 0,
+                  child: showLightText && nextLightText.isNotEmpty
+                      ? Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: Container(
+                              width: screenWidth * 0.20,
+                              // height: screenHeight * 0.25,
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.yellow.shade600, width: 2.0), // Box border
+                                borderRadius: BorderRadius.circular(8.0), // Optional: Rounded corners
+                                color: Colors.grey.shade800, // Optional: Background color
+                              ),
+                              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                                const Text("Current Light State",
+                                    textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                                SizedBox(
+                                    width: screenWidth * 0.15, height: screenHeight * 0.15, child: currentLightState),
+                                Text(nextLightText, textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                              ])))
+                      : (!showLightText && nextLightText.isNotEmpty)
+                          ? SizedBox(width: screenWidth * 0.15, height: screenHeight * 0.15, child: currentLightState)
+                          : Container(),
+                ),
+                Positioned(
+                    top: configController.isVehicleConfig.value ? 60 : 0,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Column(children: [
+                        managementButtons(),
+                        verticalSpaceSmall,
+                        settingsController.tollingEnabled.value ? hovButton() : Container(),
+                        settingsController.tollingEnabled.value ? verticalSpaceSmall : Container(),
+                        configController.hasASiren()
+                            ? sirenButton()
+                            : (configController.isVehicleConfig.value &&
+                                    configController.selectedVehicle.value.classification == VehicleType.BUS)
+                                ? busWarningButton()
+                                : (configController.isVehicleConfig.value &&
+                                        configController.selectedVehicle.value.classification ==
+                                            VehicleType.ICE_CREAM_TRUCK)
+                                    ? iceCreamSongButton()
+                                    : Container(width: 60),
+                      ]),
+                    )),
+                Align(
+                    alignment: Alignment.bottomLeft,
+                    child: SizedBox(
+                      height: screenHeight * 0.2,
+                      child: Row(children: [
+                        Expanded(
+                          child: timsDisplay(heightBottomDisplay, screenWidth),
+                        ),
+                        configController.isVehicleConfig.value ? speedMarker(heightBottomDisplay) : Container(),
+                      ]),
+                    )),
+                Align(
+                  alignment: Alignment.center,
+                  child: showLoadingIcon
+                      ? const SpinKitSpinningLines(
+                          color: Colors.white,
+                          size: 140,
+                          lineWidth: 4,
+                        )
+                      : null,
+                )
+              ]),
+          ),
     );
   }
 

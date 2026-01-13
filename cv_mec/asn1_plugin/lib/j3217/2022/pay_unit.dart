@@ -9,7 +9,6 @@ class PayUnit {
     final Uint8List byteList = string.buf.asTypedList(string.size);
 
     payUnit = byteList.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join().toUpperCase();
-    print('PayUnit as hex: $payUnit');
 
   }
 

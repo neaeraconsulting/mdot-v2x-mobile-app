@@ -71,7 +71,7 @@ class MappableTam {
           int numOfArrows = 3;
           LatLng startPoint = lanePoints.first;
           LatLng endPoint = lanePoints.last;
-          double arrowBearingAdjustmentAngle = checkOrientationofPoints(startPoint, endPoint, markerPoints.first.latitude, markerPoints.first.longitude); 
+          double arrowBearingAdjustmentAngle = checkOrientationOfPoints(startPoint, endPoint, markerPoints.first.latitude, markerPoints.first.longitude); 
           double deltaLat = (endPoint.latitude - startPoint.latitude) / (numOfArrows + 1);
           double deltaLon = (endPoint.longitude - startPoint.longitude) / (numOfArrows + 1);
           approachMarkerRotation = geometryService.calculateBearingBetweenLatLng(startPoint, endPoint) + arrowBearingAdjustmentAngle;
@@ -176,7 +176,7 @@ class MappableTam {
     return outerBorderPoints;
   }
 
-  double checkOrientationofPoints(LatLng startPoint, LatLng endPoint, double refLat, double refLon) {
+  double checkOrientationOfPoints(LatLng startPoint, LatLng endPoint, double refLat, double refLon) {
     Coordinate start = geometryService.latLngToCoordinate(startPoint, tam!.tollAdvInfo!.tollPointMap.referencePoint);
     Coordinate end = geometryService.latLngToCoordinate(endPoint, tam!.tollAdvInfo!.tollPointMap.referencePoint);
     Coordinate reference = geometryService.latLngToCoordinate(LatLng(refLat, refLon), tam!.tollAdvInfo!.tollPointMap.referencePoint);
