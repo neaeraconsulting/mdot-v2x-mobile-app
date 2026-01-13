@@ -177,21 +177,14 @@ class TumMessageBuilder{
         ContractSerialNumber contractSerialNumber = ContractSerialNumber(012345678);
         UserId userId = UserId.fromDetails(null, contractSerialNumber, null, null, null);
         VehicleId vehicleId = VehicleId.fromDetails(vehicleidentity, licensePlateState, licensePlateNumber, null, userId);
-        
-        VehicleTypes vehicleType = VehicleMappingService.getVehicleTypes(selectedVehicle.classification);
+        late VehicleTypes vehicleType;
+        vehicleType = VehicleMappingService.getVehicleTypes(selectedVehicle.classification);
         
         //VehicleAxlesAndWeightInfo
         int vehNumAxles = VehicleMappingService.getAxles(selectedVehicle.classification); 
         int vehWeight = VehicleMappingService.getWeight(selectedVehicle.classification); 
         VehicleAxlesAndWeightInfo vehicleAxlesAndWeightInfo = VehicleAxlesAndWeightInfo(vehNumAxles, null, vehWeight, VehicleMappingService.getDefaultWeightUnit(selectedVehicle.classification));
         int? numOccupants;
-        if (configController.isHovOn.value) {
-          numOccupants = VehicleMappingService.getNumOccupants(selectedVehicle.classification); 
-          if (numOccupants > 5) {
-            numOccupants = 5; //Based on J3217 saying if numOccupants is 5 or greater, then set numOccupants to 5
-          }
-        }
-
 
         // locAndTimeStamps
         int maxNumberOfLocTimeStamps = tam.tollAdvInfo!.tumInstructions!.maxNumOfLocTimeStamps.maxNumOfLocTimeStampsInteger; //Can be 5 as most
