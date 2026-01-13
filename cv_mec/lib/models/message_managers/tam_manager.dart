@@ -17,7 +17,7 @@ class TamManager {
   Map<int, DateTime> tamTimestamps = <int, DateTime>{};
   bool inTamZone = false;
 
-  static const Duration tamExpiryDuration = Duration(seconds: 3000);
+  static const Duration tamExpiryDuration = Duration(seconds: 30);
   static const Duration cleanupInterval = Duration(seconds: 10);
   final GeometryService geometryService = Get.find<GeometryService>();
   MappableTam? currentTam;
