@@ -872,7 +872,7 @@ class MapState extends State<MapPage> {
     DateTime sendTime = timingService.getTime();
     MsgType messageType = MsgType.TUM;
 
-    TollUsageMessageResult tumResult = tumBuilder.generateTumFromTam(tam, currentPosition!, vehicleId, sendTime);
+    TollUsageMessageResult tumResult = tumBuilder.generateTumFromTam(tam, vehicleId, sendTime);
     if (!tumResult.isSuccess) {
       showError(tumResult.errorMessage!);
       return false;
@@ -919,10 +919,12 @@ class MapState extends State<MapPage> {
     prevKronos = kronos;
     prevLocal = now;
 
-    tumBuilder.addLocation(position, kronos);
-
     if (settingsController.tollingEnabled.value) {
       checkAndSendTum();
+    }
+    
+    if (tamManager.inTamZone) {
+      tumBuilder.addLocation(position, kronos);
     }
 
     updateGraphics();

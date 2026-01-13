@@ -56,7 +56,7 @@ class MappableTam {
           // Handle ComputedLane case if needed
         } 
       }
-      laneTollZoneGeometries = _generateLaneTollZoneGeometries(tam.tollAdvInfo!.tollPointMap);
+      laneTollZoneGeometries = _generateLaneTollZoneGeometries(tam.tollAdvInfo!.tollPointMap, tollZonePolylinePoints);
 
       entireTollZoneBorder = _generateTollBorderShape(tam.tollAdvInfo!.tollPointMap);
       _addMidPointMarker();
@@ -71,7 +71,7 @@ class MappableTam {
           int numOfArrows = 3;
           LatLng startPoint = lanePoints.first;
           LatLng endPoint = lanePoints.last;
-          double arrowBearingAdjustmentAngle = checkOrientationofPoints(startPoint, endPoint, markerPoints.first.latitude, markerPoints.first.longitude); // 1 start point is closer, 2 end point is closer
+          double arrowBearingAdjustmentAngle = checkOrientationofPoints(startPoint, endPoint, markerPoints.first.latitude, markerPoints.first.longitude); 
           double deltaLat = (endPoint.latitude - startPoint.latitude) / (numOfArrows + 1);
           double deltaLon = (endPoint.longitude - startPoint.longitude) / (numOfArrows + 1);
           approachMarkerRotation = geometryService.calculateBearingBetweenLatLng(startPoint, endPoint) + arrowBearingAdjustmentAngle;
@@ -88,7 +88,7 @@ class MappableTam {
     }
   }
 
-  List<GeometryDirection> _generateLaneTollZoneGeometries(TollPointMap tollPointMap) {
+  List<GeometryDirection> _generateLaneTollZoneGeometries(TollPointMap tollPointMap, List<List<LatLng>> tollZonePolylinePoints) {
     List<GenericLane> tollZoneLanes = tollPointMap.tollZoneLanesMap.tollZoneLanesMap;
     double laneWidth = tollPointMap.laneWidth.laneWidth * 0.01;
     Position3D anchorPoint = tollPointMap.referencePoint;
@@ -96,11 +96,11 @@ class MappableTam {
 
     List<GeometryDirection> laneGeometries = [];
     
-    for (GenericLane lane in tollZoneLanes) {
+    for (int i = 0; i < tollZoneLanes.length; i++) {
+      GenericLane lane = tollZoneLanes[i];
       Geometry? laneBorderPolygon = geometryService.getGeometryFromNodeListXY(lane.nodeList, anchorPoint, laneWidth);
       if (laneBorderPolygon != null) {
-        List<LatLng> laneBorderPoints = geometryService.convertGeometryToLatLngList(laneBorderPolygon);
-        GeometryDirection geometryDirection = GeometryDirection(laneBorderPolygon, null, laneBorderPoints, directionOfUse);
+        GeometryDirection geometryDirection = GeometryDirection(laneBorderPolygon, null, tollZonePolylinePoints[i], directionOfUse);
         laneGeometries.add(geometryDirection);
       }
     }

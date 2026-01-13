@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/toll_advertisement_message.dart';
 import 'package:cv_mec/models/geometry_direction.dart';
 import 'package:cv_mec/models/mappable_tam.dart';
+import 'package:cv_mec/models/message_builders/tum_message_builder.dart';
 import 'package:cv_mec/models/test_data.dart';
 import 'package:cv_mec/services/asn_service.dart';
 import 'package:cv_mec/services/geometry_service.dart';
@@ -19,6 +20,7 @@ class TamManager {
   static const Duration tamExpiryDuration = Duration(seconds: 3000);
   static const Duration cleanupInterval = Duration(seconds: 10);
   final GeometryService geometryService = Get.find<GeometryService>();
+  MappableTam? currentTam;
   Timer? _cleanupTimer;
   final double margin = 0.00001;
 
@@ -72,7 +74,6 @@ class TamManager {
 
   MappableTam? checkIfInTam(Position? currentPosition) {
     bool isInTam = false; 
-    MappableTam? currentTam;
     for (MappableTam mappableTam in storedTams.values) {
       for (GeometryDirection geometryDirection in mappableTam.laneTollZoneGeometries) {
         Geometry border = geometryDirection.geometry;
@@ -91,14 +92,19 @@ class TamManager {
     if (isInTam && currentTam != null) {
       if (!inTamZone) {
         inTamZone = true;
-        return currentTam;
-      } 
+        return null;
+      }
     } else {
       if (isInTam) {
         return null;
       } else {
         inTamZone = false;
-        return null;
+        if (currentTam != null) {
+          //On exiting Toll zone
+          MappableTam tempTam = currentTam!;
+          currentTam = null;
+          return tempTam; 
+        }
       }
     }
     return null;
