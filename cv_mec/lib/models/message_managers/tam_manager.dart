@@ -88,6 +88,9 @@ class TamManager {
           break;
         }
       }
+      if (isInTam && currentTam != null) {
+        break;
+      }
     }
     if (isInTam && currentTam != null) {
       if (!inTamZone) {
