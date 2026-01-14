@@ -12,6 +12,9 @@ class Position3D {
   Elevation? elevation;
   List<RegionalExtension>? regional;
 
+
+  Position3D(this.lat, this.long, this.elevation);
+
   Position3D.fromC(C.Position3D position3D) {
     lat = Latitude(position3D.lat);
     long = Longitude(position3D.Long);
