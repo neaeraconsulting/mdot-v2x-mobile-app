@@ -63,6 +63,7 @@ class MappableTam {
       entireTollZoneBorder = _generateTollBorderShape(tam.tollAdvInfo!.tollPointMap);
       _addMidPointMarker();
       ApproachLanesMap approachLanesMap = tollPointMap.approachLanesMap;
+      List<DirectionOfUse> approachDirections = [];
       for (GenericLane lane in approachLanesMap.approachLanesMap) {
         List<LatLng> lanePoints = [];
         NodeListXY nodeList = lane.nodeList;
@@ -73,10 +74,11 @@ class MappableTam {
           int numOfArrows = 3;
           LatLng startPoint = lanePoints.first;
           LatLng endPoint = lanePoints.last;
-          double arrowBearingAdjustmentAngle = checkOrientationOfPoints(startPoint, endPoint, markerPoints.first.latitude, markerPoints.first.longitude); 
+          DirectionOfUse approachDirection = checkOrientationOfPoints(startPoint, endPoint, markerPoints.first.latitude, markerPoints.first.longitude); 
+          approachDirections.add(approachDirection);
           double deltaLat = (endPoint.latitude - startPoint.latitude) / (numOfArrows + 1);
           double deltaLon = (endPoint.longitude - startPoint.longitude) / (numOfArrows + 1);
-          approachMarkerRotation = geometryService.calculateBearingBetweenLatLng(startPoint, endPoint) + arrowBearingAdjustmentAngle;
+          approachMarkerRotation = geometryService.calculateBearingBetweenLatLng(startPoint, endPoint) + (approachDirection == DirectionOfUse.forward ? 90 : -90);
           for (int i = 1; i <= numOfArrows; i++) {
             approachMarkerPoints.add(LatLng(
               startPoint.latitude + deltaLat * i,
@@ -87,7 +89,7 @@ class MappableTam {
           // Handle ComputedLane case if needed
         } 
       }
-      laneApproachGeometries = _generateLaneApproachGeometries(tam.tollAdvInfo!.tollPointMap, approachPolylinePoints);
+      laneApproachGeometries = _generateLaneApproachGeometries(tam.tollAdvInfo!.tollPointMap, approachPolylinePoints, approachDirections);
     }
   }
 
@@ -110,11 +112,10 @@ class MappableTam {
     return laneGeometries;    
   }
 
-  List<GeometryDirection> _generateLaneApproachGeometries(TollPointMap tollPointMap, List<List<LatLng>> approachPolylinePoints) {
+  List<GeometryDirection> _generateLaneApproachGeometries(TollPointMap tollPointMap, List<List<LatLng>> approachPolylinePoints, List<DirectionOfUse> approachDirections) {
     List<GenericLane> approachLanes = tollPointMap.approachLanesMap.approachLanesMap;
     double laneWidth = tollPointMap.laneWidth.laneWidth * 0.01;
     Position3D anchorPoint = tollPointMap.referencePoint;
-    DirectionOfUse directionOfUse = getDirectionOfUse(tollPointMap);
 
     List<GeometryDirection> laneGeometries = [];
     
@@ -122,7 +123,7 @@ class MappableTam {
       GenericLane lane = approachLanes[i];
       Geometry? laneBorderPolygon = geometryService.getGeometryFromNodeListXY(lane.nodeList, anchorPoint, laneWidth);
       if (laneBorderPolygon != null) {
-        GeometryDirection geometryDirection = GeometryDirection(laneBorderPolygon, null, approachPolylinePoints[i], directionOfUse);
+        GeometryDirection geometryDirection = GeometryDirection(laneBorderPolygon, null, approachPolylinePoints[i], approachDirections[i]);
         laneGeometries.add(geometryDirection);
       }
     }
@@ -198,16 +199,16 @@ class MappableTam {
     return outerBorderPoints;
   }
 
-  double checkOrientationOfPoints(LatLng startPoint, LatLng endPoint, double refLat, double refLon) {
+  DirectionOfUse checkOrientationOfPoints(LatLng startPoint, LatLng endPoint, double refLat, double refLon) {
     Coordinate start = geometryService.latLngToCoordinate(startPoint, tam!.tollAdvInfo!.tollPointMap.referencePoint);
     Coordinate end = geometryService.latLngToCoordinate(endPoint, tam!.tollAdvInfo!.tollPointMap.referencePoint);
     Coordinate reference = geometryService.latLngToCoordinate(LatLng(refLat, refLon), tam!.tollAdvInfo!.tollPointMap.referencePoint);
     double distanceOne = geometryService.calculateDistanceBetweenCoordinates(start, reference);
     double distanceTwo = geometryService.calculateDistanceBetweenCoordinates(end, reference);
     if (distanceOne < distanceTwo) {
-      return -90; // Start point is closer to the reference point
+      return DirectionOfUse.reverse; // Start point is closer to the reference point
     } else {
-      return 90; // End point is closer to the reference point
+      return DirectionOfUse.forward; // End point is closer to the reference point
     }
   }
 
