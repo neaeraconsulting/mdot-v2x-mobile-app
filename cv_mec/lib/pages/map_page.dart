@@ -263,6 +263,7 @@ class MapState extends State<MapPage> {
     flutterTts = FlutterTts();
 
 
+
     Future.delayed(Duration.zero, () async {
       int loggingEnabled = await enableLogging();
       if (loggingEnabled != 0) {
@@ -1648,7 +1649,7 @@ class MapState extends State<MapPage> {
                       child: Column(children: [
                         managementButtons(),
                         verticalSpaceSmall,
-                        settingsController.tollingEnabled.value ? hovButton() : Container(),
+                        settingsController.tollingEnabled.value ? fourTireButton() : Container(),
                         settingsController.tollingEnabled.value ? verticalSpaceSmall : Container(),
                         configController.hasASiren()
                             ? sirenButton()
@@ -1933,35 +1934,26 @@ class MapState extends State<MapPage> {
         ));
   }
 
-  Widget hovButton() {
+  Widget fourTireButton() { 
     return Obx(() => GestureDetector(
           onTap: () {
-            configController.isHovOn.value = !configController.isHovOn.value;
-            if (configController.isHovOn.value) {
-              toastification.show(
-                context: context,
-                type: ToastificationType.success,
-                style: ToastificationStyle.flatColored,
-                title: const Text("HOV Enabled"),
-                alignment: Alignment.topCenter,
-                autoCloseDuration: const Duration(seconds: 5),
-                showProgressBar: false,
-                dragToClose: true,
-                icon: Icon(Icons.group),
-              );
+            configController.isFourTire.value = !configController.isFourTire.value;
+            if (configController.isFourTire.value) {
+              configController.tempEditSelectedVehicleType(VehicleType.LIGHT_TRUCK);
             } else {
-              toastification.show(
-                context: context,
-                type: ToastificationType.info,
-                style: ToastificationStyle.flatColored,
-                title: const Text("HOV Disabled"),
-                alignment: Alignment.topCenter,
-                autoCloseDuration: const Duration(seconds: 1),
-                showProgressBar: false,
-                dragToClose: true,
-                icon: Icon(Icons.group),
-              );
+              configController.returnToSelectedVehicleType();
             }
+            toastification.show(
+              context: context,
+              type: ToastificationType.info,
+              style: ToastificationStyle.flatColored,
+              title: Text("Switched to ${VehicleType.vehicleTypeToString(configController.selectedVehicle.value.classification)}"), //Dinosaur to do
+              alignment: Alignment.topCenter,
+              autoCloseDuration: const Duration(seconds: 5),
+              showProgressBar: false,
+              dragToClose: true,
+              icon: Icon(IconManager.getIconForBSM(configController.selectedVehicle.value.classification)), 
+            );
           },
           child: Container(
             width: 60,
@@ -1970,7 +1962,7 @@ class MapState extends State<MapPage> {
               color: lightGrey,
               shape: BoxShape.circle,
               border: Border.all(
-                color: configController.isHovOn.value ? Colors.green : mediumGrey,
+                color: configController.isFourTire.value ? Colors.blue : Colors.green,
                 width: 2,
               ),
               boxShadow: [
@@ -1983,15 +1975,12 @@ class MapState extends State<MapPage> {
               ],
             ),
             child: Center(
-              child: Text(
-                "HOV",
-                style: TextStyle(
-                  color: configController.isHovOn.value ? Colors.green : mediumGrey,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+              child: Icon(  
+                IconManager.getIconForBSM(configController.selectedVehicle.value.classification),
+                color: configController.isFourTire.value ? Colors.blue : Colors.green,
+                size: 30,
               ),
-            ),
+            )
           ),
         ));
   }

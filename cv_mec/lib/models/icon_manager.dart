@@ -50,7 +50,7 @@ class IconManager {
     if (type == VehicleType.PASSENGER_VEHICLE) {
       return car;
     } else if (type == VehicleType.LIGHT_TRUCK) {
-      return car;
+      return truck;
     } else if (type == VehicleType.TRUCK) {
       return truck;
     } else if (type == VehicleType.MOTORCYCLE) {
