@@ -10,6 +10,7 @@ import 'package:cv_mec/views/bluetooth_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:toastification/toastification.dart';
 
 import '../controllers/obd_controller.dart';
 
@@ -287,12 +288,30 @@ class CreateVehicleConfigDialog extends StatelessWidget {
               vehicleWidthController.text.isEmpty ||
               selectedColor.value.isEmpty ||
               vehicleClassification == null) {
-            Get.snackbar("Error", "Please fill out all fields", backgroundColor: Colors.red, colorText: Colors.white);
+            toastification.show(
+              context: context,
+              type: ToastificationType.error,
+              style: ToastificationStyle.flatColored,
+              title: const Text("Please fill out all fields"),
+              alignment: Alignment.topCenter,
+              autoCloseDuration: const Duration(seconds: 5),
+              showProgressBar: false,
+              dragToClose: true,
+            );
           } else if (configController.vehicleBeingEditedIndex.value == -1 &&
               Get.find<ConfigurationController>()
                   .vehicleConfigs
                   .any((vehicle) => vehicle.name == vehicleNameController.text && vehicle.name != "")) {
-            Get.snackbar("Error", "Config name already exists", backgroundColor: Colors.red, colorText: Colors.white);
+            toastification.show(
+              context: context,
+              type: ToastificationType.error,
+              style: ToastificationStyle.flatColored,
+              title: const Text("Config name already exists"), 
+              alignment: Alignment.topCenter,
+              autoCloseDuration: const Duration(seconds: 5),
+              showProgressBar: false,
+              dragToClose: true,
+            );
           } else {
             //Save the vehicle configuration
             Vehicle vehicle = Vehicle.detailed(
