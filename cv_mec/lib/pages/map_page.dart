@@ -242,6 +242,10 @@ class MapState extends State<MapPage> {
 
     updateConnectedStatus(ConnectedStatus.PARTIAL);
 
+    if (configController.selectedVehicle.value.classification == VehicleType.LIGHT_TRUCK) {
+      configController.isFourTire.value = true;
+    }
+
     currentLightState = lightStateMap[MovementPhaseState.UNAVAILABLE]!;
 
     if (debugMode) {
@@ -1942,6 +1946,9 @@ class MapState extends State<MapPage> {
               configController.tempEditSelectedVehicleType(VehicleType.LIGHT_TRUCK);
             } else {
               configController.returnToSelectedVehicleType();
+              if (configController.selectedVehicle.value.classification == VehicleType.LIGHT_TRUCK) {
+                configController.tempEditSelectedVehicleType(VehicleType.PASSENGER_VEHICLE);
+              }
             }
             toastification.show(
               context: context,
