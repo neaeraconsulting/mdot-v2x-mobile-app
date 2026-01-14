@@ -726,7 +726,7 @@ class MapState extends State<MapPage> {
   void checkAndSendTum() {
     late MappableTam? currentTam;
     late ZoneType? zoneType;
-    (currentTam, zoneType) = tamManager.checkIfInTam(currentPosition);
+    (currentTam, zoneType) = tamManager.checkIfInZone(currentPosition);
     if (currentTam == null) {
       return;
     }

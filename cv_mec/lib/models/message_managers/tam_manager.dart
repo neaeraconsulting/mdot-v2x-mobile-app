@@ -72,7 +72,7 @@ class TamManager {
     }
   }
 
-  (MappableTam?, ZoneType?) checkIfInTam(Position? currentPosition) { 
+  (MappableTam?, ZoneType?) checkIfInZone(Position? currentPosition) { 
     bool isInTam = false; 
     bool isInApproach = false;
     for (MappableTam mappableTam in storedTams.values) {
