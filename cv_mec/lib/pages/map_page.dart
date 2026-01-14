@@ -1954,7 +1954,7 @@ class MapState extends State<MapPage> {
               context: context,
               type: ToastificationType.info,
               style: ToastificationStyle.flatColored,
-              title: Text("Switched to ${VehicleType.vehicleTypeToString(configController.selectedVehicle.value.classification)}"), //Dinosaur to do
+              title: Text("Switched to ${VehicleType.vehicleTypeToString(configController.selectedVehicle.value.classification)}"), 
               alignment: Alignment.topCenter,
               autoCloseDuration: const Duration(seconds: 5),
               showProgressBar: false,
