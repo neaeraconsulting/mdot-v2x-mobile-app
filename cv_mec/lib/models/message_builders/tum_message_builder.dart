@@ -177,8 +177,7 @@ class TumMessageBuilder{
         ContractSerialNumber contractSerialNumber = ContractSerialNumber(012345678);
         UserId userId = UserId.fromDetails(null, contractSerialNumber, null, null, null);
         VehicleId vehicleId = VehicleId.fromDetails(vehicleidentity, licensePlateState, licensePlateNumber, null, userId);
-        late VehicleTypes vehicleType;
-        vehicleType = VehicleMappingService.getVehicleTypes(selectedVehicle.classification);
+        VehicleTypes vehicleType = VehicleMappingService.getVehicleTypes(selectedVehicle.classification);
         
         //VehicleAxlesAndWeightInfo
         int vehNumAxles = VehicleMappingService.getAxles(selectedVehicle.classification); 
