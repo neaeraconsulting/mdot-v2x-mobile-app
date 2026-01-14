@@ -72,9 +72,11 @@ class TamManager {
     }
   }
 
-  MappableTam? checkIfInTam(Position? currentPosition) {
+  (MappableTam?, ZoneType?) checkIfInTam(Position? currentPosition) { 
     bool isInTam = false; 
+    bool isInApproach = false;
     for (MappableTam mappableTam in storedTams.values) {
+      //Check if current position is within any TAM zone
       for (GeometryDirection geometryDirection in mappableTam.laneTollZoneGeometries) {
         Geometry border = geometryDirection.geometry;
         if (currentPosition == null) continue;
@@ -91,25 +93,71 @@ class TamManager {
       if (isInTam && currentTam != null) {
         break;
       }
+
+      //Check if current position is within any Approach zone
+      for (GeometryDirection geometryDirection in mappableTam.laneApproachGeometries) {
+        Geometry border = geometryDirection.geometry;
+        if (currentPosition == null) continue;
+        isInApproach = geometryService.isPointInPolygonWithMargin(border, currentPosition.longitude, currentPosition.latitude, margin);
+        if (isInApproach) {
+          bool correctDirection = geometryDirection.isInPathDirection(currentPosition.longitude, currentPosition.latitude, currentPosition.heading);
+          if (!correctDirection) {
+            continue;
+          }
+          currentTam = mappableTam;
+          break;
+        }
+      }
+      if (isInApproach && currentTam != null) {
+        break;
+      }
     }
+
+    //Check if entering, exiting, or in the middle of the toll zone
     if (isInTam && currentTam != null) {
       if (!inTamZone) {
         inTamZone = true;
-        return null;
+        return (null, null);
       }
-    } else {
+    } else if (!isInApproach) {
       if (isInTam) {
-        return null;
+        return (null, null);
       } else {
         inTamZone = false;
         if (currentTam != null) {
           //On exiting Toll zone
           MappableTam tempTam = currentTam!;
           currentTam = null;
-          return tempTam; 
+          return (tempTam, ZoneType.TOLL); 
         }
       }
     }
-    return null;
+
+    //Check if entering, exiting, or in the middle of the approach zone
+    if (isInApproach && currentTam != null) {
+      if (!inTamZone) {
+        //On entering Approach zone
+        inTamZone = true;
+        MappableTam tempTam = currentTam!;
+        currentTam = null;
+        return (tempTam, ZoneType.APPROACH); 
+      }
+    } else if (!isInTam) {
+      if (isInApproach) {
+        return (null, null);
+      } else {
+        inTamZone = false;
+        if (currentTam != null) {
+          //On exiting Approach zone
+          return (null, null);
+        }
+      }
+    }
+    return (null, null);
   }
+}
+
+enum ZoneType {
+  TOLL,
+  APPROACH
 }

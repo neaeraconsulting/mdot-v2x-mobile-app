@@ -719,13 +719,20 @@ class MapState extends State<MapPage> {
   }
 
   void checkAndSendTum() {
-    MappableTam? currentTam = tamManager.checkIfInTam(currentPosition);
+    late MappableTam? currentTam;
+    late ZoneType? zoneType;
+    (currentTam, zoneType) = tamManager.checkIfInTam(currentPosition);
     if (currentTam == null) {
       return;
     }
-    bool sent = sendTumMessage(currentTam.tam!);
-    if (!sent) {
-      VehicleNotificationManager.sendPaymentMessage("Error while sending payment");
+    if (zoneType == ZoneType.TOLL) {
+      bool sent = sendTumMessage(currentTam.tam!);
+      if (!sent) {
+        VehicleNotificationManager.sendPaymentMessage("Error while sending payment");
+      }
+    }
+    if (zoneType == ZoneType.APPROACH) {
+      VehicleNotificationManager.sendPaymentMessage("Approaching Toll Zone");
     }
   }
 

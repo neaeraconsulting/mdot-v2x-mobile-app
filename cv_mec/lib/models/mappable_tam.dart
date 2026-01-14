@@ -18,6 +18,7 @@ class MappableTam {
   final TollAdvertisementMessage? tam;
   List<List<LatLng>> approachPolylinePoints = [];
   List<List<LatLng>> tollZonePolylinePoints = [];
+  List<GeometryDirection> laneApproachGeometries = [];
   List<GeometryDirection> laneTollZoneGeometries = [];
   List<LatLng> entireTollZoneBorder = [];
   List<LatLng> markerPoints = [];
@@ -30,6 +31,7 @@ class MappableTam {
       {required this.tam,
       required this.approachPolylinePoints,
       required this.tollZonePolylinePoints,
+      required this.laneApproachGeometries,
       required this.laneTollZoneGeometries,
       required this.entireTollZoneBorder,
       required this.markerPoints});
@@ -85,6 +87,7 @@ class MappableTam {
           // Handle ComputedLane case if needed
         } 
       }
+      laneApproachGeometries = _generateLaneApproachGeometries(tam.tollAdvInfo!.tollPointMap, approachPolylinePoints);
     }
   }
 
@@ -101,6 +104,25 @@ class MappableTam {
       Geometry? laneBorderPolygon = geometryService.getGeometryFromNodeListXY(lane.nodeList, anchorPoint, laneWidth);
       if (laneBorderPolygon != null) {
         GeometryDirection geometryDirection = GeometryDirection(laneBorderPolygon, null, tollZonePolylinePoints[i], directionOfUse);
+        laneGeometries.add(geometryDirection);
+      }
+    }
+    return laneGeometries;    
+  }
+
+  List<GeometryDirection> _generateLaneApproachGeometries(TollPointMap tollPointMap, List<List<LatLng>> approachPolylinePoints) {
+    List<GenericLane> approachLanes = tollPointMap.approachLanesMap.approachLanesMap;
+    double laneWidth = tollPointMap.laneWidth.laneWidth * 0.01;
+    Position3D anchorPoint = tollPointMap.referencePoint;
+    DirectionOfUse directionOfUse = getDirectionOfUse(tollPointMap);
+
+    List<GeometryDirection> laneGeometries = [];
+    
+    for (int i = 0; i < approachLanes.length; i++) {
+      GenericLane lane = approachLanes[i];
+      Geometry? laneBorderPolygon = geometryService.getGeometryFromNodeListXY(lane.nodeList, anchorPoint, laneWidth);
+      if (laneBorderPolygon != null) {
+        GeometryDirection geometryDirection = GeometryDirection(laneBorderPolygon, null, approachPolylinePoints[i], directionOfUse);
         laneGeometries.add(geometryDirection);
       }
     }
