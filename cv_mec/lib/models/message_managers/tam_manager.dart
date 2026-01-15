@@ -7,7 +7,7 @@ import 'package:cv_mec/models/message_builders/tum_message_builder.dart';
 import 'package:cv_mec/models/test_data.dart';
 import 'package:cv_mec/services/asn_service.dart';
 import 'package:cv_mec/services/geometry_service.dart';
-import 'package:dart_jts/dart_jts.dart' hide Position;
+import 'package:dart_jts/dart_jts.dart' show Geometry;
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
