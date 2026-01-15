@@ -242,6 +242,10 @@ class MapState extends State<MapPage> {
 
     updateConnectedStatus(ConnectedStatus.PARTIAL);
 
+    if (configController.selectedVehicle.value.classification == VehicleType.LIGHT_TRUCK) {
+      configController.isFourTire.value = true;
+    }
+
     currentLightState = lightStateMap[MovementPhaseState.UNAVAILABLE]!;
 
     if (debugMode) {
@@ -261,6 +265,7 @@ class MapState extends State<MapPage> {
     }
 
     flutterTts = FlutterTts();
+
 
 
     Future.delayed(Duration.zero, () async {
@@ -719,13 +724,20 @@ class MapState extends State<MapPage> {
   }
 
   void checkAndSendTum() {
-    MappableTam? currentTam = tamManager.checkIfInTam(currentPosition);
+    late MappableTam? currentTam;
+    late ZoneType? zoneType;
+    (currentTam, zoneType) = tamManager.checkIfInZone(currentPosition);
     if (currentTam == null) {
       return;
     }
-    bool sent = sendTumMessage(currentTam.tam!);
-    if (!sent) {
-      VehicleNotificationManager.sendPaymentMessage("Error while sending payment");
+    if (zoneType == ZoneType.TOLL) {
+      bool sent = sendTumMessage(currentTam.tam!);
+      if (!sent) {
+        VehicleNotificationManager.sendPaymentMessage("Error while sending payment");
+      }
+    }
+    if (zoneType == ZoneType.APPROACH) {
+      VehicleNotificationManager.sendPaymentMessage("Approaching Toll Zone");
     }
   }
 
@@ -870,7 +882,7 @@ class MapState extends State<MapPage> {
     DateTime sendTime = timingService.getTime();
     MsgType messageType = MsgType.TUM;
 
-    TollUsageMessageResult tumResult = tumBuilder.generateTumFromTam(tam, currentPosition!, vehicleId, sendTime);
+    TollUsageMessageResult tumResult = tumBuilder.generateTumFromTam(tam, vehicleId, sendTime);
     if (!tumResult.isSuccess) {
       showError(tumResult.errorMessage!);
       return false;
@@ -917,10 +929,12 @@ class MapState extends State<MapPage> {
     prevKronos = kronos;
     prevLocal = now;
 
-    tumBuilder.addLocation(position, kronos);
-
     if (settingsController.tollingEnabled.value) {
       checkAndSendTum();
+    }
+    
+    if (tamManager.inTamZone) {
+      tumBuilder.addLocation(position, kronos);
     }
 
     updateGraphics();
@@ -1505,11 +1519,11 @@ class MapState extends State<MapPage> {
     }
 
     for (MappableTam mappableTam in tamManager.storedTams.values) {
-      if (mappableTam.tollZoneBorder.isEmpty) {
+      if (mappableTam.entireTollZoneBorder.isEmpty) {
         continue;
       }
       Polygon<HitValue> hitPoly = Polygon(  
-        points: mappableTam.tollZoneBorder,
+        points: mappableTam.entireTollZoneBorder,
         borderColor: Colors.white,
         borderStrokeWidth: 5,
         hitValue: null,
@@ -1601,79 +1615,81 @@ class MapState extends State<MapPage> {
                 ),
               ]),
             )
-          : Stack(alignment: AlignmentDirectional.topStart, children: [
-              Center(child: map(context, _mapController)),
-              Align(
-                  alignment: Alignment.topLeft,
-                  child: configController.isVehicleConfig.value ? vehicleStatsBar() : Container()),
-              Positioned(
-                top: 60,
-                right: 0,
-                child: showLightText && nextLightText.isNotEmpty
-                    ? Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: Container(
-                            width: screenWidth * 0.20,
-                            // height: screenHeight * 0.25,
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.yellow.shade600, width: 2.0), // Box border
-                              borderRadius: BorderRadius.circular(8.0), // Optional: Rounded corners
-                              color: Colors.grey.shade800, // Optional: Background color
-                            ),
-                            child: Column(mainAxisSize: MainAxisSize.min, children: [
-                              const Text("Current Light State",
-                                  textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
-                              SizedBox(
-                                  width: screenWidth * 0.15, height: screenHeight * 0.15, child: currentLightState),
-                              Text(nextLightText, textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
-                            ])))
-                    : (!showLightText && nextLightText.isNotEmpty)
-                        ? SizedBox(width: screenWidth * 0.15, height: screenHeight * 0.15, child: currentLightState)
-                        : Container(),
-              ),
-              Positioned(
-                  top: configController.isVehicleConfig.value ? 60 : 0,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(children: [
-                      managementButtons(),
-                      verticalSpaceSmall,
-                      settingsController.tollingEnabled.value ? hovButton() : Container(),
-                      settingsController.tollingEnabled.value ? verticalSpaceSmall : Container(),
-                      configController.hasASiren()
-                          ? sirenButton()
-                          : (configController.isVehicleConfig.value &&
-                                  configController.selectedVehicle.value.classification == VehicleType.BUS)
-                              ? busWarningButton()
-                              : (configController.isVehicleConfig.value &&
-                                      configController.selectedVehicle.value.classification ==
-                                          VehicleType.ICE_CREAM_TRUCK)
-                                  ? iceCreamSongButton()
-                                  : Container(width: 60),
-                    ]),
-                  )),
-              Align(
-                  alignment: Alignment.bottomLeft,
-                  child: SizedBox(
-                    height: screenHeight * 0.2,
-                    child: Row(children: [
-                      Expanded(
-                        child: timsDisplay(heightBottomDisplay, screenWidth),
-                      ),
-                      configController.isVehicleConfig.value ? speedMarker(heightBottomDisplay) : Container(),
-                    ]),
-                  )),
-              Align(
-                alignment: Alignment.center,
-                child: showLoadingIcon
-                    ? const SpinKitSpinningLines(
-                        color: Colors.white,
-                        size: 140,
-                        lineWidth: 4,
-                      )
-                    : null,
-              )
-            ]),
+          : SafeArea(
+            child: Stack(alignment: AlignmentDirectional.topStart, children: [
+                Center(child: map(context, _mapController)),
+                Align(
+                    alignment: Alignment.topLeft,
+                    child: configController.isVehicleConfig.value ? vehicleStatsBar() : Container()),
+                Positioned(
+                  top: 60,
+                  right: 0,
+                  child: showLightText && nextLightText.isNotEmpty
+                      ? Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: Container(
+                              width: screenWidth * 0.20,
+                              // height: screenHeight * 0.25,
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.yellow.shade600, width: 2.0), // Box border
+                                borderRadius: BorderRadius.circular(8.0), // Optional: Rounded corners
+                                color: Colors.grey.shade800, // Optional: Background color
+                              ),
+                              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                                const Text("Current Light State",
+                                    textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                                SizedBox(
+                                    width: screenWidth * 0.15, height: screenHeight * 0.15, child: currentLightState),
+                                Text(nextLightText, textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                              ])))
+                      : (!showLightText && nextLightText.isNotEmpty)
+                          ? SizedBox(width: screenWidth * 0.15, height: screenHeight * 0.15, child: currentLightState)
+                          : Container(),
+                ),
+                Positioned(
+                    top: configController.isVehicleConfig.value ? 60 : 0,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Column(children: [
+                        managementButtons(),
+                        verticalSpaceSmall,
+                        settingsController.tollingEnabled.value ? fourTireButton() : Container(),
+                        settingsController.tollingEnabled.value ? verticalSpaceSmall : Container(),
+                        configController.hasASiren()
+                            ? sirenButton()
+                            : (configController.isVehicleConfig.value &&
+                                    configController.selectedVehicle.value.classification == VehicleType.BUS)
+                                ? busWarningButton()
+                                : (configController.isVehicleConfig.value &&
+                                        configController.selectedVehicle.value.classification ==
+                                            VehicleType.ICE_CREAM_TRUCK)
+                                    ? iceCreamSongButton()
+                                    : Container(width: 60),
+                      ]),
+                    )),
+                Align(
+                    alignment: Alignment.bottomLeft,
+                    child: SizedBox(
+                      height: screenHeight * 0.2,
+                      child: Row(children: [
+                        Expanded(
+                          child: timsDisplay(heightBottomDisplay, screenWidth),
+                        ),
+                        configController.isVehicleConfig.value ? speedMarker(heightBottomDisplay) : Container(),
+                      ]),
+                    )),
+                Align(
+                  alignment: Alignment.center,
+                  child: showLoadingIcon
+                      ? const SpinKitSpinningLines(
+                          color: Colors.white,
+                          size: 140,
+                          lineWidth: 4,
+                        )
+                      : null,
+                )
+              ]),
+          ),
     );
   }
 
@@ -1922,35 +1938,29 @@ class MapState extends State<MapPage> {
         ));
   }
 
-  Widget hovButton() {
+  Widget fourTireButton() { 
     return Obx(() => GestureDetector(
           onTap: () {
-            configController.isHovOn.value = !configController.isHovOn.value;
-            if (configController.isHovOn.value) {
-              toastification.show(
-                context: context,
-                type: ToastificationType.success,
-                style: ToastificationStyle.flatColored,
-                title: const Text("HOV Enabled"),
-                alignment: Alignment.topCenter,
-                autoCloseDuration: const Duration(seconds: 5),
-                showProgressBar: false,
-                dragToClose: true,
-                icon: Icon(Icons.group),
-              );
+            configController.isFourTire.value = !configController.isFourTire.value;
+            if (configController.isFourTire.value) {
+              configController.tempEditSelectedVehicleType(VehicleType.LIGHT_TRUCK);
             } else {
-              toastification.show(
-                context: context,
-                type: ToastificationType.info,
-                style: ToastificationStyle.flatColored,
-                title: const Text("HOV Disabled"),
-                alignment: Alignment.topCenter,
-                autoCloseDuration: const Duration(seconds: 5),
-                showProgressBar: false,
-                dragToClose: true,
-                icon: Icon(Icons.group),
-              );
+              configController.returnToSelectedVehicleType();
+              if (configController.selectedVehicle.value.classification == VehicleType.LIGHT_TRUCK) {
+                configController.tempEditSelectedVehicleType(VehicleType.PASSENGER_VEHICLE);
+              }
             }
+            toastification.show(
+              context: context,
+              type: ToastificationType.info,
+              style: ToastificationStyle.flatColored,
+              title: Text("Switched to ${VehicleType.vehicleTypeToString(configController.selectedVehicle.value.classification)}"), 
+              alignment: Alignment.topCenter,
+              autoCloseDuration: const Duration(seconds: 5),
+              showProgressBar: false,
+              dragToClose: true,
+              icon: Icon(IconManager.getIconForBSM(configController.selectedVehicle.value.classification)), 
+            );
           },
           child: Container(
             width: 60,
@@ -1959,7 +1969,7 @@ class MapState extends State<MapPage> {
               color: lightGrey,
               shape: BoxShape.circle,
               border: Border.all(
-                color: configController.isHovOn.value ? Colors.green : mediumGrey,
+                color: configController.isFourTire.value ? Colors.blue : Colors.green,
                 width: 2,
               ),
               boxShadow: [
@@ -1972,15 +1982,12 @@ class MapState extends State<MapPage> {
               ],
             ),
             child: Center(
-              child: Text(
-                "HOV",
-                style: TextStyle(
-                  color: configController.isHovOn.value ? Colors.green : mediumGrey,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+              child: Icon(  
+                IconManager.getIconForBSM(configController.selectedVehicle.value.classification),
+                color: configController.isFourTire.value ? Colors.blue : Colors.green,
+                size: 30,
               ),
-            ),
+            )
           ),
         ));
   }

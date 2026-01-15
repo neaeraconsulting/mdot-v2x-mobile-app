@@ -108,4 +108,31 @@ enum VehicleType {
     }
     return VehicleClass.passengerVehicleTypeUnknown;
   }
+
+  static String vehicleTypeToString(VehicleType type) {
+    switch (type) {
+      case VehicleType.PASSENGER_VEHICLE:
+        return "Passenger Vehicle";
+      case VehicleType.LIGHT_TRUCK:
+        return "Light Truck";
+      case VehicleType.TRUCK:
+        return "Truck";
+      case VehicleType.MOTORCYCLE:
+        return "Motorcycle";
+      case VehicleType.BUS:
+        return "Bus";
+      case VehicleType.FIRE:
+        return "Fire";
+      case VehicleType.POLICE:
+        return "Police";
+      case VehicleType.AMBULANCE:
+        return "Ambulance";
+      case VehicleType.ICE_CREAM_TRUCK:
+        return "Ice Cream Truck";
+      case VehicleType.OTHER:
+        return "Other";
+      default:
+        return "Unknown";
+    }
+  }
 }

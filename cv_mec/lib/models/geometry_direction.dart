@@ -45,7 +45,6 @@ class GeometryDirection {
     double deltaNorth = cos(headingRadians);
     double deltaEast = sin(headingRadians);
 
-
     for(int i =1; i< coordinates!.length; i++){
       LatLng position = coordinates![i];
       // Perform a fast relative distance check. 
