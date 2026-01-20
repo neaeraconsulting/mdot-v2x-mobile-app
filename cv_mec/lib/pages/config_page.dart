@@ -1,6 +1,7 @@
 import 'package:cv_mec/services/param_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:toastification/toastification.dart';
 
 class ConfigDialogTwo extends StatelessWidget {
   ParamController controller = Get.find<ParamController>();
@@ -129,7 +130,16 @@ class ConfigDialogTwo extends StatelessWidget {
         ElevatedButton(
           onPressed: () {
             if (!inputValid()) {
-              Get.snackbar('Error', 'One or more fields are empty');
+              toastification.show(
+                context: context,
+                type: ToastificationType.error,
+                style: ToastificationStyle.flatColored,
+                title: const Text("One or more fields are empty"), 
+                alignment: Alignment.topCenter,
+                autoCloseDuration: const Duration(seconds: 5),
+                showProgressBar: false,
+                dragToClose: true,
+              );
               return;
             } else {
               if (fakeLatitudeController.text.isEmpty) {

@@ -16,6 +16,7 @@ import 'package:get/get.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:typed_data/typed_data.dart';
 import 'package:cv_mec/models/protobuf_models/geo_routed_msg.pb.dart' as protobuf;
+import 'dart:convert';
 
 class EtxMqttAgent extends MqttAgent{
 
@@ -84,7 +85,7 @@ class EtxMqttAgent extends MqttAgent{
       connectionUrl = await apiService.getConnection(fullRegistration!.deviceID,
         currentPosition!.latitude, currentPosition!.longitude, vzString);
     }
-    
+
     int result = await mqttService.connect(connectionUrl!, registration);
     if (result != 0) {
       return 3;
@@ -114,6 +115,7 @@ class EtxMqttAgent extends MqttAgent{
           mqttService.subscribe(topic, onRawAsnMessage);
         }
       }
+      mqttService.subscribe("vzimp/1/ClientInfo", onClientInfo);
     }
 
     
@@ -247,6 +249,11 @@ class EtxMqttAgent extends MqttAgent{
     processingFunction(connectionUrl, message.topic, recMess.payload.message, recTime, null, "ETX");
   }
 
+  void onClientInfo(MqttReceivedMessage<MqttMessage?> message, DateTime recTime){
+    final recMess = message.payload as MqttPublishMessage;
+    logger.i("On Client Info Decoded ${ascii.decode(recMess.payload.message)}");
+  }
+
 
   List<String> getSubscriptions(MqttPermission aclRules){
 
@@ -267,12 +274,18 @@ class EtxMqttAgent extends MqttAgent{
 
   List<String> extractSubscriptions(List<String> components){
     if(components.isEmpty){
-      return ["+"];
+      return [""];
     }
     if(components[0] == '*'){
       List<String> results = extractSubscriptions(components.sublist(1));
+
       for(int i =0; i< results.length; i++){
-        results[i] = "+/${results[i]}";
+        if(results[i] == ""){
+          results[i] = "+";
+        }else{
+          results[i] = "+/${results[i]}";
+        }
+        
       }
       return results;
     }
@@ -284,7 +297,12 @@ class EtxMqttAgent extends MqttAgent{
           // Skip JSON format since there is not currently a standard encoding for JSON j2735 messages
           List<String> part_results = extractSubscriptions(components.sublist(1));
           for(int j =0; j< part_results.length; j++){
-            results.add("${parts[i]}/${part_results[j]}");
+            if(part_results[j] == ""){
+              results.add(parts[i]);
+            }else{
+              results.add("${parts[i]}/${part_results[j]}");
+            }
+
           } 
         }
       }
@@ -293,7 +311,12 @@ class EtxMqttAgent extends MqttAgent{
     }else{
       List<String> results = extractSubscriptions(components.sublist(1));
       for(int i =0; i< results.length; i++){
-        results[i] = "${components[0]}/${results[i]}";
+        if(results[i] == ""){
+          results[i] = components[0];
+        }else{
+          results[i] = "${components[0]}/${results[i]}";
+        }
+        
       }
       return results;
     }

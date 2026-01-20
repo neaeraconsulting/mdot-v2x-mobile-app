@@ -19,6 +19,14 @@ class UserId {
   Lpn? licencePlateNumber;
   ObeId? obeId;
   String? iccId;
+
+  UserId.fromDetails(
+    this.pan,
+    this.contractSerialNumber,
+    this.licencePlateNumber,
+    this.obeId,
+    this.iccId,
+  );
   
   UserId.fromC(C.UserId c_obj){
     if(c_obj.pan.address != 0){

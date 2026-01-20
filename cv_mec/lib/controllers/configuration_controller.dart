@@ -39,13 +39,15 @@ class ConfigurationController extends GetxController {
   //Is Ice Cream Song On
   RxBool isIceCreamSongOn = false.obs;
 
-  //HOV on
-  RxBool isHovOn = false.obs;
+  //Switch to Light Truck (4 Tire) Vehicle Type
+  RxBool isFourTire = false.obs;
 
   //Configuration State
   RxBool isVehicleConfig = true.obs; //true for vehicle, false for pedestrian
 
   final AudioPlayer _audioPlayer = AudioPlayer();
+
+  VehicleType originalVehicleType = VehicleType.PASSENGER_VEHICLE;
 
   initialize() async {
     vehicleConfigs.value = await fileService.getVehicleConfigsfromFile();
@@ -104,6 +106,23 @@ class ConfigurationController extends GetxController {
   Future<void> stopIceCreamSong() async {
     await _audioPlayer.stop();
     isIceCreamSongOn.value = false;
+  }
+
+  void tempEditSelectedVehicleType(VehicleType type) {
+    originalVehicleType = selectedVehicle.value.classification;
+    selectedVehicle.update((vehicle) {
+      if (vehicle != null) {
+        vehicle.classification = type;
+      }
+    });
+  }
+
+  void returnToSelectedVehicleType() {
+    selectedVehicle.update((vehicle) {
+      if (vehicle != null) {
+        vehicle.classification = originalVehicleType;
+      }
+    });
   }
 
   @override

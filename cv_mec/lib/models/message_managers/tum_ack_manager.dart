@@ -13,6 +13,10 @@ class TumAckManager {
     return asnService.decodeTumAck(TestData.testTumAck);
   }
 
+  bool isNewTumAck(TollUsageAckMessage tumAck) {
+    return !storedTams.containsKey(tumAck.tumAck.tumAck.first.tempId.temporaryID.first);
+  }
+
   void add(TollUsageAckMessage tumAck) {
     storedTams[tumAck.tumAck.tumAck.first.tempId.temporaryID.first] = tumAck;
   }

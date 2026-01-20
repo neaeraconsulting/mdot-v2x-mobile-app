@@ -26,15 +26,18 @@ import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/veh_type_charg
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/vehicle_types.dart';
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/weight_charges.dart';
 import 'package:asn1_plugin/j3217/2022/toll_advertisement_message/weight_charges_table.dart';
+import 'package:asn1_plugin/j3217/2022/toll_usage_message/contract_serial_number.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/encrypted_tum_data.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/loc_and_time_stamp.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/loc_and_time_stamps.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/toll_usage_message.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/toll_user_data.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/tum_data.dart';
+import 'package:asn1_plugin/j3217/2022/toll_usage_message/user_id.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/vehicle_axles_and_weight_info.dart';
 import 'package:asn1_plugin/j3217/2022/toll_usage_message/vehicle_id.dart';
 import 'package:cv_mec/controllers/configuration_controller.dart';
+import 'package:cv_mec/models/iso_4217.dart';
 import 'package:cv_mec/models/test_data.dart';
 import 'package:cv_mec/models/vehicle.dart';
 import 'package:cv_mec/services/geometry_service.dart';
@@ -56,7 +59,7 @@ class TumMessageBuilder{
   ConfigurationController configController = Get.find<ConfigurationController>();
   GeometryService geometryService = Get.find<GeometryService>();
   final double margin = 0.00001;
-  List<LocAndTimeStamp> historicalVehiclePath = [];
+  List<LocAndTimeStamp> vehiclePathInTollZone = [];
 
   C.TollUsageMessage buildCTum(TollUsageMessage tum) {
     final tumPtr = calloc<C.TollUsageMessage>();
@@ -70,10 +73,7 @@ class TumMessageBuilder{
       longitude: Longitude((position.longitude * 1E7).toInt()),
       timeStamp: DDateTime.fromDateTime(kronos),
     );
-    historicalVehiclePath.add(locAndTime); 
-    if (historicalVehiclePath.length > 50) {
-      historicalVehiclePath.removeAt(0);
-    }
+    vehiclePathInTollZone.add(locAndTime); 
   }
 
   TollUsageMessage getSampleTum() {
@@ -144,9 +144,16 @@ class TumMessageBuilder{
     return ptrPtr;
   }
 
-  TollUsageMessageResult generateTumFromTam(TollAdvertisementMessage tam, Position currentPosition, List<int> vehicleIdList, DateTime sendTime){
+  TollUsageMessageResult generateTumFromTam(TollAdvertisementMessage tam, List<int> vehicleIdList, DateTime sendTime){
     try {
       Vehicle selectedVehicle = configController.selectedVehicle.value;
+      if (vehiclePathInTollZone.isEmpty) {
+        return TollUsageMessageResult.error("No location data available to generate TUM");
+      }
+      LatLng mostRecentPosition = LatLng(
+        vehiclePathInTollZone.last.latitude.latitude / 1E7,
+        vehiclePathInTollZone.last.longitude.longitude / 1E7,
+      );
       if (tam.tollAdvInfo == null) {
         throw Exception("TollAdvertisementMessage does not contain toll advertisement info");
       } else {
@@ -167,9 +174,9 @@ class TumMessageBuilder{
         String licensePlateState = configController.selectedVehicle.value.licensePlateState.code;
         String licensePlateNumber = configController.selectedVehicle.value.licensePlateNumber;
         //skipping license plate num trailer for now
-        //skipping user id 
-        VehicleId vehicleId = VehicleId.fromDetails(vehicleidentity, licensePlateState, licensePlateNumber);
-        
+        ContractSerialNumber contractSerialNumber = ContractSerialNumber(012345678);
+        UserId userId = UserId.fromDetails(null, contractSerialNumber, null, null, null);
+        VehicleId vehicleId = VehicleId.fromDetails(vehicleidentity, licensePlateState, licensePlateNumber, null, userId);
         VehicleTypes vehicleType = VehicleMappingService.getVehicleTypes(selectedVehicle.classification);
         
         //VehicleAxlesAndWeightInfo
@@ -177,22 +184,15 @@ class TumMessageBuilder{
         int vehWeight = VehicleMappingService.getWeight(selectedVehicle.classification); 
         VehicleAxlesAndWeightInfo vehicleAxlesAndWeightInfo = VehicleAxlesAndWeightInfo(vehNumAxles, null, vehWeight, VehicleMappingService.getDefaultWeightUnit(selectedVehicle.classification));
         int? numOccupants;
-        if (configController.isHovOn.value) {
-          numOccupants = VehicleMappingService.getNumOccupants(selectedVehicle.classification); 
-          if (numOccupants > 5) {
-            numOccupants = 5; //Based on J3217 saying if numOccupants is 5 or greater, then set numOccupants to 5
-          }
-        }
-
 
         // locAndTimeStamps
-        int maxNumberOfLocTimeStamps = tam.tollAdvInfo!.tumInstructions!.maxNumOfLocTimeStamps.maxNumOfLocTimeStampsInteger;
-        int locTimeStampRate = tam.tollAdvInfo!.tumInstructions!.locTimeStampRate.locTimeStampRateInteger; //in Hz
-        List<LocAndTimeStamp> locAndTimeStampslist = getLocAndTimeStampsList(historicalVehiclePath, maxNumberOfLocTimeStamps, locTimeStampRate);
+        int maxNumberOfLocTimeStamps = tam.tollAdvInfo!.tumInstructions!.maxNumOfLocTimeStamps.maxNumOfLocTimeStampsInteger; //Can be 5 as most
+        int locTimeStampRate = tam.tollAdvInfo!.tumInstructions!.locTimeStampRate.locTimeStampRateInteger; //in Hz //Can be 10 at most
+        List<LocAndTimeStamp> locAndTimeStampslist = getLocAndTimeStampsList(maxNumberOfLocTimeStamps, locTimeStampRate);
         LocAndTimeStamps locAndTimeStamps = LocAndTimeStamps(locAndTimeStampslist);
         
         //charge
-        PaymentFeeResult paymentFeeResult = getPaymentFeeFromTam(tam, currentPosition, numOccupants);
+        PaymentFeeResult paymentFeeResult = getPaymentFeeFromTam(tam, mostRecentPosition, numOccupants);
         if (!paymentFeeResult.isSuccess) {
           return TollUsageMessageResult.error(paymentFeeResult.errorMessage!);
         } 
@@ -265,27 +265,28 @@ class TumMessageBuilder{
     return list.sublist(start);
   }
 
-  List<LocAndTimeStamp> getLocAndTimeStampsList(List<LocAndTimeStamp> historicalVehiclePath, int maxNumberOfLocTimeStamps, int locTimeStampRate) {
+  List<LocAndTimeStamp> getLocAndTimeStampsList(int maxNumberOfLocTimeStamps, int locTimeStampRate) {
     List<LocAndTimeStamp> result = [];
-    if (historicalVehiclePath.isEmpty) return [];
+    if (vehiclePathInTollZone.isEmpty) return [];
     const int currentRateHz = 10;
 
     if (locTimeStampRate == currentRateHz || locTimeStampRate > currentRateHz) {
-      result = historicalVehiclePath.reversed.toList();
+      result = vehiclePathInTollZone;
     } else if (locTimeStampRate < currentRateHz) {
       int step = (currentRateHz / locTimeStampRate).round();
-      for (int i = historicalVehiclePath.length - 1; i >= 0; i -= step) {
-        result.add(historicalVehiclePath[i]);
+      for (int i = 0; i < vehiclePathInTollZone.length; i += step) {
+        result.add(vehiclePathInTollZone[i]);
       }
     }
     if (result.length > maxNumberOfLocTimeStamps) {
+      vehiclePathInTollZone.clear();
       return result.sublist(0, maxNumberOfLocTimeStamps);
     } else {
       return result;
     }
   }
   
-  PaymentFeeResult getPaymentFeeFromTam(TollAdvertisementMessage tam, Position currentPosition, int? numOccupants) {
+  PaymentFeeResult getPaymentFeeFromTam(TollAdvertisementMessage tam, LatLng position, int? numOccupants) {
     TollTypeChargeChoice tollTypeCharge = tam.tollChargesTable.tollTypeCharge;
     if (tollTypeCharge.tollTypeCharge is TimeChargesTable) {
       return PaymentFeeResult.error("Time based charging not implemented"); //This fee is charge per minute. Time based chargine isn't implemented yet
@@ -293,7 +294,7 @@ class TumMessageBuilder{
       return PaymentFeeResult.error("Per closed network charging not implemented");
     } else if (tollTypeCharge.tollTypeCharge is PerLaneChargesTable) {
       PerLaneChargesTable perLaneChargesTable = tollTypeCharge.tollTypeCharge as PerLaneChargesTable;
-      int? laneId = getLaneId(tam, currentPosition);
+      int? laneId = getLaneId(tam, position);
       if (laneId == null) {
         return PaymentFeeResult.error("Could not determine lane ID for per-lane charges");
       }
@@ -366,7 +367,7 @@ class TumMessageBuilder{
     return PaymentFeeResult.error("Could not determine payment fee");
   }
 
-  int? getLaneId(TollAdvertisementMessage tam, Position currentPosition) {
+  int? getLaneId(TollAdvertisementMessage tam, LatLng position) {
     TollZoneLanesMap tollZoneLanesMap = tam.tollAdvInfo!.tollPointMap.tollZoneLanesMap;
     double laneWidth = tam.tollAdvInfo!.tollPointMap.laneWidth.laneWidth * 0.01;
     for (var lane in tollZoneLanesMap.tollZoneLanesMap) {
@@ -375,12 +376,20 @@ class TumMessageBuilder{
       if (lanePolygon == null) {
         continue;
       }
-      bool isInLane = geometryService.isPointInPolygonWithMargin(lanePolygon, currentPosition.longitude, currentPosition.latitude, margin);
+      bool isInLane = geometryService.isPointInPolygonWithMargin(lanePolygon, position.longitude, position.latitude, margin);
       if (isInLane) {
         return lane.laneID.laneID;
       }
     }
     return null; 
+  }
+
+  (double, String) getPaymentAmountFromTum(TollUsageMessage tum) {
+
+    (double, int) paymentAmount = tum.encryptedTumData.tumData!.tollUserData.charge!.getPaymentAmountWithUnit();
+
+    String unit = ISO4217.getAlphabeticCode(paymentAmount.$2) ?? "Unknown Units";
+    return (paymentAmount.$1, unit);
   }
 }
 
