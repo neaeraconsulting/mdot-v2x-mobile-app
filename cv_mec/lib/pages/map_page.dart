@@ -909,10 +909,7 @@ class MapState extends State<MapPage> {
     _logger.i("Generated TUM Hex $tumHex");
 
     if (tumHex != "") {
-      List<int> tumBytes = ASNService.hexToBytes(tumHex);
-      mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false);
-      var (amount, unit) = tumBuilder.getPaymentAmountFromTum(tum);
-      VehicleNotificationManager.sendPaymentMessage("Sending Toll Message", description: "Payment Fee: ${amount.toStringAsFixed(2)} $unit");
+      VehicleNotificationManager.sendPaymentMessage("Sending Toll Message");
       return true;
     }
     return false;

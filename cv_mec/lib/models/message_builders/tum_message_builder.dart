@@ -311,9 +311,7 @@ class TumMessageBuilder{
       } else {
         laneId = defaultLaneId;
       }
-      if (laneId == null) {
-        return PaymentFeeResult.error("Could not determine lane ID for per-lane charges");
-      }
+      laneId ??= defaultLaneId;
       LaneChargesTable? laneChargesTable = perLaneChargesTable.getLaneChargesTableFromLaneId(laneId); 
       if (laneChargesTable == null) {
         return PaymentFeeResult.error("Could not find charges for lane ID: $laneId");
