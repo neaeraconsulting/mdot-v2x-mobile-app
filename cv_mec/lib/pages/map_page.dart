@@ -742,8 +742,13 @@ class MapState extends State<MapPage> {
       }
     }
     if (zoneType == ZoneType.APPROACH) {
-      var (amount, unit) = tumBuilder.getPaymentFeeFromTamForApproach(currentTam!.tam!);
-      VehicleNotificationManager.sendPaymentMessage("Toll Zone Ahead", description: "Expected Fee: ${amount.toStringAsFixed(2)} $unit");
+      final feeResult = tumBuilder.getPaymentFeeFromTamForApproach(currentTam.tam!);
+      if (feeResult != null) {
+        var (amount, unit) = feeResult;
+        VehicleNotificationManager.sendPaymentMessage("Toll Zone Ahead", description: "Expected Fee: ${amount.toStringAsFixed(2)} $unit");
+      } else {
+        VehicleNotificationManager.sendPaymentMessage("Toll Zone Ahead");
+      }
     }
   }
 

@@ -286,14 +286,14 @@ class TumMessageBuilder{
     }
   }
 
-  (double, String) getPaymentFeeFromTamForApproach(TollAdvertisementMessage tam) {
+  (double, String)? getPaymentFeeFromTamForApproach(TollAdvertisementMessage tam) {
     PaymentFeeResult paymentFeeResult = getPaymentFeeFromTam(tam, null, null, defaultLaneId: 1);
     if (paymentFeeResult.isSuccess) {
       (double, int) paymentAmount = paymentFeeResult.paymentFee!.getPaymentAmountWithUnit();
       String unit = ISO4217.getAlphabeticCode(paymentAmount.$2) ?? "Unknown Units";
       return (paymentAmount.$1, unit);
     } else {
-      return (0.0, paymentFeeResult.errorMessage ?? "Unknown error");
+      return null;
     }
   }
   
