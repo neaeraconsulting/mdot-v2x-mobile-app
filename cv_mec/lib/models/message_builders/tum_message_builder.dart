@@ -286,7 +286,7 @@ class TumMessageBuilder{
     }
   }
 
-  (double, String) getLanePaymentFeeFromTamForApproach(TollAdvertisementMessage tam) {
+  (double, String) getPaymentFeeFromTamForApproach(TollAdvertisementMessage tam) {
     PaymentFeeResult paymentFeeResult = getPaymentFeeFromTam(tam, null, null, defaultLaneId: 1);
     if (paymentFeeResult.isSuccess) {
       (double, int) paymentAmount = paymentFeeResult.paymentFee!.getPaymentAmountWithUnit();

@@ -720,7 +720,7 @@ class MapState extends State<MapPage> {
     TollUsageAckMessage tumAck = asnService.decodeTumAck(trimmedHex);
     
     if(tumAckManager.isNewTumAck(tumAck)){
-      VehicleNotificationManager.sendPaymentMessage("Toll Transaction Complete");
+      VehicleNotificationManager.sendPaymentMessage("Toll Message Acknowledged");
       tumAckManager.add(tumAck);
     }else{
       addToAppLog("Duplicate TUMAck Received. Ignoring.");
@@ -742,9 +742,7 @@ class MapState extends State<MapPage> {
       }
     }
     if (zoneType == ZoneType.APPROACH) {
-      //LatLng currentPositionTwo = LatLng(currentPosition!.latitude, currentPosition!.longitude);
-      //tumBuilder.getLanePaymentFeeFromTam(currentTam!);
-      var (amount, unit) = tumBuilder.getLanePaymentFeeFromTamForApproach(currentTam!.tam!);
+      var (amount, unit) = tumBuilder.getPaymentFeeFromTamForApproach(currentTam!.tam!);
       VehicleNotificationManager.sendPaymentMessage("Toll Zone Ahead", description: "Expected Fee: ${amount.toStringAsFixed(2)} $unit");
     }
   }
@@ -909,7 +907,7 @@ class MapState extends State<MapPage> {
       List<int> tumBytes = ASNService.hexToBytes(tumHex);
       mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false);
       var (amount, unit) = tumBuilder.getPaymentAmountFromTum(tum);
-      VehicleNotificationManager.sendPaymentMessage("Entering Toll Zone", description: "Expected Fee: ${amount.toStringAsFixed(2)} $unit");
+      VehicleNotificationManager.sendPaymentMessage("Sending Toll Message", description: "Payment Fee: ${amount.toStringAsFixed(2)} $unit");
       return true;
     }
     return false;
