@@ -285,8 +285,19 @@ class TumMessageBuilder{
       return result;
     }
   }
+
+  (double, String)? getPaymentFeeFromTamForApproach(TollAdvertisementMessage tam) {
+    PaymentFeeResult paymentFeeResult = getPaymentFeeFromTam(tam, null, null, defaultLaneId: 1);
+    if (paymentFeeResult.isSuccess) {
+      (double, int) paymentAmount = paymentFeeResult.paymentFee!.getPaymentAmountWithUnit();
+      String unit = ISO4217.getAlphabeticCode(paymentAmount.$2) ?? "Unknown Units";
+      return (paymentAmount.$1, unit);
+    } else {
+      return null;
+    }
+  }
   
-  PaymentFeeResult getPaymentFeeFromTam(TollAdvertisementMessage tam, LatLng position, int? numOccupants) {
+  PaymentFeeResult getPaymentFeeFromTam(TollAdvertisementMessage tam, LatLng? position, int? numOccupants, {int defaultLaneId = 1}) {
     TollTypeChargeChoice tollTypeCharge = tam.tollChargesTable.tollTypeCharge;
     if (tollTypeCharge.tollTypeCharge is TimeChargesTable) {
       return PaymentFeeResult.error("Time based charging not implemented"); //This fee is charge per minute. Time based chargine isn't implemented yet
@@ -294,10 +305,13 @@ class TumMessageBuilder{
       return PaymentFeeResult.error("Per closed network charging not implemented");
     } else if (tollTypeCharge.tollTypeCharge is PerLaneChargesTable) {
       PerLaneChargesTable perLaneChargesTable = tollTypeCharge.tollTypeCharge as PerLaneChargesTable;
-      int? laneId = getLaneId(tam, position);
-      if (laneId == null) {
-        return PaymentFeeResult.error("Could not determine lane ID for per-lane charges");
+      int? laneId; 
+      if (position != null) {
+        laneId = getLaneId(tam, position);
+      } else {
+        laneId = defaultLaneId;
       }
+      laneId ??= defaultLaneId;
       LaneChargesTable? laneChargesTable = perLaneChargesTable.getLaneChargesTableFromLaneId(laneId); 
       if (laneChargesTable == null) {
         return PaymentFeeResult.error("Could not find charges for lane ID: $laneId");
