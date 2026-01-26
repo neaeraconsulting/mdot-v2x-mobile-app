@@ -113,6 +113,10 @@ class TollUsageMessage{
       }
     }
 
+    void incrementTumSequenceNumber() {
+      tumSequenceNum = MsgCount(tumSequenceNum.msgCount + 1);
+    }
+
 
 
     TollUsageMessage ({

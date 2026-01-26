@@ -917,12 +917,18 @@ class MapState extends State<MapPage> {
       mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false); 
       VehicleNotificationManager.sendPaymentMessage("Sending Toll Message");
       if (!settingsController.disableTUMRetry.value) {
-        sendingTumTimer = Timer(Duration(milliseconds: timeout), () {
+        sendingTumTimer = Timer.periodic(Duration(milliseconds: timeout), (timer) {
           if (numOfRetries > 0) {
             numOfRetries--;
+            //duplicate tum with new tumSequenceNumber
+            tum.incrementTumSequenceNumber();
+            String tumHex = tumBuilder.convertTumToHex(tum);
+            List<int> tumBytes = ASNService.hexToBytes(tumHex);
             mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false); 
             VehicleNotificationManager.sendPaymentMessage("Resending Toll Message");
-          } 
+          } else {
+            sendingTumTimer?.cancel();
+          }
         });
       } 
       return true;

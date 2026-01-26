@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:ffi';
 import 'dart:math';
 import 'dart:typed_data';
@@ -61,7 +60,6 @@ class TumMessageBuilder{
   GeometryService geometryService = Get.find<GeometryService>();
   final double margin = 0.00001;
   List<LocAndTimeStamp> vehiclePathInTollZone = [];
-  Timer? sendingTumTimer;
 
   C.TollUsageMessage buildCTum(TollUsageMessage tum) {
     final tumPtr = calloc<C.TollUsageMessage>();
