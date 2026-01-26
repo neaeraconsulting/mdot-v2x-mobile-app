@@ -921,7 +921,7 @@ class MapState extends State<MapPage> {
           if (numOfRetries > 0) {
             numOfRetries--;
             mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false); 
-            VehicleNotificationManager.sendPaymentMessage("Sending Toll Message");
+            VehicleNotificationManager.sendPaymentMessage("Resending Toll Message");
           } 
         });
       } 

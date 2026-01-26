@@ -180,6 +180,7 @@ class TumMessageBuilder{
         UserId userId = UserId.fromDetails(null, contractSerialNumber, null, null, null);
         VehicleId vehicleId = VehicleId.fromDetails(vehicleidentity, licensePlateState, licensePlateNumber, null, userId);
         VehicleTypes vehicleType = VehicleMappingService.getVehicleTypes(selectedVehicle.classification);
+        
         //VehicleAxlesAndWeightInfo
         int vehNumAxles = VehicleMappingService.getAxles(selectedVehicle.classification); 
         int vehWeight = VehicleMappingService.getWeight(selectedVehicle.classification); 
@@ -191,6 +192,7 @@ class TumMessageBuilder{
         int locTimeStampRate = tam.tollAdvInfo!.tumInstructions!.locTimeStampRate.locTimeStampRateInteger; //in Hz //Can be 10 at most
         List<LocAndTimeStamp> locAndTimeStampslist = getLocAndTimeStampsList(maxNumberOfLocTimeStamps, locTimeStampRate);
         LocAndTimeStamps locAndTimeStamps = LocAndTimeStamps(locAndTimeStampslist);
+        
         //charge
         PaymentFeeResult paymentFeeResult = getPaymentFeeFromTam(tam, mostRecentPosition, numOccupants);
         if (!paymentFeeResult.isSuccess) {
@@ -218,10 +220,12 @@ class TumMessageBuilder{
         Pointer<C.TumData> tumDataPtr = calloc<C.TumData>();
         tumData.toC(tumDataPtr);  // This modifies tumDataPtr.ref in-place
         C.TumData cTumData = tumDataPtr.ref; 
+
         String encodedTumData = encodeTumData(cTumData);
         tumData.free(tumDataPtr); 
 
         EncryptedTumData encryptedTumData = EncryptedTumData(encodedTumData, tumData: tumData);
+
         TollUsageMessage tum = TollUsageMessage(
           tollPointInfo: tollPointInfo,
           tempID: tempId,
@@ -407,7 +411,6 @@ class TumMessageBuilder{
     String unit = ISO4217.getAlphabeticCode(paymentAmount.$2) ?? "Unknown Units";
     return (paymentAmount.$1, unit);
   }
-
 }
 
 class PaymentFeeResult {

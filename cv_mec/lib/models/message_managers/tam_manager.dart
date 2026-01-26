@@ -38,7 +38,7 @@ class TamManager {
   }
 
   void addOrUpdate(TollAdvertisementMessage tam) {
-    if (tam.tollAdvInfo == null || tam.tollAdvInfo!.tollChargerInfo.tollPointId.tollPointID == 185) return;
+    if (tam.tollAdvInfo == null) return;
     storedTams[tam.tollAdvInfo!.tollChargerInfo.tollPointId.tollPointID] = MappableTam.fromTam(tam);
     tamTimestamps[tam.tollAdvInfo!.tollChargerInfo.tollPointId.tollPointID] = DateTime.now();
   }
