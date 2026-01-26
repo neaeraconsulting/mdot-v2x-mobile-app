@@ -920,7 +920,6 @@ class MapState extends State<MapPage> {
         sendingTumTimer = Timer.periodic(Duration(milliseconds: timeout), (timer) {
           if (numOfRetries > 0) {
             numOfRetries--;
-            //duplicate tum with new tumSequenceNumber
             tum.incrementTumSequenceNumber();
             String tumHex = tumBuilder.convertTumToHex(tum);
             List<int> tumBytes = ASNService.hexToBytes(tumHex);
