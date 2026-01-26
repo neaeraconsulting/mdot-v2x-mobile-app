@@ -52,6 +52,8 @@ class SettingsController extends GetxController {
 
   RxList<String> availablePaths = <String>[].obs;
 
+  Rx<bool> disableTUMRetry = false.obs;
+
   //GPS Mode
   Rx<GPSType> gpsType = GPSType.mobile.obs; // Default to mobile
   List<GPSType> gpsTypes = GPSType.values;

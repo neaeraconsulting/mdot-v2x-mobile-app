@@ -46,6 +46,8 @@ class SecureStorage {
   static const _keyTollingEnabled = "tollingEnabled";
   static const _keyShowTims = "showTims";
 
+  static const _keyDisableTUMRetry = "disableTUMRetry";
+
   static final _startUsername = dotenv.env['USERNAME']!;
   static final _startPassword = dotenv.env['PASSWORD']!;
   static final _startBaseURI = dotenv.env['API_ENDPOINT']!;
@@ -72,6 +74,8 @@ class SecureStorage {
 
   static final _startTollingEnabled = dotenv.env['TOLLING_ENABLED'] != null ? (dotenv.env['TOLLING_ENABLED']!.toLowerCase() == 'true') : true;
   static final _startShowTims = dotenv.env['SHOW_TIMS'] != null ? (dotenv.env['SHOW_TIMS']!.toLowerCase() == 'true') : true;
+
+  static final _startDisableTUMRetry = dotenv.env['DISABLE_TUM_RETRY'] != null ? (dotenv.env['DISABLE_TUM_RETRY']!.toLowerCase() == 'true') : false;
 
   static final _startS3AccessKey = dotenv.env['S3_ACCESS_KEY'] ?? "";
   static final _startS3SecretKey = dotenv.env['S3_SECRET_KEY'] ?? "";
@@ -115,6 +119,7 @@ class SecureStorage {
       int.tryParse(await _storage.read(key: _keyBroadcastRate) ?? _startBroadcastRate.toString()) ?? 0;
   Future<bool> getTollingEnabled() async => (await _storage.read(key: _keyTollingEnabled) ?? _startTollingEnabled.toString()) == "true";
   Future<bool> getShowTims() async => (await _storage.read(key: _keyShowTims) ?? _startShowTims.toString()) == "true";
+  Future<bool> getDisableTUMRetry() async => (await _storage.read(key: _keyDisableTUMRetry) ?? _startDisableTUMRetry.toString()) == "true";
 
   Future<void> setUsername(String username) async => await _storage.write(key: _keyUsername, value: username);
   Future<void> setPassword(String password) async => await _storage.write(key: _keyPassword, value: password);
@@ -240,6 +245,14 @@ class SecureStorage {
       await _storage.write(key: _keyShowTims, value: "true");
     } else {
       await _storage.write(key: _keyShowTims, value: "false");
+    }
+  }
+
+  Future setDisableTUMRetry(bool disableTUMRetry) async {
+    if (disableTUMRetry) {
+      await _storage.write(key: _keyDisableTUMRetry, value: "true");
+    } else {
+      await _storage.write(key: _keyDisableTUMRetry, value: "false");
     }
   }
 

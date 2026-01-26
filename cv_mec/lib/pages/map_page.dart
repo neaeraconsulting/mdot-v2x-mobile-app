@@ -161,6 +161,7 @@ class MapState extends State<MapPage> {
   late TumMessageBuilder tumBuilder;
 
   Timer? uploadTimer;
+  Timer? sendingTumTimer;
 
   Color connectedButtonColor = Colors.red;
   StreamSubscription<Position>? positionStream;
@@ -720,6 +721,7 @@ class MapState extends State<MapPage> {
     TollUsageAckMessage tumAck = asnService.decodeTumAck(trimmedHex);
     
     if(tumAckManager.isNewTumAck(tumAck)){
+      sendingTumTimer?.cancel();
       VehicleNotificationManager.sendPaymentMessage("Toll Message Acknowledged");
       tumAckManager.add(tumAck);
     }else{
@@ -909,7 +911,20 @@ class MapState extends State<MapPage> {
     _logger.i("Generated TUM Hex $tumHex");
 
     if (tumHex != "") {
+      List<int> tumBytes = ASNService.hexToBytes(tumHex);
+      int numOfRetries = tam.tollAdvInfo!.ackPolicy.numOfRetries.numOfRetriesInteger;
+      int timeout = tam.tollAdvInfo!.ackPolicy.timeout.timeoutInteger;
+      mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false); 
       VehicleNotificationManager.sendPaymentMessage("Sending Toll Message");
+      if (!settingsController.disableTUMRetry.value) {
+        sendingTumTimer = Timer(Duration(milliseconds: timeout), () {
+          if (numOfRetries > 0) {
+            numOfRetries--;
+            mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false); 
+            VehicleNotificationManager.sendPaymentMessage("Sending Toll Message");
+          } 
+        });
+      } 
       return true;
     }
     return false;
