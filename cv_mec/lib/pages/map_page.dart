@@ -60,6 +60,7 @@ import 'package:cv_mec/models/message_managers/map_manager.dart';
 import 'package:cv_mec/models/message_managers/received_message_manager.dart';
 import 'package:cv_mec/models/message_managers/tam_manager.dart';
 import 'package:cv_mec/models/message_managers/tum_ack_manager.dart';
+import 'package:cv_mec/models/message_managers/tum_manager.dart';
 import 'package:cv_mec/models/mqtt/etx_mqtt_agent.dart';
 import 'package:cv_mec/models/mqtt/iss_mqtt_agent.dart';
 import 'package:cv_mec/models/mqtt/mqtt_agent_manager.dart';
@@ -146,6 +147,7 @@ class MapState extends State<MapPage> {
   SpatManager spatManager = SpatManager();
   ReceivedMessageManager messageManager = ReceivedMessageManager();
   TamManager tamManager = TamManager(); 
+  TumManager tumManager = TumManager();
   TumAckManager tumAckManager = TumAckManager();
 
   SecureStorage secureStorage = SecureStorage();
@@ -161,7 +163,6 @@ class MapState extends State<MapPage> {
   late TumMessageBuilder tumBuilder;
 
   Timer? uploadTimer;
-  Timer? sendingTumTimer;
 
   Color connectedButtonColor = Colors.red;
   StreamSubscription<Position>? positionStream;
@@ -721,7 +722,7 @@ class MapState extends State<MapPage> {
     TollUsageAckMessage tumAck = asnService.decodeTumAck(trimmedHex);
     
     if(tumAckManager.isNewTumAck(tumAck)){
-      sendingTumTimer?.cancel();
+      tumManager.cancelTimer(tumAck.tumAck.tumAck.first.tempId);
       VehicleNotificationManager.sendPaymentMessage("Toll Message Acknowledged");
       tumAckManager.add(tumAck);
     }else{
@@ -917,7 +918,7 @@ class MapState extends State<MapPage> {
       mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false); 
       VehicleNotificationManager.sendPaymentMessage("Sending Toll Message");
       if (!settingsController.disableTUMRetry.value) {
-        sendingTumTimer = Timer.periodic(Duration(milliseconds: timeout), (timer) {
+        Timer sendingTumTimer = Timer.periodic(Duration(milliseconds: timeout), (timer) {
           if (numOfRetries > 0) {
             numOfRetries--;
             tum.incrementTumSequenceNumber();
@@ -926,9 +927,10 @@ class MapState extends State<MapPage> {
             mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false); 
             VehicleNotificationManager.sendPaymentMessage("Resending Toll Message");
           } else {
-            sendingTumTimer?.cancel();
+            tumManager.cancelTimer(tum.tempID);
           }
         });
+        tumManager.addTimer(tum.tempID, sendingTumTimer);
       } 
       return true;
     }

@@ -21,6 +21,10 @@ class TemporaryID{
     }
   }
 
+  int toInt() {
+    return int.parse(temporaryID.join());
+  }
+
   void toC(Pointer<OCTET_STRING> pointer) {
     final c_tempID = pointer.ref;
 
