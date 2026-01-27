@@ -24,7 +24,7 @@ class DDateTime {
     day = DDay(dateTime.day);
     hour = DHour(dateTime.hour);
     minute = DMinute(dateTime.minute);
-    second = DSecond(dateTime.second);
+    second = DSecond(dateTime.second * 1000 + dateTime.millisecond);
     // Offset in minutes from UTC
     offset = DOffset(dateTime.timeZoneOffset.inMinutes);
   }
