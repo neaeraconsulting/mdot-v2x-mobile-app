@@ -60,6 +60,7 @@ import 'package:cv_mec/models/message_managers/map_manager.dart';
 import 'package:cv_mec/models/message_managers/received_message_manager.dart';
 import 'package:cv_mec/models/message_managers/tam_manager.dart';
 import 'package:cv_mec/models/message_managers/tum_ack_manager.dart';
+import 'package:cv_mec/models/message_managers/tum_manager.dart';
 import 'package:cv_mec/models/mqtt/etx_mqtt_agent.dart';
 import 'package:cv_mec/models/mqtt/iss_mqtt_agent.dart';
 import 'package:cv_mec/models/mqtt/mqtt_agent_manager.dart';
@@ -146,6 +147,7 @@ class MapState extends State<MapPage> {
   SpatManager spatManager = SpatManager();
   ReceivedMessageManager messageManager = ReceivedMessageManager();
   TamManager tamManager = TamManager(); 
+  TumManager tumManager = TumManager();
   TumAckManager tumAckManager = TumAckManager();
 
   SecureStorage secureStorage = SecureStorage();
@@ -720,6 +722,7 @@ class MapState extends State<MapPage> {
     TollUsageAckMessage tumAck = asnService.decodeTumAck(trimmedHex);
     
     if(tumAckManager.isNewTumAck(tumAck)){
+      tumManager.cancelTimer(tumAck.tumAck.tumAck.first.tempId);
       VehicleNotificationManager.sendPaymentMessage("Toll Message Acknowledged");
       tumAckManager.add(tumAck);
     }else{
@@ -909,7 +912,26 @@ class MapState extends State<MapPage> {
     _logger.i("Generated TUM Hex $tumHex");
 
     if (tumHex != "") {
+      List<int> tumBytes = ASNService.hexToBytes(tumHex);
+      int numOfRetries = tam.tollAdvInfo!.ackPolicy.numOfRetries.numOfRetriesInteger;
+      int timeout = tam.tollAdvInfo!.ackPolicy.timeout.timeoutInteger;
+      mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false); 
       VehicleNotificationManager.sendPaymentMessage("Sending Toll Message");
+      if (!settingsController.disableTUMRetry.value) {
+        Timer sendingTumTimer = Timer.periodic(Duration(milliseconds: timeout), (timer) {
+          if (numOfRetries > 0) {
+            numOfRetries--;
+            tum.incrementTumSequenceNumber();
+            String tumHex = tumBuilder.convertTumToHex(tum);
+            List<int> tumBytes = ASNService.hexToBytes(tumHex);
+            mqttAgents.sendMessage(tumBytes, messageType, sendTime, pubDataQueue, false); 
+            VehicleNotificationManager.sendPaymentMessage("Resending Toll Message");
+          } else {
+            tumManager.cancelTimer(tum.tempID);
+          }
+        });
+        tumManager.addTimer(tum.tempID, sendingTumTimer);
+      } 
       return true;
     }
     return false;

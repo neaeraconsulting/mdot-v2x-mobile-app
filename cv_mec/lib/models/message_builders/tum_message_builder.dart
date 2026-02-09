@@ -218,7 +218,7 @@ class TumMessageBuilder{
         Pointer<C.TumData> tumDataPtr = calloc<C.TumData>();
         tumData.toC(tumDataPtr);  // This modifies tumDataPtr.ref in-place
         C.TumData cTumData = tumDataPtr.ref; 
-        
+
         String encodedTumData = encodeTumData(cTumData);
         tumData.free(tumDataPtr); 
 
@@ -280,7 +280,11 @@ class TumMessageBuilder{
     }
     if (result.length > maxNumberOfLocTimeStamps) {
       vehiclePathInTollZone.clear();
-      return result.sublist(0, maxNumberOfLocTimeStamps);
+      if (maxNumberOfLocTimeStamps > result.length) {
+        return result;
+      } else {
+        return result.sublist(0, maxNumberOfLocTimeStamps);
+      }
     } else {
       return result;
     }

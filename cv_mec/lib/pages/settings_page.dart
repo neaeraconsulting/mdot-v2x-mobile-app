@@ -420,7 +420,17 @@ class SettingsPage extends StatelessWidget {
                 controller.enableIssScmsSigning.value = value;
                 await controller.secureStorage.setIssScmsSigningEnabled(value);
               }
-            }),              
+            }),  
+        verticalSpaceSmall,
+        SwitchListTile(
+            title: const Text("Disable TUM Message Retry"),
+            value: controller.disableTUMRetry.value,
+            onChanged: (value) async {
+              if (value != controller.disableTUMRetry.value) {
+                controller.disableTUMRetry.value = value;
+                await controller.secureStorage.setDisableTUMRetry(value);
+              }
+            }),            
         verticalSpaceMedium,
       ],
     );
