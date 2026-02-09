@@ -36,12 +36,12 @@ class MissingPermissions extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           verticalSpaceSmall,
-          const CVMECText.styleTwo("Location Services Required"),
+          const CVMECText.styleTwo("Location and Tracking Services Required"),
           verticalSpaceSmall,
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: CVMECText.body(
-                "Location permissions are required to use this application. Without them, timing and other components will not work correctly. Please change the app settings to allow location permissions and restart the app."),
+              "This application uses your location to provide timely and accurate information that can enhance your safety. In order to use this application you must enable location permissions and tracking in the settings menu."),
           ),
           Expanded(child: Container()),
           ElevatedButton(
