@@ -19,7 +19,7 @@ dependencies:
   json_annotation: ^4.9.0
   flutter_dotenv: ^5.1.0
   http: ^1.2.2
-  shared_preferences: ^2.2.3
+  shared_preferences: ^2.5.3
   native_device_orientation: ^2.0.3
   mqtt_client: ^10.2.1
   flutter_kronos_plus:
@@ -58,7 +58,7 @@ dependencies:
   aws_s3_upload_lite:
     path: ./packages/aws_s3_upload_lite
   audioplayers: ^5.2.1
-  flutter_libserialport: ^0.6.0
+  # flutter_libserialport: ^0.6.0
   bluez: ^0.8.3
   iss_scms:
     path: ./packages/iss_scms
