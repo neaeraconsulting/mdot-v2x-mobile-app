@@ -2322,16 +2322,16 @@ class MapState extends State<MapPage> {
         int maxWaitMs = 2000; //2 seconds max
         int waited = 0;
         const int pollInterval = 100;
-        // while (!(obdController.port.isOpen) && waited < maxWaitMs) {
-        //   await Future.delayed(const Duration(milliseconds: pollInterval));
-        //   waited += pollInterval;
-        // }
-        // if (obdController.port.isOpen) {
-        //   await obdController.startGettingDataLinux();
-        //   successfulConnection = true;
-        // } else {
-        //   addToAppLog("Timeout waiting for serial port to open");
-        // }
+        while (!(obdController.port.isOpen) && waited < maxWaitMs) {
+          await Future.delayed(const Duration(milliseconds: pollInterval));
+          waited += pollInterval;
+        }
+        if (obdController.port.isOpen) {
+          await obdController.startGettingDataLinux();
+          successfulConnection = true;
+        } else {
+          addToAppLog("Timeout waiting for serial port to open");
+        }
       } else {
         // Handle timeout or error
         addToAppLog("Timeout waiting for /dev/rfcomm0 to appear");
@@ -2351,24 +2351,24 @@ class MapState extends State<MapPage> {
           await Future.delayed(Duration(milliseconds: pollInterval));
           waited += pollInterval;
         }
-        // if (File('/dev/rfcomm0').existsSync()) {
-        //   await obdController.connectToPort();
-        //   int maxWaitMs = 2000; //2 seconds max
-        //   int waited = 0;
-        //   const int pollInterval = 100;
-        //   while (!(obdController.port.isOpen) && waited < maxWaitMs) {
-        //     await Future.delayed(const Duration(milliseconds: pollInterval));
-        //     waited += pollInterval;
-        //   }
-        //   if (obdController.port.isOpen) {
-        //     await obdController.startGettingDataLinux();
-        //     successfulConnection = true;
-        //   } else {
-        //     addToAppLog("Timeout waiting for serial port to open");
-        //   }
-        // } else {
-        //   addToAppLog("Timeout waiting for /dev/rfcomm0 to appear");
-        // }
+        if (File('/dev/rfcomm0').existsSync()) {
+          await obdController.connectToPort();
+          int maxWaitMs = 2000; //2 seconds max
+          int waited = 0;
+          const int pollInterval = 100;
+          while (!(obdController.port.isOpen) && waited < maxWaitMs) {
+            await Future.delayed(const Duration(milliseconds: pollInterval));
+            waited += pollInterval;
+          }
+          if (obdController.port.isOpen) {
+            await obdController.startGettingDataLinux();
+            successfulConnection = true;
+          } else {
+            addToAppLog("Timeout waiting for serial port to open");
+          }
+        } else {
+          addToAppLog("Timeout waiting for /dev/rfcomm0 to appear");
+        }
       }
       obdConnecting.value = false;
     }

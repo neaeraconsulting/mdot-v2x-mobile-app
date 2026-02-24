@@ -58,7 +58,10 @@ dependencies:
   aws_s3_upload_lite:
     path: ./packages/aws_s3_upload_lite
   audioplayers: ^5.2.1
-  # flutter_libserialport: ^0.6.0
+  flutter_libserialport:
+    git: 
+      url: https://github.com/neaeraconsulting/flutter_libserialport.git
+      ref: main
   bluez: ^0.8.3
   iss_scms:
     path: ./packages/iss_scms

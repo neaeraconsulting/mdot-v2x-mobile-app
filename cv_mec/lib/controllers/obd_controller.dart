@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:bluez/bluez.dart';
 import 'package:flutter/foundation.dart';
-//import 'package:flutter_libserialport/flutter_libserialport.dart';
+import 'package:flutter_libserialport/flutter_libserialport.dart';
 import 'package:get/get.dart';
 import 'package:bluetooth_classic/bluetooth_classic.dart';
 import 'package:bluetooth_classic/models/device.dart';
@@ -56,7 +56,7 @@ class OBDController extends GetxController {
 
   final bluez = BlueZClient();
 
-  //late SerialPort port;
+  late SerialPort port;
 
   bool isRunningAsRoot = false;
 
@@ -140,10 +140,10 @@ class OBDController extends GetxController {
       if (Platform.isLinux) {
         // Release the rfcomm device
         try {
-          // if (port.isOpen) {
-          //   port.close();
-          // }
-          // await Process.run('rfcomm', ['release', '/dev/rfcomm0']);
+          if (port.isOpen) {
+            port.close();
+          }
+          await Process.run('rfcomm', ['release', '/dev/rfcomm0']);
         } catch (e) {}
         _obdTimer?.cancel();
         isConnected.value = false;
@@ -301,27 +301,27 @@ class OBDController extends GetxController {
   }
 
   Future<bool> connectToPort() async {
-    // port = SerialPort('/dev/rfcomm0');
-    // if (!port.openReadWrite()) {
-    //   return false;
-    // }
-    // final reader = SerialPortReader(port);
-    // reader.stream.listen((data) {
-    //   _inputBuffer += String.fromCharCodes(data);
-    //   // Split on both \r and \n (handles \r, \n, or \r\n)
-    //   List<String> lines = _inputBuffer.split(RegExp(r'[\r\n]+'));
-    //   // The last element may be incomplete, so keep it in the buffer
-    //   _inputBuffer = lines.removeLast();
+    port = SerialPort('/dev/rfcomm0');
+    if (!port.openReadWrite()) {
+      return false;
+    }
+    final reader = SerialPortReader(port);
+    reader.stream.listen((data) {
+      _inputBuffer += String.fromCharCodes(data);
+      // Split on both \r and \n (handles \r, \n, or \r\n)
+      List<String> lines = _inputBuffer.split(RegExp(r'[\r\n]+'));
+      // The last element may be incomplete, so keep it in the buffer
+      _inputBuffer = lines.removeLast();
 
-    //   for (var line in lines) {
-    //     line = line.trim();
-    //     if (line.isEmpty) continue;
-    //     _handleOBDResponse(line);
-    //     if (collectingVin.value) {
-    //       _vinBuffer.add(line);
-    //     }
-    //   }
-    // });
+      for (var line in lines) {
+        line = line.trim();
+        if (line.isEmpty) continue;
+        _handleOBDResponse(line);
+        if (collectingVin.value) {
+          _vinBuffer.add(line);
+        }
+      }
+    });
     bluetoothInitialized.value = true;
     isConnected.value = true;
     return true;
@@ -352,7 +352,7 @@ class OBDController extends GetxController {
     if (!isConnected.value) {
       return;
     }
-    //port.write(Uint8List.fromList(cmd.codeUnits));
+    port.write(Uint8List.fromList(cmd.codeUnits));
   }
 
   Future<String?> getVinOnceLinux() async {
