@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:cv_mec/models/RangeInputFormatter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -385,9 +386,8 @@ class SettingsPage extends StatelessWidget {
                 controller.notificationsEnabled.value = value;
                 await controller.secureStorage.setNotificationsEnabled(value);
                 if (controller.notificationsEnabled.value) {
-                  //TODO: Fix icons
                   VehicleNotificationManager.notifyVehicleFromMessageAndImage(
-                      "Notifications Enabled!", const AssetImage('assets/images/cv_mec_notification_icon.png'));
+                      "Notifications Enabled!", AssetImage(dotenv.env["NOTIFICATION_ICON_PATH"] ?? 'assets/images/Sample/notification_icon.png')); 
                 }
               }
             })),

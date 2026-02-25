@@ -4,6 +4,7 @@ import 'package:cv_mec/pages/missing_permissions.dart';
 import 'package:cv_mec/services/location_service.dart';
 import 'package:cv_mec/services/param_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 
 class Load extends StatelessWidget {
@@ -28,8 +29,8 @@ class Load extends StatelessWidget {
           return Container(
             decoration: BoxDecoration(
               color: Theme.of(context).scaffoldBackgroundColor,
-              image: const DecorationImage(
-                image: AssetImage('assets/images/load_page.png'),
+              image: DecorationImage(
+                image: AssetImage(dotenv.env["LOAD_PAGE_PATH"] ?? 'assets/images/Sample/load_page.png'), 
                 fit: BoxFit.cover,
               ),
             ),

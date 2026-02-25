@@ -79,17 +79,12 @@ flutter:
   uses-material-design: true
   assets:
     - .env
-    - assets/images/cvmec_logo.png
-    - assets/images/load_page.png
-    - assets/images/cv_mec_notification_icon.png
-    - assets/images/generic/
+    - assets/images/
+    - assets/images/Sample/
+    - assets/images/CVMEC/
+    - assets/images/Iceberg/
     - assets/fonts/
-    - assets/images/Lights/
-    - assets/images/Vehicle_config_icons/
-    - assets/images/Siren/
-    - assets/images/Bus/
     - assets/audio/
-    - assets/images/tims/
     - assets/tims.json
 
   # fonts:
