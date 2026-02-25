@@ -3,12 +3,14 @@ import 'dart:io';
 
 import 'package:cv_mec/models/position_with_declination.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:cv_mec/models/declination_data.dart';
 import 'package:cv_mec/services/mock_location_service.dart';
 import 'package:cv_mec/services/noaa_geomag_api.dart';
 import 'package:logger/logger.dart';
+import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 
 class LocationService extends GetxService {
   // Static variables
@@ -77,7 +79,7 @@ class LocationService extends GetxService {
     // This method starts the location stream. This can be called multiple times, but only one stream will be active at a time.
     try {
       await requestPermission();
-      if (await isPermissionGranted() && _serviceEnabled) {
+      if (await isPermissionGranted() && await isTrackingGranted() && _serviceEnabled) {
         _startLocationUpdates();
       }
     } catch (e) {
@@ -86,7 +88,7 @@ class LocationService extends GetxService {
         AlertDialog(
           title: const Text('Location Permissions Required'),
           content: Text(
-              'Location permissions are required to use this application. Without them, timing and other components will not work correctly. Please restart this application and grant location permissions. Error: $e'),
+              'Location and Tracking permissions are required to use this application. Without them, timing and other components will not work correctly. Please restart this application and grant location permissions. Error: $e'),
           actions: <Widget>[
             TextButton(
               child: Text('Continue', style: TextStyle(color: Theme.of(Get.context!).colorScheme.onPrimary)),
@@ -114,7 +116,34 @@ class LocationService extends GetxService {
     }
   }
 
+  Future<bool> isTrackingGranted() async {
+    if(Platform.isIOS){
+      TrackingStatus status = await AppTrackingTransparency.trackingAuthorizationStatus;
+      print("Returning Tracking Status $status");
+      return status == TrackingStatus.authorized;
+    }
+    return true;
+  }
+
   Future<bool> requestPermission() async {
+    if(Platform.isIOS){
+      if (await AppTrackingTransparency.trackingAuthorizationStatus ==
+          TrackingStatus.notDetermined) {
+        // Show a custom explainer dialog before the system dialog
+        // await showCustomTrackingDialog(context);
+        // Wait for dialog popping animation
+        await Future.delayed(const Duration(milliseconds: 200));
+        // Request system's tracking authorization dialog
+        TrackingStatus status = await AppTrackingTransparency.requestTrackingAuthorization();
+        _logger.i("Tracking permission status: $status");
+        if(status != TrackingStatus.authorized){
+          _logger.w("Tracking permissions not granted, location permissions may not work correctly on iOS");
+        return Future.error('Tracking permissions are denied');
+        }
+      }
+    }
+
+
     _serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!_serviceEnabled) {
       // Location services are not enabled don't continue
