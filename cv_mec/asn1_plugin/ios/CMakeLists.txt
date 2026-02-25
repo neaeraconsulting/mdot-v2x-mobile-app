@@ -14,6 +14,8 @@ add_library(asn1_plugin SHARED
     ${SRC_FILES}
 )
 
+set_target_properties(asn1_plugin PROPERTIES LINK_FLAGS "-Wl,-z,max-page-size=16384")
+
 set_target_properties(asn1_plugin PROPERTIES
   PUBLIC_HEADER asn1_plugin.h
   OUTPUT_NAME "asn1_plugin"
