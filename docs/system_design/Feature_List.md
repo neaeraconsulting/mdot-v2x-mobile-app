@@ -38,6 +38,24 @@
         -   Receive SPaT messages            
         -   Show active light state on the map in real-time            
         -   Show countdown to green icon when App is in a valid ingress lane
+
+    - J3217 Tam
+
+        - Receive TAM messages
+        - Show Toll zones on the map 
+        - Provide information on Toll Pricing Expectations
+
+    - J3217 Tum
+
+        - Send TUM messages when vehicle drives through zones
+        - Supports automatic message retry on delivery failure
+        - Notifies users of toll transaction initiation
+
+
+    - J3217 TUMAck
+
+        - Receive TUMAck messages from tolling providers
+        - Notifies users of toll transaction completion
             
 -   MQTT Broker Support
     
