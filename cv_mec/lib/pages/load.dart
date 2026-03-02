@@ -12,9 +12,19 @@ class Load extends StatelessWidget {
   Future _init() async {
     LocationService locationService = Get.find<LocationService>();
     await locationService.init();
-    if ((Platform.isAndroid) && !(await locationService.isPermissionGranted())) {
-      Get.off(() => const MissingPermissions());
-    } else {
+
+    if(Platform.isAndroid || Platform.isIOS) {
+      bool isTrackingGranted = await locationService.isTrackingGranted();
+      bool isPermissionGranted = await locationService.isPermissionGranted();
+
+      // Apple App store doesn't allow to clarify permissions. 
+      if(Platform.isAndroid && !(isTrackingGranted && isPermissionGranted)) {
+       Get.off(() => const MissingPermissions());
+      }else{
+        Get.put(ParamController(), permanent: true);
+        Get.off(() => const HomePage());
+      }
+    }else {
       Get.put(ParamController(), permanent: true);
       Get.off(() => const HomePage());
     }

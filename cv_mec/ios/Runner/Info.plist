@@ -36,6 +36,8 @@
 	<string>Looking for local tcp Bonjour service</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>This application needs access to your location in order to provide you with accurate connected vehicle information near your location.</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>This app will track and share user location with other users on the network.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIFileSharingEnabled</key>
@@ -57,7 +59,5 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>NSUserTrackingUsageDescription</key>
-	<string>This app will track and share user location with other users on the network.</string>
 </dict>
 </plist>

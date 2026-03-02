@@ -138,7 +138,6 @@ class LocationService extends GetxService {
         _logger.i("Tracking permission status: $status");
         if(status != TrackingStatus.authorized){
           _logger.w("Tracking permissions not granted, location permissions may not work correctly on iOS");
-        return Future.error('Tracking permissions are denied');
         }
       }
     }
