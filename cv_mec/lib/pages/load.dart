@@ -12,7 +12,7 @@ class Load extends StatelessWidget {
   Future _init() async {
     LocationService locationService = Get.find<LocationService>();
     await locationService.init();
-    if ((Platform.isAndroid || Platform.isIOS) && !(await locationService.isTrackingGranted() && await locationService.isPermissionGranted())) {
+    if ((Platform.isAndroid) && !(await locationService.isPermissionGranted())) {
       Get.off(() => const MissingPermissions());
     } else {
       Get.put(ParamController(), permanent: true);
