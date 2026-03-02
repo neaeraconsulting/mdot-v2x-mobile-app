@@ -88,7 +88,7 @@ class LocationService extends GetxService {
         AlertDialog(
           title: const Text('Location Permissions Required'),
           content: Text(
-              'Location and Tracking permissions are required to use this application. Without them, timing and other components will not work correctly. Please restart this application and grant location permissions. Error: $e'),
+              'Location permissions are required to use this application. Without them, timing and other components will not work correctly. Please restart this application and grant location permissions. Error: $e'),
           actions: <Widget>[
             TextButton(
               child: Text('Continue', style: TextStyle(color: Theme.of(Get.context!).colorScheme.onPrimary)),
@@ -138,7 +138,6 @@ class LocationService extends GetxService {
         _logger.i("Tracking permission status: $status");
         if(status != TrackingStatus.authorized){
           _logger.w("Tracking permissions not granted, location permissions may not work correctly on iOS");
-        return Future.error('Tracking permissions are denied');
         }
       }
     }

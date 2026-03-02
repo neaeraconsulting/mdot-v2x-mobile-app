@@ -165,8 +165,8 @@ class SettingsPage extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               value: controller.gpsType.value,
               items: (Platform.isLinux
-                ? controller.gpsTypes.sublist(0, controller.gpsTypes.length - 1)
-                : controller.gpsTypes
+                ? controller.gpsTypes.sublist(1, controller.gpsTypes.length)
+                : controller.gpsTypes.sublist(0, 2)
               ).map((GPSType type) {
                 return DropdownMenuItem<GPSType>(
                   value: type,
