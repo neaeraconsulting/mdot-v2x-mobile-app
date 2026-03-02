@@ -873,7 +873,7 @@ class MapState extends State<MapPage> {
         }
       }
       
-      // mqttAgents.sendMessage(messageBytes, messageType, sendTime, pubDataQueue, signed);
+      mqttAgents.sendMessage(messageBytes, messageType, sendTime, pubDataQueue, signed);
       int connectionCount = mqttAgents.getConnectionCount();
       if( connectionCount == mqttAgents.agents.length){
         updateConnectedStatus(ConnectedStatus.CONNECTED);
