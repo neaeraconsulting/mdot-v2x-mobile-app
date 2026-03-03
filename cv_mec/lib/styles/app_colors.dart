@@ -6,7 +6,6 @@ Color darkBackgroundColor = dotenv.env["DARK_BACKGROUND_COLOR"] != null ? Color(
 
 Color primaryColor = dotenv.env["PRIMARY_COLOR"] != null ? Color(int.parse(dotenv.env["PRIMARY_COLOR"]!)) : const Color.fromARGB(255, 102, 186, 255);
 Color darkPrimaryColor = dotenv.env["DARK_PRIMARY_COLOR"] != null ? Color(int.parse(dotenv.env["DARK_PRIMARY_COLOR"]!)) : const Color.fromARGB(255, 0, 87, 157);
-Color lightprimaryColor = dotenv.env["LIGHT_PRIMARY_COLOR"] != null ? Color(int.parse(dotenv.env["LIGHT_PRIMARY_COLOR"]!)) : const Color.fromARGB(255, 168, 216, 255);
 
 Color selectedColor = dotenv.env["SELECTED_COLOR"] != null ? Color(int.parse(dotenv.env["SELECTED_COLOR"]!)) : const Color.fromARGB(255, 164, 214, 255);
 Color darkSelectedColor = dotenv.env["DARK_SELECTED_COLOR"] != null ? Color(int.parse(dotenv.env["DARK_SELECTED_COLOR"]!)) : const Color.fromARGB(255, 0, 63, 114);

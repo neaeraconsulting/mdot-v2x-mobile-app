@@ -1,0 +1,50 @@
+
+ext {
+    mipmapSizes = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi', 'xxxhdpi']
+}
+
+def loadEnv(String envPath) {
+    def env = [:]
+    file(envPath).eachLine { line ->
+        line = line.trim()
+        if (line && !line.startsWith('#')) {
+            def parts = line.split('=', 2)
+            if (parts.length == 2) {
+                env[parts[0].trim()] = parts[1].trim()
+            }
+        }
+    }
+    return env
+}
+
+task generateMipmap {
+    doLast {
+        def parentDir = file("${rootDir}/..")
+        def envVars = loadEnv("${parentDir}/.env")
+        def appName = envVars['APP_NAME'] ?: 'v2x_mobile_app'
+        def logoPath = envVars['LOGO_PATH'] ?: 'assets/images/V2X_Mobile_App/logo.png'
+        // Check if the path has any $APP_NAME variable and replace it with the actual app name
+        logoPath = logoPath.replace('$APP_NAME', appName)
+        logoPath = logoPath.replace('/', '\\')
+        logoPath = "${parentDir}\\${logoPath}"
+        println "Generating mipmaps for ${appName} using logo at ${logoPath}"
+        def srcLogo = file("$logoPath")
+
+        if (!srcLogo.exists()) {
+            println "Logo file not found: ${logoPath}"
+            return
+        }
+
+        mipmapSizes.each { size ->
+            def dir = file("src/${appName}/res/mipmap-${size}")
+            dir.mkdirs()
+            def destLogo = new File(dir, "launcher_icon.png")
+            srcLogo.withInputStream { is ->
+                destLogo.withOutputStream { os ->
+                    os << is
+                }
+            }
+            println "Copied logo to ${destLogo}"
+        }
+    }
+}

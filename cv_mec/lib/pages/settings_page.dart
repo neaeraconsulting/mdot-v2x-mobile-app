@@ -530,8 +530,7 @@ class SettingsPage extends StatelessWidget {
     return Column(
       children: [
         Row(children: [
-          Icon(icon,
-              color: controller.darkModeState.value ? lightprimaryColor : primaryColor), //change color to match theme
+          Icon(icon),
           const SizedBox(width: 10),
           Text(sectionTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
         ]),

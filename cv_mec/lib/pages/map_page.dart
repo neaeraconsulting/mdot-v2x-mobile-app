@@ -1270,7 +1270,7 @@ class MapState extends State<MapPage> {
         point: getUserLocation(),
         width: 60,
         height: 60,
-        child: iconBase(getSenderIcon(), Colors.blue[900]!,
+        child: iconBase(getSenderIcon(), Theme.of(context).primaryColor,
             sirensOn: configController.isIceCreamSongOn.value || configController.isSirenOn.value,
             busWarningOn: configController.isBusWarningOn.value),
       );
@@ -1990,6 +1990,7 @@ class MapState extends State<MapPage> {
               showProgressBar: false,
               dragToClose: true,
               icon: Icon(IconManager.getIconForBSM(configController.selectedVehicle.value.classification)), 
+              primaryColor: Theme.of(context).primaryColor,
             );
           },
           child: Container(

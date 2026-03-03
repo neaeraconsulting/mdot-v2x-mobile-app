@@ -16,7 +16,7 @@ final ThemeData lightTheme = _base.copyWith(
     contentTextStyle: style_body.copyWith(color: textPrimaryColor),
   ),
   disabledColor: disabledColor,
-  focusColor: primaryColor,
+  focusColor: lightGrey,
   hintColor: textPrimaryColor,
   hoverColor: lightGrey,
   primaryColorDark: darkPrimaryColor,
@@ -24,7 +24,7 @@ final ThemeData lightTheme = _base.copyWith(
     primary: primaryColor,
     secondary: selectedColor,
     onSurface: textPrimaryColor,
-    onPrimary: textPrimaryColor,
+    onPrimary: isDark(primaryColor) ? darkTextPrimaryColor : textPrimaryColor,
     onPrimaryContainer: textPrimaryColor,
   ),
 
@@ -33,6 +33,13 @@ final ThemeData lightTheme = _base.copyWith(
   inputDecorationTheme: inputTextTheme(),
   appBarTheme: AppBarTheme(
     backgroundColor: primaryColor,
+    titleTextStyle: style_body.copyWith(color: isDark(primaryColor) ? darkTextPrimaryColor : textPrimaryColor, fontSize: 20, fontWeight: FontWeight.bold),
+    iconTheme: IconThemeData(color: isDark(primaryColor) ? darkTextPrimaryColor : textPrimaryColor),
+    actionsIconTheme: IconThemeData(color: isDark(primaryColor) ? darkTextPrimaryColor : textPrimaryColor),
+  ),
+  switchTheme: SwitchThemeData(
+    thumbColor: WidgetStateProperty.all(primaryColor),
+    trackColor: WidgetStateProperty.all(primaryColor.withValues(alpha: 0.3)),
   ),
   iconButtonTheme:
       IconButtonThemeData(style: ButtonStyle(foregroundColor: WidgetStateProperty.all<Color>(textPrimaryColor))),
@@ -65,6 +72,13 @@ final ThemeData darkTheme = _baseDark.copyWith(
   inputDecorationTheme: darkInputTextTheme(),
   appBarTheme: AppBarTheme(
     backgroundColor: darkPrimaryColor,
+    titleTextStyle: style_body.copyWith(color: isDark(darkPrimaryColor) ? darkTextPrimaryColor : textPrimaryColor, fontSize: 20, fontWeight: FontWeight.bold),
+    iconTheme: IconThemeData(color: isDark(darkPrimaryColor) ? darkTextPrimaryColor : textPrimaryColor),
+    actionsIconTheme: IconThemeData(color: isDark(darkPrimaryColor) ? darkTextPrimaryColor : textPrimaryColor),
+  ),
+  switchTheme: SwitchThemeData(
+    thumbColor: WidgetStateProperty.all(darkPrimaryColor),
+    trackColor: WidgetStateProperty.all(darkPrimaryColor.withValues(alpha: 0.5)),
   ),
   iconButtonTheme:
       IconButtonThemeData(style: ButtonStyle(foregroundColor: WidgetStateProperty.all<Color>(darkTextPrimaryColor))),
@@ -87,7 +101,7 @@ ElevatedButtonThemeData buttonStyle() {
         if (states.contains(WidgetState.disabled)) {
           return darkBackgroundColor;
         }
-        return Colors.black;
+        return isDark(primaryColor) ? darkTextPrimaryColor : textPrimaryColor;
       },
     ),
     shape: WidgetStateProperty.all<RoundedRectangleBorder>(RoundedRectangleBorder(
@@ -112,7 +126,7 @@ ElevatedButtonThemeData darkButtonStyle() {
           if (states.contains(WidgetState.disabled)) {
             return mediumGrey;
           }
-          return lightGrey;
+          return isDark(darkPrimaryColor) ? darkTextPrimaryColor : textPrimaryColor;
         },
       ),
       shape: WidgetStateProperty.all<RoundedRectangleBorder>(RoundedRectangleBorder(
@@ -175,4 +189,8 @@ InputDecorationTheme darkInputTextTheme() {
       borderSide: BorderSide(color: Colors.red),
     ),
   );
+}
+
+bool isDark(Color color) {
+  return color.computeLuminance() < 0.5;
 }

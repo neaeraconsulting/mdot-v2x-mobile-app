@@ -74,18 +74,27 @@ dev_dependencies:
   flutter_lints: ^3.0.0
   build_runner: ^2.3.3
   json_serializable: ^6.8.0
+  image: ^4.2.0
 
 flutter:
+  default-flavor: v2x_mobile_app
   uses-material-design: true
   assets:
-    - .env
-    - assets/images/
-    - assets/images/Sample/
-    - assets/images/CVMEC/
-    - assets/images/Iceberg/
+    - path: assets/images/V2X_Mobile_App/
+      flavors:
+        - v2x_mobile_app
+
+    - assets/images/Bus/
+    - assets/images/generic/
+    - assets/images/ITIS/
+    - assets/images/Lights/
+    - assets/images/Siren/
+    - assets/images/tims/
+    - assets/images/Vehicle_config_icons/
     - assets/fonts/
     - assets/audio/
     - assets/tims.json
+    - .env
 
   # fonts:
   #   - family: HighwayGothic
