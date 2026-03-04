@@ -38,8 +38,30 @@ final ThemeData lightTheme = _base.copyWith(
     actionsIconTheme: IconThemeData(color: isDark(primaryColor) ? darkTextPrimaryColor : textPrimaryColor),
   ),
   switchTheme: SwitchThemeData(
-    thumbColor: WidgetStateProperty.all(primaryColor),
-    trackColor: WidgetStateProperty.all(primaryColor.withValues(alpha: 0.3)),
+    thumbColor: WidgetStateProperty.resolveWith<Color>(
+      (Set<WidgetState> states) {
+        if (states.contains(WidgetState.selected)) {
+          return primaryColor;
+        }
+        return isDark(primaryColor) ? lightGrey : mediumGrey; 
+      },
+    ),
+    trackColor: WidgetStateProperty.resolveWith<Color>(
+      (Set<WidgetState> states) {
+        if (states.contains(WidgetState.selected)) {
+          return isDark(primaryColor) ? lightGrey : mediumGrey; 
+        }
+        return isDark(primaryColor) ? mediumGrey : lightGrey;
+      },
+    ),
+    trackOutlineColor: WidgetStateProperty.resolveWith<Color>(
+      (Set<WidgetState> states) {
+        if (states.contains(WidgetState.selected)) {
+          return isDark(primaryColor) ? lightGrey : mediumGrey;
+        }
+        return isDark(primaryColor) ? lightGrey : mediumGrey; 
+      },
+    ),
   ),
   iconButtonTheme:
       IconButtonThemeData(style: ButtonStyle(foregroundColor: WidgetStateProperty.all<Color>(textPrimaryColor))),
@@ -77,8 +99,30 @@ final ThemeData darkTheme = _baseDark.copyWith(
     actionsIconTheme: IconThemeData(color: isDark(darkPrimaryColor) ? darkTextPrimaryColor : textPrimaryColor),
   ),
   switchTheme: SwitchThemeData(
-    thumbColor: WidgetStateProperty.all(darkPrimaryColor),
-    trackColor: WidgetStateProperty.all(darkPrimaryColor.withValues(alpha: 0.5)),
+    thumbColor: WidgetStateProperty.resolveWith<Color>(
+      (Set<WidgetState> states) {
+        if (states.contains(WidgetState.selected)) {
+          return darkPrimaryColor;
+        }
+        return isDark(darkPrimaryColor) ? lightGrey : mediumGrey; 
+      },
+    ),
+    trackColor: WidgetStateProperty.resolveWith<Color>(
+      (Set<WidgetState> states) {
+        if (states.contains(WidgetState.selected)) {
+          return isDark(darkPrimaryColor) ? lightGrey : mediumGrey; 
+        }
+        return isDark(darkPrimaryColor) ? mediumGrey : lightGrey;
+      },
+    ),
+    trackOutlineColor: WidgetStateProperty.resolveWith<Color>(
+      (Set<WidgetState> states) {
+        if (states.contains(WidgetState.selected)) {
+          return isDark(darkPrimaryColor) ? lightGrey : mediumGrey;
+        }
+        return isDark(darkPrimaryColor) ? lightGrey : mediumGrey; 
+      },
+    ),
   ),
   iconButtonTheme:
       IconButtonThemeData(style: ButtonStyle(foregroundColor: WidgetStateProperty.all<Color>(darkTextPrimaryColor))),
