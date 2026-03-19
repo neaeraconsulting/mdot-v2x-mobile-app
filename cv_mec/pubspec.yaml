@@ -67,6 +67,7 @@ dependencies:
     path: ./packages/iss_scms
   connectivity_plus: ^7.0.0
   app_tracking_transparency: ^2.0.6+1
+  yaml_edit: ^2.2.4
 
 dev_dependencies:
   flutter_test:
@@ -77,13 +78,11 @@ dev_dependencies:
   image: ^4.2.0
 
 flutter:
-  default-flavor: v2x_mobile_app
+  # default-flavor: v2x_mobile_app
   uses-material-design: true
   assets:
-    - path: assets/images/V2X_Mobile_App/
-      flavors:
-        - v2x_mobile_app
-
+    - assets/images/Default/
+    - assets/images/Custom/
     - assets/images/Bus/
     - assets/images/generic/
     - assets/images/ITIS/

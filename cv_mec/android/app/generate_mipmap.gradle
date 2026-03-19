@@ -36,7 +36,7 @@ task generateMipmap {
         }
 
         mipmapSizes.each { size ->
-            def dir = file("src/${appName}/res/mipmap-${size}")
+            def dir = file("src/main/res/mipmap-${size}")
             dir.mkdirs()
             def destLogo = new File(dir, "launcher_icon.png")
             srcLogo.withInputStream { is ->
