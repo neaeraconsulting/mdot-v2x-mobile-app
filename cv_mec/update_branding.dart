@@ -64,4 +64,22 @@ void main() async {
   });
   await buildFile.writeAsString(buildContent);
   print('Updated Android applicationId to: com.neaera.$formattedAppName');
+
+  //set the ios bundle display name by setting the CFBundleDisplayName in the Info.plist file
+  final infoFile = File('ios/Runner/Info.plist');
+  var infoContent = await infoFile.readAsString();
+  final displayNameRegex = RegExp(r'<key>CFBundleDisplayName</key>\s*<string>(.+?)</string>');
+  infoContent = infoContent.replaceAllMapped(displayNameRegex, (match) {
+    return '<key>CFBundleDisplayName</key>\n\t<string>$appName</string>';
+  });
+  await infoFile.writeAsString(infoContent);
+  print('Updated iOS bundle display name to: $appName');
+
+  //set the ios bundle name to formattedAppName
+  final bundleNameRegex = RegExp(r'<key>CFBundleName</key>\s*<string>(.+?)</string>');
+  infoContent = infoContent.replaceAllMapped(bundleNameRegex, (match) {
+    return '<key>CFBundleName</key>\n\t<string>$formattedAppName</string>';
+  });
+  await infoFile.writeAsString(infoContent);
+  print('Updated iOS bundle name to: $formattedAppName');
 }
