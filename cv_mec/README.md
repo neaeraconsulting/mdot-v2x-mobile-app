@@ -157,31 +157,16 @@ Additionally, the IOS SCMS package stores additional dependencies locally. Delet
 ## Changing App Name and Branding
 
 ### 1. Add Assets
-- Under `assets/images`, add a new folder titled the same as your app name.
+- Under `assets/images/Custom`.
 - Add a `logo.png` (500x500px) and `load_page.png` (900x1800px).
-- Add the asset to `pubspec.yaml`:
+- If you use a directory under assets/images that isn't 'Custom' or 'Default',   add the asset to the `pubspec.yaml`:
   ```yaml
   assets:
-    - assets/images/[App Name]/
-      flavors:
-        - [App ID Suffix]
+    - assets/images/[directory name]/
   ```
 
 ### 2. Edit .env
-- Set up colors and asset references in the `.env` file.
+- Set the colors, app name, and asset references (logo_path and load_page_path)  in the `.env` file.
 
-### 3. Add Your Flavor
-- In `android/app/build.gradle`, add your version flavor under `productFlavors`:
-  ```groovy
-  create("[Flavor Name]") {
-      dimension = "default"
-      resValue "string", "app_name", "[App Name]"
-      applicationIdSuffix = ".[App ID Suffix]"
-  }
-  ```
-
-### 4. Build and Run Your Flavor
-- Run:
-  ```sh
-  flutter run --flavor [AppID Suffix]
-  ```
+### 3. Run update_branding script
+- In the cv_mec directory, run 'dart run update_branding.dart'
