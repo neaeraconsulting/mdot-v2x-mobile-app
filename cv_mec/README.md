@@ -167,6 +167,7 @@ Additionally, the IOS SCMS package stores additional dependencies locally. Delet
 
 ### 2. Edit .env
 - Set the colors, app name, and asset references (logo_path and load_page_path)  in the `.env` file.
+- Example: `LOGO_PATH=assets/images/Custom/logo.png`
 
 ### 3. Run update_branding script
-- In the cv_mec directory, run 'dart run update_branding.dart'
+- In the cv_mec directory, run `dart run update_branding.dart`
