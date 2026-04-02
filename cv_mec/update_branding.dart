@@ -15,7 +15,7 @@ void main() async {
     }
   }
 
-  var logoPath = env['LOGO_PATH'] ?? 'assets/images/V2X_Mobile_App/logo.png';
+  var logoPath = env['LOGO_PATH'] ?? 'assets/images/Default/logo.png';
   final appName = env['APP_NAME'] ?? 'v2x_mobile_app';
   logoPath = logoPath.replaceAll('\$APP_NAME', appName);
   // logoPath = logoPath.replaceAll('/', '\\');
@@ -38,11 +38,11 @@ void main() async {
   await yamlFile.writeAsString(editor.toString());
   print('Updated flutter_launcher_icons.yaml with logo path: $logoPath');
 
-  // Optionally run flutter_launcher_icons
+  // Run flutter_launcher_icons
   await Process.run('dart', ['run', 'flutter_launcher_icons:main']);
 
 
-  //change app name in the strings.xml file
+  //Change app name in the strings.xml file
   final stringsFile = File('android/app/src/main/res/values/strings.xml');
   var stringsContent = await stringsFile.readAsString();
   final appNameRegex = RegExp(r'<string name="app_name">(.+?)</string>');
