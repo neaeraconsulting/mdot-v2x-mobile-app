@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/models/api_responses/mqtt_permission.dart';
 import 'package:cv_mec/models/api_responses/path_response/path_response.dart';
@@ -24,6 +25,13 @@ class ApiService extends GetxController {
     final ioClient = HttpClient();
 
     ioClient.badCertificateCallback = (X509Certificate cer, String host, int port){
+      // Only allow bad certificates if explicitly enabled via environment variable
+      final allowInvalidApiCertificate = (dotenv.env['ALLOW_INVALID_API_CERTIFICATE'] ?? '').toLowerCase() == 'true';
+      if (!allowInvalidApiCertificate) {
+        return false;
+      }
+
+      // Even when enabled, only allow for the configured API host
       final configuredHost = Uri.tryParse(settingsController.baseUri.value)?.host;
       return configuredHost != null && configuredHost == host;
     };
