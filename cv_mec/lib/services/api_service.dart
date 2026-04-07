@@ -9,7 +9,7 @@ import 'package:cv_mec/models/api_responses/secrets/secret_response.dart';
 import 'package:cv_mec/models/etx/full_registration.dart';
 import 'package:cv_mec/models/etx/registration.dart';
 import 'package:get/get.dart';
-
+import 'package:http/io_client.dart';
 import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
 
@@ -17,6 +17,19 @@ class ApiService extends GetxController {
   SettingsController settingsController = Get.find<SettingsController>();
   final Logger _logger = Logger();
   String? token;
+
+  late final http.Client _client = _buildClient();
+
+  http.Client _buildClient(){
+    final ioClient = HttpClient();
+
+    ioClient.badCertificateCallback = (X509Certificate cer, String host, int port){
+      final configuredHost = Uri.tryParse(settingsController.baseUri.value)?.host;
+      return configuredHost != null && configuredHost == host;
+    };
+
+    return IOClient(ioClient);
+  }
 
 
   Future<bool> setupToken() async {
@@ -43,10 +56,13 @@ class ApiService extends GetxController {
       };
 
       try {
-        var response = await http.post(Uri.parse(uri), headers: headers, body: json.encode(body));
+        _logger.i("Sending Token Request to API $uri");
+        var response = await _client.post(Uri.parse(uri), headers: headers, body: json.encode(body));
+        _logger.i("Received Response");
         if (response.statusCode == 200) {
           Map<String, dynamic> responseObject = jsonDecode(response.body.toString());
           if (responseObject.containsKey("access_token")) {
+            _logger.i("Token Generated Successfully");
             return responseObject["access_token"];
           }else{
             _logger.e("Token not found in response ${response.body.toString()}");
@@ -75,7 +91,7 @@ class ApiService extends GetxController {
       final String uri = "${settingsController.baseUri.value}/prd/v2/registration?DeviceID=$deviceID";
       final Map<String, String> headers = {"Content-Type": "application/json", "Authorization": "Bearer $token"};
 
-      var response = await http.get(Uri.parse(uri), headers: headers);
+      var response = await _client.get(Uri.parse(uri), headers: headers);
 
       if (response.statusCode == 200) {
         dynamic registrationDynamic = jsonDecode(response.body.toString());
@@ -111,7 +127,7 @@ class ApiService extends GetxController {
         "ClientSubtype": clientSubtype,
       });
 
-      var response = await http.post(Uri.parse(uri), headers: headers, body: body);
+      var response = await _client.post(Uri.parse(uri), headers: headers, body: body);
 
       if (response.statusCode == 200) {
         dynamic registrationDynamic = jsonDecode(response.body.toString());
@@ -144,7 +160,7 @@ class ApiService extends GetxController {
         "DeviceID": deviceID
       });
 
-      var response = await http.put(Uri.parse(uri), headers: headers, body: body);
+      var response = await _client.put(Uri.parse(uri), headers: headers, body: body);
 
       if (response.statusCode == 200) {
         dynamic registrationDynamic = jsonDecode(response.body.toString());
@@ -179,7 +195,7 @@ class ApiService extends GetxController {
 
       final String body = jsonEncode({"DeviceID": deviceID, "lat": lat, "long": long, "NetworkType": networkType});
 
-      var response = await http.post(Uri.parse(uri), headers: headers, body: body);
+      var response = await _client.post(Uri.parse(uri), headers: headers, body: body);
 
       Map<String, dynamic> json = jsonDecode(response.body.toString());
       _logger.i(response.body.toString());
@@ -202,7 +218,7 @@ class ApiService extends GetxController {
       String uri = "${settingsController.baseUri.value}/prd/v2/acl-rules";
       final Map<String, String> headers = {"Content-Type": "application/json", "Authorization": "Bearer $token"};
       try {
-        var response = await http.get(Uri.parse(uri), headers: headers);
+        var response = await _client.get(Uri.parse(uri), headers: headers);
         print("ACL Response" + response.body.toString());
         if (response.statusCode == 200) {
           List<dynamic> jsonList = jsonDecode(response.body.toString());
@@ -234,7 +250,7 @@ class ApiService extends GetxController {
       String uri = "${settingsController.baseUri.value}/prd/v2/tim/configuration";
       final Map<String, String> headers = {"Content-Type": "application/json", "Authorization": "Bearer $token"};
       try {
-        var response = await http.get(Uri.parse(uri), headers: headers);
+        var response = await _client.get(Uri.parse(uri), headers: headers);
         if (response.statusCode == 200) {
           return response.body.toString();
         }else{
@@ -262,7 +278,7 @@ class ApiService extends GetxController {
       final Map<String, String> headers = {"Authorization": "Bearer $token", "Accept": "application/gzip"};
 
       try {
-        var response = await http.get(Uri.parse(uri), headers: headers);
+        var response = await _client.get(Uri.parse(uri), headers: headers);
         if (response.statusCode == 200) {
           return response.bodyBytes; 
         }else{
@@ -290,7 +306,7 @@ class ApiService extends GetxController {
 
       final Map<String, String> headers = {"Content-Type": "application/json", "Authorization": "Bearer $token"};
 
-      var response = await http.get(Uri.parse(uri), headers: headers);
+      var response = await _client.get(Uri.parse(uri), headers: headers);
       if (response.statusCode == 200) {
       return PathResponse.fromJson(jsonDecode(response.body.toString()));
       }else{
@@ -314,7 +330,7 @@ class ApiService extends GetxController {
 
       final Map<String, String> headers = {"Content-Type": "application/json", "Authorization": "Bearer $token"};
 
-      var response = await http.get(Uri.parse(uri), headers: headers);
+      var response = await _client.get(Uri.parse(uri), headers: headers);
       
 
       if (response.statusCode == 200) {
