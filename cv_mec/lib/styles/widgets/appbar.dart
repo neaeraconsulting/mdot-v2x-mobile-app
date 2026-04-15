@@ -20,7 +20,6 @@ class CVMecAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      //title: CVMECText.styleTwo(title != null ? title! : "CV-MEC"),
       title: Text(title != null ? title! : "V2X Mobile App", style: TextStyle(color: isDark(Theme.of(context).colorScheme.secondary) ? darkTextPrimaryColor : textPrimaryColor)),
       actions: <Widget>[
         navigationMenu(context),
