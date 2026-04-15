@@ -30,7 +30,7 @@ class Load extends StatelessWidget {
             decoration: BoxDecoration(
               color: Theme.of(context).scaffoldBackgroundColor,
               image: DecorationImage(
-                image: AssetImage(dotenv.env["LOAD_PAGE_PATH"] ?? 'assets/images/Sample/load_page.png'), 
+                image: AssetImage(dotenv.env["LOAD_PAGE_PATH"] ?? 'assets/images/Default/load_page.png'), 
                 fit: BoxFit.cover,
               ),
             ),
