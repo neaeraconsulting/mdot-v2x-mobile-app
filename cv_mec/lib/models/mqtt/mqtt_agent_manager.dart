@@ -11,7 +11,7 @@ class MqttAgentManager{
   MqttAgentManager(){}
 
   Future<int> connectAll() async{
-    for(MqttAgent agent in agents){
+    for(var agent in List<MqttAgent>.from(agents)){
       logger.i("Connecting Agent ${agent.agentName}");
       final success = await agent.connect();
       if(success != 0){

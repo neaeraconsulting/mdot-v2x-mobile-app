@@ -96,6 +96,8 @@ class SettingsController extends GetxController {
   RxString s3Region = (dotenv.env['S3_REGION'] ?? "").obs;
   RxString s3DestDir = (dotenv.env['S3_DESTINATION'] ?? "").obs;
 
+  RxBool changedBrokerSettings = false.obs; 
+
   initialize() async {    
     baseUri.value = await secureStorage.getBaseURI();
     cradleGPSUsername.value = await secureStorage.getGPSUsername();

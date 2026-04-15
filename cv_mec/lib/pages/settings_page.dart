@@ -58,22 +58,23 @@ class SettingsPage extends StatelessWidget {
     registrationLatitudeController.text = paramController.manualLatitude.toString();
     registrationLongitudeController.text = paramController.manualLongitude.toString();
     return Scaffold(
-        appBar: AppBar(
-          title: const Text("Settings Page"),
+      appBar: AppBar(
+        title: const Text("Settings Page"),
+      ),
+      body: Container(
+          child: Obx(
+        () => Padding(
+          padding: const EdgeInsets.all(30.0),
+          child: ListView(children: [
+            versionHeader(),
+            verticalSpaceMedium,
+            configurationSection(),
+            verticalSpaceMedium,
+            appearanceSection(),
+          ]),
         ),
-        body: Container(
-            child: Obx(
-          () => Padding(
-            padding: const EdgeInsets.all(30.0),
-            child: ListView(children: [
-              versionHeader(),
-              verticalSpaceMedium,
-              configurationSection(),
-              verticalSpaceMedium,
-              appearanceSection(),
-            ]),
-          ),
-        )));
+      ))
+    );
   }
 
   versionHeader() {
@@ -230,6 +231,7 @@ class SettingsPage extends StatelessWidget {
               if (value != controller.enablePC5.value) {
                 controller.enablePC5.value = value;
                 await controller.secureStorage.setPC5Enabled(value);
+                controller.changedBrokerSettings.value = true; 
               }
             }) : Container(),
         Obx(() => (controller.enablePC5.value && controller.showPc5)
@@ -253,6 +255,7 @@ class SettingsPage extends StatelessWidget {
               if (value != controller.enableIssMqtt.value) {
                 controller.enableIssMqtt.value = value;
                 await controller.secureStorage.setIssMqttEnabled(value);
+                controller.changedBrokerSettings.value = true; 
               }
             }) : Container(),
         controller.showIss ? verticalSpaceSmall : Container(),
@@ -263,6 +266,7 @@ class SettingsPage extends StatelessWidget {
               if (value != controller.enableEtxMqtt.value) {
                 controller.enableEtxMqtt.value = value;
                 await controller.secureStorage.setEtxMqttEnabled(value);
+                controller.changedBrokerSettings.value = true; 
               }
             }) : Container(),
         controller.showEtx ? verticalSpaceSmall : Container(),
@@ -274,6 +278,7 @@ class SettingsPage extends StatelessWidget {
                 //paramController.manualRegistrationMode.value = value;
                 await paramController.switchManualRegistrationMode();
                 await controller.secureStorage.setManualRegistrationModeEnabled(value);
+                controller.changedBrokerSettings.value = true; 
               }
             })) : Container(),
         Obx(() => (paramController.manualRegistrationMode.value && controller.showManualRegistration)

@@ -18,15 +18,14 @@ void main() async {
   var logoPath = env['LOGO_PATH'] ?? 'assets/images/Default/logo.png';
   final appName = env['APP_NAME'] ?? 'v2x_mobile_app';
   logoPath = logoPath.replaceAll('\$APP_NAME', appName);
-  // logoPath = logoPath.replaceAll('/', '\\');
-  // logoPath = "${parentDir}\\${logoPath}"
+
 
   // Read flutter_launcher_icons.yaml
   final yamlFile = File('flutter_launcher_icons.yaml');
   final yamlContent = await yamlFile.readAsString();
   final editor = YamlEditor(yamlContent);
 
-  // Update image_path
+  // Update App Images
   editor.update(['image_path'], logoPath);
   editor.update(['flutter_launcher_icons', 'image_path'], logoPath);
   editor.update(['flutter_launcher_icons', 'web', 'image_path'], logoPath);
