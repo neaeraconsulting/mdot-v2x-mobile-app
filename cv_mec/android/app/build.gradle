@@ -28,7 +28,7 @@ def keystoreProperties = new Properties()
        keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
    }
 android {
-    namespace = "com.neaera.cv_mec"  //Don't touch this one
+    namespace = "com.neaera.cv_mec" 
     compileSdk = flutter.compileSdkVersion 
     ndkVersion = flutter.ndkVersion
 
@@ -43,7 +43,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.neaera.v2x_mobile_app"
+        applicationId = "com.neaera.mdot_v2x_mobile_app"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
         minSdkVersion = 26
@@ -66,20 +66,8 @@ android {
             signingConfig = signingConfigs.release
         }
     }
-    // flavorDimensions += "default"
-    // productFlavors {
-    //     create("v2x_mobile_app") {
-    //         dimension = "default"
-    //         resValue "string", "app_name", "V2X Mobile App"
-    //         applicationIdSuffix = ".v2x_mobile_app"
-    //     }
-    // }
 }
 
-// tasks.register('runGenerateIcons', Exec) {
-//     commandLine 'dart', 'run', 'generate_icons.dart'
-//     //workingDir = project.rootDir
-// }
 
 flutter {
     source = "../.."

@@ -15,7 +15,7 @@ class MissingPermissions extends StatelessWidget {
       children: [
         verticalSpaceMassive,
         Image.asset(
-          dotenv.env["LOGO_PATH"] ?? 'assets/images/Sample/logo.png',
+          dotenv.env["LOGO_PATH"] ?? 'assets/images/Default/logo.png',
           width: 200,
           height: 200,
         ),

@@ -24,7 +24,7 @@ class HomePage extends StatelessWidget {
               children: [
                 verticalSpaceLarge,
                 Image.asset(
-                  dotenv.env["LOGO_PATH"] ?? 'assets/images/Sample/logo.png', 
+                  dotenv.env["LOGO_PATH"] ?? 'assets/images/Default/logo.png', 
                   width: 300,
                   height: 300,
                 ),

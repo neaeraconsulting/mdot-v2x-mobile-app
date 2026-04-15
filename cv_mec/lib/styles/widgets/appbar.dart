@@ -20,7 +20,8 @@ class CVMecAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      title: CVMECText.styleTwo(title != null ? title! : "CV-MEC"),
+      //title: CVMECText.styleTwo(title != null ? title! : "CV-MEC"),
+      title: Text(title != null ? title! : "V2X Mobile App", style: TextStyle(color: isDark(Theme.of(context).colorScheme.secondary) ? darkTextPrimaryColor : textPrimaryColor)),
       actions: <Widget>[
         navigationMenu(context),
       ],
@@ -36,7 +37,7 @@ Widget navigationMenu(BuildContext context) {
   List<String> menuNoDev = ['Home', 'Map', 'Settings'];
   List<String> menuDev = ['Home', 'Map', 'Settings', 'Developer Page'];
   return PopupMenuButton<String>(
-    icon: Icon(Icons.menu), 
+    icon: Icon(Icons.menu, color: isDark(Theme.of(context).colorScheme.secondary) ? darkTextPrimaryColor : textPrimaryColor), 
     color: Theme.of(context).colorScheme.secondary,
     itemBuilder: (BuildContext context) {
       return settingsController.developerMode.value
