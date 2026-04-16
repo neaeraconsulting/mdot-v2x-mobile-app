@@ -160,7 +160,7 @@ Additionally, the IOS SCMS package stores additional dependencies locally. Delet
 
 ### 1. Add Assets
 - Go to `assets/images/Custom` or create a new directory under `assets/images`
-- Add a `logo.png` (500x500px) and `load_page.png` (900x1800px).
+- Add a `logo.png` (500x500px) `app_icon.png` (500x500px) and `load_page.png` (900x1800px).
 - If you use a directory under assets/images that isn't 'Custom' or 'Default',   add the asset to the `pubspec.yaml`:
   ```yaml
   assets:
@@ -174,6 +174,7 @@ Additionally, the IOS SCMS package stores additional dependencies locally. Delet
 | :----------------------- | :--------------------------------------------------------------- | :---------------------------------- | :------- |
 | APP_NAME                 | Sets the name of the application.                                | V2X Mobile App                      | No       |
 | LOGO_PATH                | Sets the path where the app logo is located                      | assets/images/Default/logo.png      | No       |
+| APP_ICON_PATH            | Sets the path where the app icon image is located                | assets/images/Defaulst/app_icon.png | No       |
 | LOAD_PAGE_PATH           | Sets the path where the load page image is located               | assets/images/Default/load_page.png | No       |
 | LIGHT_BACKGROUND_COLOR   | Sets the app background color when the app is in light mode      | 0xFFF0F3F7                          | No       |
 | DARK_BACKGROUND_COLOR    | Sets the app background color when the app is in dark mode       | 0xFF010E1F                          | No       |

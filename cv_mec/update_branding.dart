@@ -15,7 +15,7 @@ void main() async {
     }
   }
 
-  var logoPath = env['LOGO_PATH'] ?? 'assets/images/Default/logo.png';
+  var logoPath = env['APP_ICON_PATH'] ?? env['LOGO_PATH'] ?? 'assets/images/Default/logo.png';
   final appName = env['APP_NAME'] ?? 'v2x_mobile_app';
   logoPath = logoPath.replaceAll('\$APP_NAME', appName);
 
