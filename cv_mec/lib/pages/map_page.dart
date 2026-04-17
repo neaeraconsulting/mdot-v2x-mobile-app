@@ -258,6 +258,9 @@ class MapState extends State<MapPage> {
       TravelerInformation plugfest6 = asnService.decodeTim(TestData.plugfestWorkZoneTim);
       timManager.addOrUpdate(plugfest6,TestData.plugfestWorkZoneTim);
 
+      TravelerInformation mdotTim = asnService.decodeTim(TestData.mdotTestTim);
+      timManager.addOrUpdate(mdotTim, TestData.mdotTestTim);
+
     } else if (settingsController.demoMode.value) {
       TravelerInformation weatherTimDemo = asnService.decodeTim(TestData.tfhrcWeatherTIMDemo);
       timManager.addOrUpdate(weatherTimDemo, TestData.tfhrcWeatherTIMDemo);
@@ -369,7 +372,8 @@ class MapState extends State<MapPage> {
   Future<void> createGPSStream() async{
     Stream<Position> stream;
     if (debugMode) {
-      stream = fakePosition(TestData.plugfestFakePosition);
+      // stream = fakePosition(TestData.detroitStaticPosition);
+      stream = fakePosition(TestData.mdotTestTimPosition);
     } else if (settingsController.gpsType.value == GPSType.path) {
       VehiclePath? path = pathService.getPathByName(settingsController.pathToFollow.value);
       if(path!=null){
