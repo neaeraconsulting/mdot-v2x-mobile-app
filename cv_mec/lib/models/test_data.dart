@@ -94,7 +94,7 @@ class TestData {
   ];
 
   static const List<List<double>> detroitStaticPosition = [
-    [-83.160002, 42.402539]
+    [-83.140836, 42.417156]
   ];
 
   static const List<List<double>> plugfestStaticPosition = [
