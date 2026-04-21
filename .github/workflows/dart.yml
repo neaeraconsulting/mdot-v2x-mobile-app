@@ -78,7 +78,7 @@ jobs:
       - name: Install Flutter dependencies
         run: flutter pub get
 
-      - name: Build CV-MEC for Linux
+      - name: Build V2X Mobile App for Linux
         run: flutter build linux
 
       - name: Activate Fastforge

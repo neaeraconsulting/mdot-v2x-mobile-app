@@ -69,7 +69,6 @@ class EtxMqttAgent extends MqttAgent{
 
     logger.i("Acquired Certificates for DeviceID: ${fullRegistration!.deviceID}");
 
-
     String vzString = paramController.networkType.value;
 
     if (settingsController.vzMode.value) {

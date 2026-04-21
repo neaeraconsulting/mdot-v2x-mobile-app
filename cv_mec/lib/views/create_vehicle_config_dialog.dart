@@ -149,6 +149,7 @@ class CreateVehicleConfigDialog extends StatelessWidget {
                                   isRequired: true, isNumeric: false, context: context),
                             ),
                             verticalSpaceSmall,
+                            if(Platform.isAndroid || Platform.isLinux)
                             SizedBox(
                               width: screenWidth(context) * 0.8,
                               child: Row(

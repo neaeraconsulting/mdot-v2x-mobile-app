@@ -12,10 +12,10 @@ import 'package:flutter/scheduler.dart';
 import 'dart:io';
 
 enum GPSType {
-  obu,
-  cradle,
   mobile,
   path,
+  obu,
+  cradle,
 }
 
 class SettingsController extends GetxController {
