@@ -232,6 +232,13 @@ class GeometryService {
   List<Coordinate> getPolygonFromPointPath(List<Coordinate> points, double laneWidth) {
     LineString lineString = geometryFactory.createLineString(points);
 
+    double maxLaneWidth = calculateMaximumExpansion(lineString);
+
+    if (laneWidth > maxLaneWidth) {
+      _logger.w("Provided lane width of $laneWidth meters exceeds the maximum lane width of $maxLaneWidth meters for this geometry. The geometry will be expanded to the maximum possible lane width.");
+      laneWidth = maxLaneWidth;
+    }
+
     BufferParameters bufferParams = BufferParameters();
     bufferParams.setEndCapStyle(BufferParameters.CAP_FLAT);
     bufferParams.setJoinStyle(BufferParameters.JOIN_BEVEL);
@@ -550,5 +557,38 @@ class GeometryService {
 
   double calculateDistanceBetweenCoordinates(Coordinate start, Coordinate end) {
     return sqrt(pow((end.x - start.x), 2) + pow((end.y - start.y), 2));
+  }
+
+
+  double calculateMaximumExpansion(LineString lineString){
+    double maxLaneWidth = 0;
+    for(int i = 1; i < lineString.getNumPoints()-1; i++){
+      
+      Coordinate a = lineString.getCoordinateN(i-1);
+      Coordinate b = lineString.getCoordinateN(i);
+      Coordinate c = lineString.getCoordinateN(i+1);
+
+      double lenAB = a.distance(b);
+      double lenBC = b.distance(c);
+
+      Coordinate ab = Coordinate(b.x - a.x, b.y - a.y);
+      Coordinate bc = Coordinate(c.x - b.x, c.y - b.y);
+
+      double theta = pi - acos((ab.x * bc.x + ab.y * bc.y) / (lenAB * lenBC));
+      double maxABWidth = tan(theta/2) * lenAB;
+      double maxBCWidth = tan(theta/2) * lenBC;
+
+      
+
+      if (maxLaneWidth == 0) {
+        maxLaneWidth = maxABWidth;
+      }
+
+      maxLaneWidth = min(maxLaneWidth, maxABWidth);
+      maxLaneWidth = min(maxLaneWidth, maxBCWidth);
+    }
+
+
+    return maxLaneWidth;
   }
 }

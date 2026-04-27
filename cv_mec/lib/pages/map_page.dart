@@ -259,6 +259,9 @@ class MapState extends State<MapPage> with RouteAware {
       TravelerInformation plugfest6 = asnService.decodeTim(TestData.plugfestWorkZoneTim);
       timManager.addOrUpdate(plugfest6,TestData.plugfestWorkZoneTim);
 
+      TravelerInformation mdotTim = asnService.decodeTim(TestData.mdotTestTim);
+      timManager.addOrUpdate(mdotTim, TestData.mdotTestTim);
+
     } else if (settingsController.demoMode.value) {
       TravelerInformation weatherTimDemo = asnService.decodeTim(TestData.tfhrcWeatherTIMDemo);
       timManager.addOrUpdate(weatherTimDemo, TestData.tfhrcWeatherTIMDemo);
@@ -406,7 +409,7 @@ class MapState extends State<MapPage> with RouteAware {
   Future<void> createGPSStream() async{
     Stream<Position> stream;
     if (debugMode) {
-      stream = fakePosition(TestData.plugfestFakePosition);
+      stream = fakePosition(TestData.mdotTestTimPosition);
     } else if (settingsController.gpsType.value == GPSType.static) {
       List<List<double>> pos = [[settingsController.staticGPSLongitude.value, settingsController.staticGPSLatitude.value]];
       stream = fakePosition(pos);
