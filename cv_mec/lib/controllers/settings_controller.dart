@@ -14,6 +14,7 @@ import 'dart:io';
 enum GPSType {
   mobile,
   path,
+  static,
   obu,
   cradle,
 }
@@ -51,6 +52,9 @@ class SettingsController extends GetxController {
   RxInt broadcastRate = 10.obs;
 
   RxList<String> availablePaths = <String>[].obs;
+
+  Rx<double> staticGPSLatitude = 0.0.obs;
+  Rx<double> staticGPSLongitude = 0.0.obs;
 
   Rx<bool> disableTUMRetry = false.obs;
 
@@ -93,6 +97,8 @@ class SettingsController extends GetxController {
     soundEffectsEnabled.value = await secureStorage.getSoundEffectsEnabled();
     tollingEnabled.value = await secureStorage.getTollingEnabled();
     showTims.value = await secureStorage.getShowTims();
+    staticGPSLatitude.value = await secureStorage.getStaticGPSLatitude();
+    staticGPSLongitude.value = await secureStorage.getStaticGPSLongitude();
     enablePC5.value = await secureStorage.getPC5Enabled();
     enableIssMqtt.value = await secureStorage.getISSMqttEnabled();
     enableEtxMqtt.value = await secureStorage.getEtxMqttEnabled();
@@ -191,6 +197,8 @@ class SettingsController extends GetxController {
         return GPSType.mobile;
       case 'path':
         return GPSType.path;
+      case 'static':
+        return GPSType.static;
       default:
         return GPSType.mobile; // Default to mobile if unknown
     }

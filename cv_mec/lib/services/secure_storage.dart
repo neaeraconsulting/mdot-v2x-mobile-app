@@ -23,6 +23,8 @@ class SecureStorage {
   static const _keyGPSType = 'gpsType';
   static const _keyOBUIP = 'obuIP';
   static const _keyPathToFollow = 'pathToFollow';
+  static const _keyStaticGPSLatitude = 'staticGPSLatitude';
+  static const _keyStaticGPSLongitude = 'staticGPSLongitude';
   static const _keyManualRegistrationMode = "manualRegistrationMode";
   static const _keyRegistrationLatitude = "registrationLatitude";
   static const _keyRegistrationLongitude = "registrationLongitude";
@@ -66,6 +68,8 @@ class SecureStorage {
   static final _startBroadcastRate = dotenv.env["BROADCAST_RATE"] != null ? min(10, max(1, int.tryParse(dotenv.env['BROADCAST_RATE']!)??10)) : 10;
 
   static final _startGPSType = dotenv.env['GPS_TYPE'] ?? '';
+  static final _startStaticGPSLatitude = dotenv.env['STATIC_GPS_LATITUDE'] ?? '0.0';
+  static final _startStaticGPSLongitude = dotenv.env['STATIC_GPS_LONGITUDE'] ?? '0.0';
   static final _startGPSUsername = dotenv.env['GPS_USERNAME'] ?? '';
   static final _startGPSPassword = dotenv.env['GPS_PASSWORD'] ?? '';
   static final _startGPSIP = dotenv.env['GPS_IP'] ?? '';
@@ -107,7 +111,9 @@ class SecureStorage {
   Future<String> getGPSPassword() async => (await _storage.read(key: _keyGPSPassword)) ?? _startGPSPassword;
   Future<String> getGPSIP() async => (await _storage.read(key: _keyGPSIP)) ?? _startGPSIP;
   Future<String> getOBUIP() async => (await _storage.read(key: _keyOBUIP)) ?? _startOBUIP;
-  Future<String> getPathToFollow() async => (await _storage.read(key: _keyPathToFollow)) ?? _startPathToFollow; 
+  Future<String> getPathToFollow() async => (await _storage.read(key: _keyPathToFollow)) ?? _startPathToFollow;
+  Future<double> getStaticGPSLatitude() async => double.tryParse(await _storage.read(key: _keyStaticGPSLatitude) ?? _startStaticGPSLatitude) ?? 0.0;
+  Future<double> getStaticGPSLongitude() async => double.tryParse(await _storage.read(key: _keyStaticGPSLongitude) ?? _startStaticGPSLongitude) ?? 0.0;
   Future<String> getGPSType() async => (await _storage.read(key: _keyGPSType)) ?? _startGPSType;
   Future<bool> getManualRegistrationMode() async =>
       (await _storage.read(key: _keyManualRegistrationMode)) == 'true';
@@ -132,6 +138,8 @@ class SecureStorage {
   Future<void> setGPSIP(String v) => _storage.write(key: _keyGPSIP, value: v);
   Future<void> setOBUIP(String v) => _storage.write(key: _keyOBUIP, value: v);
   Future<void> setPathToFollow(String v) => _storage.write(key: _keyPathToFollow, value: v);
+  Future<void> setStaticGPSLatitude(double latitude) async => await _storage.write(key: _keyStaticGPSLatitude, value: latitude.toString());
+  Future<void> setStaticGPSLongitude(double longitude) async => await _storage.write(key: _keyStaticGPSLongitude, value: longitude.toString());
   Future<void> setGPSType(GPSType gpsType) async => 
       await _storage.write(key: _keyGPSType, value: gpsType.toString().split('.').last);
   Future<void> setBroadcastRate(int broadcastRate) async => await _storage.write(key: _keyBroadcastRate, value: broadcastRate.toString());
