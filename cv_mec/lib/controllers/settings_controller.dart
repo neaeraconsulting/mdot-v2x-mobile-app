@@ -87,7 +87,7 @@ class SettingsController extends GetxController {
   Rx<bool> enablePC5 = dotenv.env['PC5_MQTT_BROKER'] != null ? true.obs : false.obs;
 
   // Automatically enable Signing if the environment variable is configured
-  Rx<bool> enableIssScmsSigning = dotenv.env['ISS_SCMS_TOKEN'] != null ? true.obs : false.obs;
+  Rx<bool> enableIssScmsSigning = false.obs;
 
   RxString deviceID = ''.obs;
   RxString s3AccessKey = (dotenv.env['S3_ACCESS_KEY'] ?? "").obs;
@@ -118,7 +118,7 @@ class SettingsController extends GetxController {
     enablePC5.value = await secureStorage.getPC5Enabled();
     enableIssMqtt.value = await secureStorage.getISSMqttEnabled();
     enableEtxMqtt.value = await secureStorage.getEtxMqttEnabled();
-    enableIssScmsSigning.value = await secureStorage.getIssScmsSigningEnabled();
+    //enableIssScmsSigning.value = await secureStorage.getIssScmsSigningEnabled();
     broadcastRate.value = await secureStorage.getBroadcastRate();
     gpsType.value = toGPSType(await secureStorage.getGPSType());
 
@@ -167,6 +167,7 @@ class SettingsController extends GetxController {
     
     if (secrets != null) {
       issScmsToken.value = secrets.issScmsToken;
+      enableIssScmsSigning.value = issScmsToken.value.isNotEmpty;
       s3AccessKey.value = secrets.s3.s3AccessKey;
       s3SecretKey.value = secrets.s3.s3SecretKey;
       s3BucketName.value = secrets.s3.s3BucketName;
@@ -174,6 +175,7 @@ class SettingsController extends GetxController {
       s3DestDir.value = secrets.s3.s3Destination;
     }else{
       issScmsToken.value = await secureStorage.getIssScmsToken();
+      enableIssScmsSigning.value = issScmsToken.value.isNotEmpty; 
       s3AccessKey.value = await secureStorage.getS3AccessKey();
       s3SecretKey.value = await secureStorage.getS3SecretKey();
       s3BucketName.value = await secureStorage.getS3BucketName();

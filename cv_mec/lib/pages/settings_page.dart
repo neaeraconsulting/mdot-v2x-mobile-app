@@ -104,9 +104,7 @@ class SettingsPage extends StatelessWidget {
               dropdownColor: Theme.of(Get.context!).scaffoldBackgroundColor,
               borderRadius: BorderRadius.circular(8),
               value: controller.gpsType.value,
-              items: (Platform.isLinux
-                ? controller.gpsTypes.sublist(0, controller.gpsTypes.length - 1)
-                : controller.gpsTypes
+              items: (controller.gpsTypes
               ).map((GPSType type) {
                 return DropdownMenuItem<GPSType>(
                   value: type,

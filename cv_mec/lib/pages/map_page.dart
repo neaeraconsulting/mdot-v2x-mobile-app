@@ -584,11 +584,7 @@ class MapState extends State<MapPage> with RouteAware {
     String hex = ASNService.bytesToHex(bytes);
     MsgType msgType = asnService.determineHexMessageType(hex);
     ValidateStatus validity;
-    if(Platform.isAndroid || Platform.isIOS){
-      validity= await scms.validate(bytes);
-    }else{
-      validity = ValidateStatus.FAILURE;
-    }
+    validity= await scms.validate(bytes);
 
     switch (msgType) {
       case MsgType.BSM:
