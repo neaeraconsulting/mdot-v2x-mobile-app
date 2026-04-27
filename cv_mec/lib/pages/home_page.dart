@@ -8,6 +8,7 @@ import 'package:cv_mec/styles/widgets/text.dart';
 import 'package:cv_mec/views/pedestrian_selection_dialog.dart';
 import 'package:cv_mec/views/vehicle_selection_dialog.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 
 class HomePage extends StatelessWidget {
@@ -23,7 +24,7 @@ class HomePage extends StatelessWidget {
               children: [
                 verticalSpaceLarge,
                 Image.asset(
-                  'assets/images/cvmec_logo.png',
+                  dotenv.env["LOGO_PATH"] ?? 'assets/images/Default/logo.png', 
                   width: 300,
                   height: 300,
                 ),

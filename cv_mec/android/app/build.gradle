@@ -28,7 +28,7 @@ def keystoreProperties = new Properties()
        keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
    }
 android {
-    namespace = "com.neaera.cv_mec"
+    namespace = "com.neaera.cv_mec" 
     compileSdk = flutter.compileSdkVersion 
     ndkVersion = flutter.ndkVersion
 
@@ -43,7 +43,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.neaera.cv_mec"
+        applicationId = "com.neaera.v2x_mobile_app"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
         minSdkVersion = 26
@@ -67,6 +67,7 @@ android {
         }
     }
 }
+
 
 flutter {
     source = "../.."

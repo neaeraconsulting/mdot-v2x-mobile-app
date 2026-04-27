@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:cv_mec/models/RangeInputFormatter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -62,26 +63,23 @@ class SettingsPage extends StatelessWidget {
     staticGPSLongitudeController.text = controller.staticGPSLongitude.value.toString();
 
     return Scaffold(
-        appBar: AppBar(
-          title: const Text("Settings Page"),
+      appBar: AppBar(
+        title: const Text("Settings Page"),
+      ),
+      body: Container(
+          child: Obx(
+        () => Padding(
+          padding: const EdgeInsets.all(30.0),
+          child: ListView(children: [
+            versionHeader(),
+            verticalSpaceMedium,
+            configurationSection(),
+            verticalSpaceMedium,
+            appearanceSection(),
+          ]),
         ),
-        body: Container(
-            child: Obx(
-          () => Padding(
-            padding: const EdgeInsets.all(30.0),
-            child: ListView(children: [
-              versionHeader(),
-              verticalSpaceMedium,
-              accountSection(),
-              verticalSpaceMedium,
-              configurationSection(),
-              verticalSpaceMedium,
-              appearanceSection(),
-              verticalSpaceMedium,
-              advancedSection(),
-            ]),
-          ),
-        )));
+      ))
+    );
   }
 
   versionHeader() {
@@ -97,69 +95,12 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  accountSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        headerElement("Account", Icons.person),
-        verticalSpaceSmall,
-        TextField(
-          decoration: const InputDecoration(labelText: 'Username'),
-          controller: usernameController,
-          obscureText: true,
-          onChanged: (value) async {
-            if (value != controller.username.value) {
-              controller.username.value = value;
-              await controller.secureStorage.setUsername(value);
-            }
-          },
-        ),
-        verticalSpaceMedium,
-        TextField(
-          decoration: const InputDecoration(labelText: 'Password'),
-          controller: passwordController,
-          obscureText: true,
-          onChanged: (value) async {
-            if (value != controller.password.value) {
-              controller.password.value = value;
-              await controller.secureStorage.setPassword(value);
-            }
-          },
-        ),
-        verticalSpaceMedium,
-        TextField(
-          decoration: const InputDecoration(labelText: 'Base URI'),
-          controller: baseUriController,
-          obscureText: true,
-          onChanged: (value) async {
-            if (value != controller.baseUri.value) {
-              controller.baseUri.value = value;
-              await controller.secureStorage.setBaseURI(value);
-            }
-          },
-        ),
-        verticalSpaceMedium,
-        TextField(
-          decoration: const InputDecoration(labelText: 'Device ID'),
-          controller: deviceIDController,
-          obscureText: false,
-          onChanged: (value) async {
-            if (value != controller.deviceID.value) {
-              controller.deviceID.value = value;
-              await controller.secureStorage.setDeviceID(value);
-            }
-          },
-        ),
-      ],
-    );
-  }
-
   configurationSection() {
     return Column(
       children: [
         headerElement("Configuration", Icons.settings),
         verticalSpaceMedium,
-        Obx(() => Row(
+        controller.gpsTypes.isNotEmpty ? Obx(() => Row(
           children: [
             const SizedBox(width: 14),
             const Text("GPS Mode: ", style: TextStyle(fontSize: 16)),
@@ -185,7 +126,7 @@ class SettingsPage extends StatelessWidget {
               },
             ),
           ],
-        )),
+        )) : Text('No GPS types available', style: TextStyle(color: Theme.of(Get.context!).textTheme.bodyMedium!.color!)),
         verticalSpaceSmall,
         Obx(() => controller.gpsType.value == GPSType.cradle
             ? Column(children: [
@@ -241,7 +182,7 @@ class SettingsPage extends StatelessWidget {
                 ),
               ])
             : const SizedBox.shrink()),
-        verticalSpaceSmall,
+        controller.showOBUGPSType ? verticalSpaceSmall : Container(),
         Obx(() => controller.gpsType.value == GPSType.path
             ? Obx(() => Row(children: [
                 const SizedBox(width: 14),
@@ -305,7 +246,8 @@ class SettingsPage extends StatelessWidget {
             : const SizedBox.shrink(),
         ),
         verticalSpaceSmall,
-        TextField(
+        controller.showPathGPSType ? verticalSpaceSmall : Container(),
+        controller.showBroadcastRate ? TextField(
           decoration: const InputDecoration(labelText: 'Broadcast Rate'),
           controller: broadcastRateController,
           keyboardType: TextInputType.number,
@@ -320,18 +262,19 @@ class SettingsPage extends StatelessWidget {
               await controller.secureStorage.setBroadcastRate(parsed);
             }
           },
-        ),
-        verticalSpaceSmall,
-        SwitchListTile(
+        ) : Container(),
+        controller.showBroadcastRate ? verticalSpaceSmall : Container(),
+        controller.showPc5 ? SwitchListTile(
             title: const Text("Enable PC5 MQTT Broker"),
             value: controller.enablePC5.value,
             onChanged: (value) async {
               if (value != controller.enablePC5.value) {
                 controller.enablePC5.value = value;
                 await controller.secureStorage.setPC5Enabled(value);
+                controller.changedBrokerSettings.value = true; 
               }
-            }),
-        Obx(() => controller.enablePC5.value
+            }) : Container(),
+        Obx(() => (controller.enablePC5.value && controller.showPc5)
             ? TextField(
                 decoration: const InputDecoration(labelText: 'PC5 MQTT Broker URL'),
                 controller: pc5BrokerUrlController,
@@ -344,28 +287,30 @@ class SettingsPage extends StatelessWidget {
                 },
               )
             : const SizedBox.shrink()),
-        verticalSpaceSmall,
-        SwitchListTile(
+        controller.showPc5 ? verticalSpaceSmall : Container(),
+        controller.showIss ? SwitchListTile(
             title: const Text("Enable ISS MQTT Broker"),
             value: controller.enableIssMqtt.value,
             onChanged: (value) async {
               if (value != controller.enableIssMqtt.value) {
                 controller.enableIssMqtt.value = value;
                 await controller.secureStorage.setIssMqttEnabled(value);
+                controller.changedBrokerSettings.value = true; 
               }
-            }),
-        verticalSpaceSmall,
-        SwitchListTile(
+            }) : Container(),
+        controller.showIss ? verticalSpaceSmall : Container(),
+        controller.showEtx ? SwitchListTile(
             title: const Text("Enable ETX MQTT Broker"),
             value: controller.enableEtxMqtt.value,
             onChanged: (value) async {
               if (value != controller.enableEtxMqtt.value) {
                 controller.enableEtxMqtt.value = value;
                 await controller.secureStorage.setEtxMqttEnabled(value);
+                controller.changedBrokerSettings.value = true; 
               }
-            }),
-        verticalSpaceSmall,
-        Obx(() => SwitchListTile(
+            }) : Container(),
+        controller.showEtx ? verticalSpaceSmall : Container(),
+        controller.showManualRegistration ? Obx(() => SwitchListTile(
             title: const Text("Enable Manual Registration"),
             value: paramController.manualRegistrationMode.value,
             onChanged: (value) async {
@@ -373,9 +318,10 @@ class SettingsPage extends StatelessWidget {
                 //paramController.manualRegistrationMode.value = value;
                 await paramController.switchManualRegistrationMode();
                 await controller.secureStorage.setManualRegistrationModeEnabled(value);
+                controller.changedBrokerSettings.value = true; 
               }
-            })),
-        Obx(() => paramController.manualRegistrationMode.value
+            })) : Container(),
+        Obx(() => (paramController.manualRegistrationMode.value && controller.showManualRegistration)
             ? Column(
               children: [
                 TextField(
@@ -404,8 +350,8 @@ class SettingsPage extends StatelessWidget {
               ],
             )
             : Container()),
-        verticalSpaceSmall,
-        Obx(() => SwitchListTile(
+        controller.showVzMode ? verticalSpaceSmall : Container(),
+        controller.showVzMode ? Obx(() => SwitchListTile(
             title: const Text("VZ Mode"),
             value: controller.vzMode.value,
             onChanged: (value) async {
@@ -413,23 +359,30 @@ class SettingsPage extends StatelessWidget {
                 controller.vzMode.value = value;
                 await controller.secureStorage.setVZMode(value);
               }
-            })),
-        verticalSpaceSmall,
+            })) : Container(),
+        controller.showVzMode ? verticalSpaceSmall : Container(),
         Obx(() => SwitchListTile(
-            title: const Text("Enable Notifications"),
+            title: const Text("Enable Notifications"), 
             value: controller.notificationsEnabled.value,
             onChanged: (value) async {
               if (value != controller.notificationsEnabled.value) {
                 controller.notificationsEnabled.value = value;
                 await controller.secureStorage.setNotificationsEnabled(value);
                 if (controller.notificationsEnabled.value) {
-                  //TODO: Fix icons
                   VehicleNotificationManager.notifyVehicleFromMessageAndImage(
-                      "Notifications Enabled!", const AssetImage('assets/images/cv_mec_notification_icon.png'));
+                      "Notifications Enabled!", AssetImage(dotenv.env["NOTIFICATION_ICON_PATH"] ?? 'assets/images/Sample/notification_icon.png')); 
                 }
               }
             })),
         verticalSpaceSmall,
+        SwitchListTile(
+                title: const Text("Allow Sound Effects"),
+                value: controller.soundEffectsEnabled.value,
+                onChanged: (value) async {
+                  controller.soundEffectsEnabled.value = value;
+                  await controller.secureStorage.setSoundEffectsEnabled(value);
+                }),
+            verticalSpaceSmall,
         Obx(() => SwitchListTile(
             title: const Text("Read Messages"),
             value: controller.readMessages.value,
@@ -440,7 +393,7 @@ class SettingsPage extends StatelessWidget {
               }
             })),
         verticalSpaceSmall,
-        Obx(() => SwitchListTile(
+        controller.showDemoMode ? Obx(() => SwitchListTile(
             title: const Text("Enable Demo Mode"),
             value: controller.demoMode.value,
             onChanged: (value) async {
@@ -448,9 +401,9 @@ class SettingsPage extends StatelessWidget {
                 controller.demoMode.value = value;
                 await controller.secureStorage.setDemoMode(value);
               }
-            })),
-        verticalSpaceSmall,
-        SwitchListTile(
+            })) : Container(),
+        controller.showDemoMode ? verticalSpaceSmall : Container(),
+        controller.showSigning ? SwitchListTile(
             title: const Text("Enable Signing"),
             value: controller.enableIssScmsSigning.value,
             onChanged: (value) async {
@@ -458,9 +411,9 @@ class SettingsPage extends StatelessWidget {
                 controller.enableIssScmsSigning.value = value;
                 await controller.secureStorage.setIssScmsSigningEnabled(value);
               }
-            }),  
-        verticalSpaceSmall,
-        SwitchListTile(
+            }) : Container(),
+        controller.showSigning ? verticalSpaceSmall : Container(),
+        controller.showDisableTUMRetry ? SwitchListTile(
             title: const Text("Disable TUM Message Retry"),
             value: controller.disableTUMRetry.value,
             onChanged: (value) async {
@@ -468,8 +421,8 @@ class SettingsPage extends StatelessWidget {
                 controller.disableTUMRetry.value = value;
                 await controller.secureStorage.setDisableTUMRetry(value);
               }
-            }),            
-        verticalSpaceMedium,
+            }) : Container(),            
+        controller.showDisableTUMRetry ? verticalSpaceMedium : Container(),
       ],
     );
   }
@@ -497,58 +450,23 @@ class SettingsPage extends StatelessWidget {
                   controller.switchModeState();
                 }),
             verticalSpaceMedium,
-            SwitchListTile(
-                title: const Text("Allow Sound Effects"),
-                value: controller.soundEffectsEnabled.value,
-                onChanged: (value) async {
-                  controller.soundEffectsEnabled.value = value;
-                  await controller.secureStorage.setSoundEffectsEnabled(value);
-                }),
-            verticalSpaceMedium,
-            SwitchListTile(
+            controller.showTollingSettings ? SwitchListTile(
                 title: const Text("Show Tolling"),
                 value: controller.tollingEnabled.value,
                 onChanged: (value) async {
                   controller.tollingEnabled.value = value;
                   await controller.secureStorage.setTollingEnabled(value);
-                }),
+                }) : Container(),
             verticalSpaceMedium,
-            SwitchListTile(
+            controller.showTimsSettings ? SwitchListTile(
                 title: const Text("Show TIMs"),
                 value: controller.showTims.value,
                 onChanged: (value) async {
                   controller.showTims.value = value;
                   await controller.secureStorage.setShowTims(value);
-                }),
+                }) : Container(),
           ],
         ));
-  }
-
-  advancedSection() {
-    return Column(
-      children: [
-        headerElement("Advanced", Icons.image),
-        advancedSettings(),
-      ],
-    );
-  }
-
-  advancedSettings(){
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        children: [
-          SwitchListTile(
-            title: const Text("Developer Mode"),
-            value: controller.developerMode.value,
-            onChanged: (value) async {
-              controller.developerMode.value = value;
-              await controller.secureStorage.setDeveloperMode(value);
-            }),
-          verticalSpaceMedium,
-        ],
-      )  
-    );
   }
 
   inputValid() {
@@ -568,8 +486,7 @@ class SettingsPage extends StatelessWidget {
     return Column(
       children: [
         Row(children: [
-          Icon(icon,
-              color: controller.darkModeState.value ? lightprimaryColor : primaryColor), //change color to match theme
+          Icon(icon),
           const SizedBox(width: 10),
           Text(sectionTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
         ]),

@@ -26,6 +26,30 @@ class SettingsController extends GetxController {
   late ApiService apiService;
   late PathService pathService;
 
+  // What settings to show
+  bool showBaseUri = (dotenv.env['SHOW_BASE_URI'] ?? 'false').toLowerCase() == 'true';
+  bool showDeviceID = (dotenv.env['SHOW_DEVICE_ID'] ?? 'false').toLowerCase() == 'true';
+  
+  bool showMobileGPSType = (dotenv.env['MOBILE_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
+  bool showCradleGPSType = (dotenv.env['CRADLE_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
+  bool showOBUGPSType = (dotenv.env['OBU_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
+  bool showPathGPSType = (dotenv.env['PATH_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
+  
+  bool showBroadcastRate = (dotenv.env['SHOW_BROADCAST_RATE'] ?? 'false').toLowerCase() == 'true';
+
+  bool showPc5 = (dotenv.env['SHOW_PC5_BROKER'] ?? 'false').toLowerCase() == 'true';
+  bool showIss = (dotenv.env['SHOW_ISS_BROKER'] ?? 'false').toLowerCase() == 'true';
+  bool showEtx = (dotenv.env['SHOW_ETX_BROKER'] ?? 'false').toLowerCase() == 'true';
+
+  bool showManualRegistration = (dotenv.env['SHOW_MANUAL_REGISTRATION'] ?? 'false').toLowerCase() == 'true';
+  bool showVzMode = (dotenv.env['SHOW_VZ_MODE'] ?? 'false').toLowerCase() == 'true';
+  bool showDemoMode = (dotenv.env['SHOW_DEMO_MODE'] ?? 'false').toLowerCase() == 'true';
+  bool showSigning = (dotenv.env['SHOW_SIGNING'] ?? 'false').toLowerCase() == 'true';
+  bool showDisableTUMRetry = (dotenv.env['SHOW_DISABLE_TUM_RETRY'] ?? 'false').toLowerCase() == 'true';
+
+  bool showTollingSettings = (dotenv.env['SHOW_TOLLING_SETTINGS'] ?? 'false').toLowerCase() == 'true';
+  bool showTimsSettings = (dotenv.env['SHOW_TIMS_SETTINGS'] ?? 'false').toLowerCase() == 'true';
+
   Rx<bool> darkModeState = Get.isDarkMode.obs;
   Rx<bool> developerMode = false.obs;
   Rx<bool> soundEffectsEnabled = true.obs;
@@ -76,11 +100,9 @@ class SettingsController extends GetxController {
   RxString s3Region = (dotenv.env['S3_REGION'] ?? "").obs;
   RxString s3DestDir = (dotenv.env['S3_DESTINATION'] ?? "").obs;
 
-  initialize() async {
-    
-    
-    username.value = await secureStorage.getUsername();
-    password.value = await secureStorage.getPassword();
+  RxBool changedBrokerSettings = false.obs; 
+
+  initialize() async {    
     baseUri.value = await secureStorage.getBaseURI();
     cradleGPSUsername.value = await secureStorage.getGPSUsername();
     cradleGPSPassword.value = await secureStorage.getGPSPassword();
@@ -104,15 +126,23 @@ class SettingsController extends GetxController {
     enableEtxMqtt.value = await secureStorage.getEtxMqttEnabled();
     enableIssScmsSigning.value = await secureStorage.getIssScmsSigningEnabled();
     broadcastRate.value = await secureStorage.getBroadcastRate();
-
-    
-
-
-    
     gpsType.value = toGPSType(await secureStorage.getGPSType());
 
     if (gpsType.value == GPSType.mobile && Platform.isLinux) {
       gpsType.value = GPSType.cradle;
+    }
+
+    //filter gps types based on environment variables
+    List<GPSType> filteredGPSTypes = [];
+    if(showMobileGPSType) filteredGPSTypes.add(GPSType.mobile);
+    if(showCradleGPSType) filteredGPSTypes.add(GPSType.cradle);
+    if(showOBUGPSType) filteredGPSTypes.add(GPSType.obu);
+    if(showPathGPSType) filteredGPSTypes.add(GPSType.path);
+    gpsTypes = filteredGPSTypes;
+
+    //check if the current gps type is in the filtered list, if not set to first available
+    if(!gpsTypes.contains(gpsType.value) && gpsTypes.isNotEmpty){
+      gpsType.value = gpsTypes[0];
     }
 
     bool? darkMode = await sharedPrefs.getDarkModeFromPrefs();
