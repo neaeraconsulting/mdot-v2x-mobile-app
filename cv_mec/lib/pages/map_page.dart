@@ -595,9 +595,13 @@ class MapState extends State<MapPage> {
 
   void processNewBsm(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
     VehicleClass vehicleClass = VehicleClass.unknownVehicleClass;
-
     String trimmedHex = asnService.trimMessageHeaders(hex, asnService.BSM_START_FLAG)!;
     BasicSafetyMessage bsm = asnService.decodeBsm(trimmedHex);
+    String vehicleID = ASNService.bytesToHex(bsm.coreData.id.temporaryID);
+
+    if (vehicleID == bsmBuilder.vehicleId) {
+      return;
+    }
 
     LightbarInUse lights = LightbarInUse.unavailable;
     SirenInUse sirens = SirenInUse.unavailable;
@@ -616,8 +620,6 @@ class MapState extends State<MapPage> {
       }
     }
     LatLng position = LatLng(bsm.coreData.lat.getDecimalLatitude(), bsm.coreData.long.getDecimalLongitude());
-    String vehicleID = ASNService.bytesToHex(bsm.coreData.id.temporaryID);
-
     DateTime bsmTime = bsm.coreData.secMark.getDateTime(recTime);
 
     ReceivedMsg msg = ReceivedBsm(vehicleID, bsmTime, position, vehicleClass, lights, sirens);
