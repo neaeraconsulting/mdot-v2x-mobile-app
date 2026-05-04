@@ -1,5 +1,7 @@
+import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/models/mqtt/mqtt_agent.dart';
 import 'package:cv_mec/models/msg_types.dart';
+import 'package:get/get.dart';
 import 'package:iss_scms/models/psid.dart';
 import 'package:typed_data/typed_data.dart';
 import 'package:dart_geohash/dart_geohash.dart';
@@ -13,11 +15,12 @@ class IssMqttAgent extends MqttAgent{
   List<int> subscribedPSIDs = [PSID.PSM.code, PSID.BSM.code, PSID.SPAT.code];
   final int bsmPSID = PSID.BSM.code;
   final int psmPSID = PSID.PSM.code;
+  SettingsController settingsController = Get.find<SettingsController>();
 
   @override
   Future<int> connect() async{
-    String connectionUrl = "mqtt://mqtt.us.mobilityinterchange.com"; // TODO load this from settings dinosaur
-    logger.i("Connecting MQTT Agent $agentName");
+    String connectionUrl = settingsController.issMqttBrokerUrl.value;
+    logger.i("Connecting MQTT Agent $agentName to $connectionUrl");
 
     int result = await mqttService.connect(connectionUrl, null);
     if (result != 0) {

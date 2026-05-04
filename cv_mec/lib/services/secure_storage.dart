@@ -29,6 +29,7 @@ class SecureStorage {
   static const _keyRegistrationLatitude = "registrationLatitude";
   static const _keyRegistrationLongitude = "registrationLongitude";
   static const _keyBroadcastRate = "broadcastRate";
+  static const _keyISSMqttBrokerUrl = "issMqttBrokerUrl";
 
   static const _keyS3Accesskey = "s3AccessKey";
   static const _keyS3SecretKey = "s3SecretKey";
@@ -53,6 +54,7 @@ class SecureStorage {
   static final _startUsername = dotenv.env['USERNAME']!;
   static final _startPassword = dotenv.env['PASSWORD']!;
   static final _startBaseURI = dotenv.env['API_ENDPOINT']!;
+  static final _startISSMqttBrokerUrl = dotenv.env['ISS_MQTT_BROKER'] ?? "";
   static final _startDeviceID = "";
 
   static final _startVzMode = false;
@@ -97,6 +99,7 @@ class SecureStorage {
   Future<String> getDeviceID() async => await _storage.read(key: _keyDeviceID) ?? _startDeviceID;
   Future<String> getPC5BrokerUrl() async => await _storage.read(key: _keyPC5BrokerUrl) ?? _pc5BrokerUrl;
   Future<String> getIssScmsToken() async => await _storage.read(key: _keyIssScmsToken) ?? _issScmsToken;
+  Future<String> getISSMqttBrokerUrl() async => await _storage.read(key: _keyISSMqttBrokerUrl) ?? _startISSMqttBrokerUrl;
   Future<bool> getVZMode() async => (await _storage.read(key: _keyVzMode) ?? _startVzMode.toString()) == "true";
   Future<bool> getNotificationsEnabled() async => (await _storage.read(key: _keyNotificationsEnabled)?? _startNotificationsEnabled.toString()) == "true";
   Future<bool> getReadMessages() async => (await _storage.read(key: _keyReadMessages)?? _startReadMessages.toString()) == "true";
@@ -132,6 +135,7 @@ class SecureStorage {
   Future<void> setBaseURI(String baseURI) async => await _storage.write(key: _keyBaseURI, value: baseURI);
   Future<void> setDeviceID(String deviceID) async => await _storage.write(key: _keyDeviceID, value: deviceID);
   Future<void> setPC5BrokerUrl(String pc5BrokerUrl) async => await _storage.write(key: _keyPC5BrokerUrl, value: pc5BrokerUrl);
+  Future<void> setISSMqttBrokerUrl(String issMqttBrokerUrl) async => await _storage.write(key: _keyISSMqttBrokerUrl, value: issMqttBrokerUrl);
   Future<void> setIssScmsToken(String issScmsToken) async => await _storage.write(key: _keyIssScmsToken, value: issScmsToken);
   Future<void> setGPSUsername(String v) => _storage.write(key: _keyGPSUsername, value: v);
   Future<void> setGPSPassword(String v) => _storage.write(key: _keyGPSPassword, value: v);

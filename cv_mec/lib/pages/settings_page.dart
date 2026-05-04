@@ -32,7 +32,7 @@ class SettingsPage extends StatelessWidget {
   TextEditingController broadcastRateController = TextEditingController();
   TextEditingController staticGPSLatitudeController = TextEditingController();
   TextEditingController staticGPSLongitudeController = TextEditingController();
-
+  TextEditingController issMqttBrokerUrlController = TextEditingController();
 
 
   FileService fileService = Get.find<FileService>();
@@ -60,6 +60,7 @@ class SettingsPage extends StatelessWidget {
     registrationLongitudeController.text = paramController.manualLongitude.toString();
     staticGPSLatitudeController.text = controller.staticGPSLatitude.value.toString();
     staticGPSLongitudeController.text = controller.staticGPSLongitude.value.toString();
+    issMqttBrokerUrlController.text = controller.issMqttBrokerUrl.value;
 
     return Scaffold(
         appBar: AppBar(
@@ -354,6 +355,18 @@ class SettingsPage extends StatelessWidget {
                 await controller.secureStorage.setIssMqttEnabled(value);
               }
             }),
+        verticalSpaceSmall,
+        controller.enableIssMqtt.value ? TextField(
+          decoration: const InputDecoration(labelText: 'ISS MQTT Broker URL'),
+          controller: issMqttBrokerUrlController,
+          onChanged: (value) async {
+            if (value != controller.issMqttBrokerUrl.value) {
+              controller.issMqttBrokerUrl.value = value;
+              print("Saving ISS MQTT Broker URL: $value");
+              await controller.secureStorage.setISSMqttBrokerUrl(value);
+            }
+          },
+        ) : Container(),
         verticalSpaceSmall,
         SwitchListTile(
             title: const Text("Enable ETX MQTT Broker"),
