@@ -16,7 +16,7 @@ enum GPSType {
   path,
   static,
   obu,
-  cradle,
+  cradle
 }
 
 class SettingsController extends GetxController {
@@ -34,6 +34,7 @@ class SettingsController extends GetxController {
   bool showCradleGPSType = (dotenv.env['CRADLE_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
   bool showOBUGPSType = (dotenv.env['OBU_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
   bool showPathGPSType = (dotenv.env['PATH_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
+  bool showStaticGPSType = (dotenv.env['STATIC_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
   
   bool showBroadcastRate = (dotenv.env['SHOW_BROADCAST_RATE'] ?? 'false').toLowerCase() == 'true';
 
@@ -138,6 +139,7 @@ class SettingsController extends GetxController {
     if(showCradleGPSType) filteredGPSTypes.add(GPSType.cradle);
     if(showOBUGPSType) filteredGPSTypes.add(GPSType.obu);
     if(showPathGPSType) filteredGPSTypes.add(GPSType.path);
+    if(showStaticGPSType) filteredGPSTypes.add(GPSType.static);
     gpsTypes = filteredGPSTypes;
 
     //check if the current gps type is in the filtered list, if not set to first available
