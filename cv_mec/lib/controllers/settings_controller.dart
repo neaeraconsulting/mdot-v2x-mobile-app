@@ -171,7 +171,6 @@ class SettingsController extends GetxController {
     
     if (secrets != null) {
       issScmsToken.value = secrets.issScmsToken;
-      enableIssScmsSigning.value = issScmsToken.value.isNotEmpty;
       s3AccessKey.value = secrets.s3.s3AccessKey;
       s3SecretKey.value = secrets.s3.s3SecretKey;
       s3BucketName.value = secrets.s3.s3BucketName;
@@ -179,7 +178,6 @@ class SettingsController extends GetxController {
       s3DestDir.value = secrets.s3.s3Destination;
     }else{
       issScmsToken.value = await secureStorage.getIssScmsToken();
-      enableIssScmsSigning.value = issScmsToken.value.isNotEmpty; 
       s3AccessKey.value = await secureStorage.getS3AccessKey();
       s3SecretKey.value = await secureStorage.getS3SecretKey();
       s3BucketName.value = await secureStorage.getS3BucketName();
