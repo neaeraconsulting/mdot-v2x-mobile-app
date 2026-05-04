@@ -11,7 +11,7 @@ class MqttAgentManager{
   MqttAgentManager(){}
 
   Future<int> connectAll() async{
-    for(MqttAgent agent in List<MqttAgent>.from(agents)){
+    for(MqttAgent agent in List<MqttAgent>.from(agents)){ //looping this way to avoid concurrent modification errors
       logger.i("Connecting Agent ${agent.agentName}");
       final success = await agent.connect();
       if(success != 0){
