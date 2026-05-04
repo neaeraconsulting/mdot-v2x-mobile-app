@@ -62,7 +62,7 @@ class IssScms {
   }
 
   // Message Definition Matches ISS Library
-  Future<void> init() async {
+  void init() async {
     if (Platform.isAndroid || Platform.isIOS) {
       print("Initializing SCMS for Mobile");
       return IssScmsPlatform.instance.init();

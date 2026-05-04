@@ -89,9 +89,7 @@ class SettingsController extends GetxController {
 
   // Automatically enable PC5 if the environment variable is configured
   Rx<bool> enablePC5 = dotenv.env['PC5_MQTT_BROKER'] != null ? true.obs : false.obs;
-
-  // Automatically enable Signing if the environment variable is configured
-  Rx<bool> enableIssScmsSigning = false.obs;
+  Rx<bool> enableIssScmsSigning = (dotenv.env['ISS_SCMS_TOKEN'] != null && dotenv.env['ISS_SCMS_TOKEN']!.isNotEmpty) ? true.obs : false.obs;
 
   RxString deviceID = ''.obs;
   RxString s3AccessKey = (dotenv.env['S3_ACCESS_KEY'] ?? "").obs;
@@ -124,7 +122,7 @@ class SettingsController extends GetxController {
     enablePC5.value = await secureStorage.getPC5Enabled();
     enableIssMqtt.value = await secureStorage.getISSMqttEnabled();
     enableEtxMqtt.value = await secureStorage.getEtxMqttEnabled();
-    //enableIssScmsSigning.value = await secureStorage.getIssScmsSigningEnabled();
+    enableIssScmsSigning.value = await secureStorage.getIssScmsSigningEnabled();
     broadcastRate.value = await secureStorage.getBroadcastRate();
     gpsType.value = toGPSType(await secureStorage.getGPSType());
 
