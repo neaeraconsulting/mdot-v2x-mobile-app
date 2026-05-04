@@ -5,14 +5,18 @@ ext {
 
 def loadEnv(String envPath) {
     def env = [:]
-    file(envPath).eachLine { line ->
-        line = line.trim()
-        if (line && !line.startsWith('#')) {
-            def parts = line.split('=', 2)
-            if (parts.length == 2) {
-                env[parts[0].trim()] = parts[1].trim()
+    try {
+        file(envPath).eachLine { line ->
+            line = line.trim()
+            if (line && !line.startsWith('#')) {
+                def parts = line.split('=', 2)
+                if (parts.length == 2) {
+                    env[parts[0].trim()] = parts[1].trim()
+                }
             }
         }
+    } catch (Exception e) {
+        println "[loadEnv] Failed to read env file at ${envPath}: ${e.message}"
     }
     return env
 }

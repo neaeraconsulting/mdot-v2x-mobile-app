@@ -187,7 +187,7 @@ class SettingsPage extends StatelessWidget {
         Obx(() => controller.gpsType.value == GPSType.path
             ? Obx(() => Row(children: [
                 const SizedBox(width: 14),
-                Text("Path Selection: ${controller.availablePaths.length}", style: TextStyle(fontSize: 16)),
+                const Text("Path Selection:", style: TextStyle(fontSize: 16)),
                 Expanded(child: Container()),
                 controller.availablePaths.isNotEmpty? DropdownButton<String>(
                   value:  controller.pathToFollow.value,
@@ -247,7 +247,7 @@ class SettingsPage extends StatelessWidget {
             : const SizedBox.shrink(),
         ),
         verticalSpaceSmall,
-        TextField(
+        controller.showBroadcastRate ? TextField(
           decoration: const InputDecoration(labelText: 'Broadcast Rate'),
           controller: broadcastRateController,
           keyboardType: TextInputType.number,
