@@ -3,6 +3,7 @@ import 'package:cv_mec/styles/spacing.dart';
 import 'package:cv_mec/styles/widgets/text.dart';
 import 'package:flutter/material.dart';
 import 'package:app_settings/app_settings.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class MissingPermissions extends StatelessWidget {
   const MissingPermissions({super.key});
@@ -14,7 +15,7 @@ class MissingPermissions extends StatelessWidget {
       children: [
         verticalSpaceMassive,
         Image.asset(
-          'assets/images/cvmec_logo.png',
+          dotenv.env["LOGO_PATH"] ?? 'assets/images/Default/logo.png',
           width: 200,
           height: 200,
         ),

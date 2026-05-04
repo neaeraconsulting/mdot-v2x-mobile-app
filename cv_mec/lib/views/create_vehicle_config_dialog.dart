@@ -218,7 +218,7 @@ class CreateVehicleConfigDialog extends StatelessWidget {
         value: vehicleClassification != "" ? vehicleClassification : null,
         isExpanded: true,
         menuMaxHeight: screenHeightPercentage(context, percentage: 0.5),
-        dropdownColor: Theme.of(context).dialogBackgroundColor,
+        dropdownColor: Theme.of(context).colorScheme.surface,
         //VehicleType.values.map((e) => e.name.replaceAll("_", " ").capitalizeFirst!).toList(),
         items: VehicleType.values
             .map((e) => DropdownMenuItem(
