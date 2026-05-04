@@ -407,6 +407,9 @@ class MapState extends State<MapPage> with RouteAware {
     Stream<Position> stream;
     if (debugMode) {
       stream = fakePosition(TestData.plugfestFakePosition);
+    } else if (settingsController.gpsType.value == GPSType.static) {
+      List<List<double>> pos = [[settingsController.staticGPSLongitude.value, settingsController.staticGPSLatitude.value]];
+      stream = fakePosition(pos);
     } else if (settingsController.gpsType.value == GPSType.path) {
       VehiclePath? path = pathService.getPathByName(settingsController.pathToFollow.value);
       if(path!=null){
