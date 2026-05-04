@@ -31,6 +31,8 @@ class SettingsPage extends StatelessWidget {
   TextEditingController registrationLongitudeController = TextEditingController();
   TextEditingController scmsApiTokenController = TextEditingController();
   TextEditingController broadcastRateController = TextEditingController();
+  TextEditingController staticGPSLatitudeController = TextEditingController();
+  TextEditingController staticGPSLongitudeController = TextEditingController();
 
 
 
@@ -57,6 +59,9 @@ class SettingsPage extends StatelessWidget {
     broadcastRateController.text = controller.broadcastRate.value.toString();
     registrationLatitudeController.text = paramController.manualLatitude.toString();
     registrationLongitudeController.text = paramController.manualLongitude.toString();
+    staticGPSLatitudeController.text = controller.staticGPSLatitude.value.toString();
+    staticGPSLongitudeController.text = controller.staticGPSLongitude.value.toString();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Settings Page"),
@@ -202,6 +207,40 @@ class SettingsPage extends StatelessWidget {
                   }
                   ) : Text('No paths available', style: TextStyle(color: Theme.of(Get.context!).textTheme.bodyMedium!.color!)),
               ]))
+            : const SizedBox.shrink(),
+        ),
+        Obx(() => controller.gpsType.value == GPSType.static
+            ? Column(children: [
+                TextField(
+                  decoration: const InputDecoration(labelText: 'Static GPS Latitude'),
+                  controller: staticGPSLatitudeController,
+                  obscureText: false,
+                  onChanged: (value) async {
+                    if (value != controller.staticGPSLatitude.value.toString()) {
+                      final parsed = double.tryParse(value);
+                      if (parsed != null) {
+                        controller.staticGPSLatitude.value = parsed;
+                        await controller.secureStorage.setStaticGPSLatitude(parsed);
+                      }
+                    }
+                  },
+                ),
+                verticalSpaceSmall,
+                TextField(
+                  decoration: const InputDecoration(labelText: 'Static GPS Longitude'),
+                  controller: staticGPSLongitudeController,
+                  obscureText: false,
+                  onChanged: (value) async {
+                    if (value != controller.staticGPSLongitude.value.toString()) {
+                      final parsed = double.tryParse(value);
+                      if (parsed != null) {
+                        controller.staticGPSLongitude.value = parsed;
+                        await controller.secureStorage.setStaticGPSLongitude(parsed);
+                      }
+                    }
+                  },
+                ),
+              ])
             : const SizedBox.shrink(),
         ),
         controller.showPathGPSType ? verticalSpaceSmall : Container(),

@@ -12,8 +12,11 @@ import 'package:cv_mec/services/geometry_service.dart';
 import 'package:dart_jts/dart_jts.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:logger/logger.dart';
 
 class GeoMap {
+
+  final Logger _logger = Logger();
   late MapData map;
   late IntersectionGeometry intersectionGeometry;
   late Geometry mapBoundingBox;
@@ -76,14 +79,16 @@ class GeoMap {
           List<LatLng> coordinates =
               calculateLaneConnectionCoordinates(ingressLaneId, connectId, intersectionGeometry.refPoint);
 
-          laneConnections.add(RenderLaneConnection(coordinates, signalGroup));
+          if (coordinates.isNotEmpty) {
+            laneConnections.add(RenderLaneConnection(coordinates, signalGroup));
 
-          if (lightLocations.containsKey(coordinates.first)) {
-            lightLocations[coordinates.first]!.signalGroups.add(signalGroup);
-          } else {
-            Set<int> signalGroups = {};
-            signalGroups.add(signalGroup);
-            lightLocations[coordinates.first] = RenderLightLocation(coordinates.first, signalGroups);
+            if (lightLocations.containsKey(coordinates.first)) {
+              lightLocations[coordinates.first]!.signalGroups.add(signalGroup);
+            } else {
+              Set<int> signalGroups = {};
+              signalGroups.add(signalGroup);
+              lightLocations[coordinates.first] = RenderLightLocation(coordinates.first, signalGroups);
+            }
           }
         }
       }
@@ -114,7 +119,11 @@ class GeoMap {
         LatLng firstPoint = laneSegments[firstLaneId]!.first;
         LatLng lastPoint = laneSegments[secondLaneId]!.first;
         return [firstPoint, lastPoint];
+      }else{
+        _logger.w("Unable to build lane connections for MAP message. Missing lane segment for lane id $secondLaneId");
       }
+    }else{
+      _logger.w("Unable to build lane connections for MAP message. Missing lane segment for lane id $firstLaneId");
     }
 
     return [];
