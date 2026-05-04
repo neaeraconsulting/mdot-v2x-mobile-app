@@ -59,6 +59,7 @@ class SettingsPage extends StatelessWidget {
     broadcastRateController.text = controller.broadcastRate.value.toString();
     registrationLatitudeController.text = paramController.manualLatitude.toString();
     registrationLongitudeController.text = paramController.manualLongitude.toString();
+
     staticGPSLatitudeController.text = controller.staticGPSLatitude.value.toString();
     staticGPSLongitudeController.text = controller.staticGPSLongitude.value.toString();
 
@@ -184,7 +185,7 @@ class SettingsPage extends StatelessWidget {
         Obx(() => controller.gpsType.value == GPSType.path
             ? Obx(() => Row(children: [
                 const SizedBox(width: 14),
-                Text("Path Selection: ${controller.availablePaths.length}", style: TextStyle(fontSize: 16)),
+                const Text("Path Selection:", style: TextStyle(fontSize: 16)),
                 Expanded(child: Container()),
                 controller.availablePaths.isNotEmpty? DropdownButton<String>(
                   value:  controller.pathToFollow.value,
