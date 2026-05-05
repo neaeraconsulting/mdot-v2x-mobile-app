@@ -14,10 +14,13 @@ import 'iss_scms_platform_interface.dart';
 
 class IssScms {
 
-  final IssSigningApi apiService = Get.put(IssSigningApi());
+  late IssSigningApi apiService;
 
   IssScms(){
     init();
+    if (!(Platform.isAndroid || Platform.isIOS)) {
+      apiService = Get.put(IssSigningApi());
+    } 
   }
 
 

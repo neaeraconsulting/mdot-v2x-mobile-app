@@ -22,7 +22,6 @@ class IssSigningApi extends GetxService {
     try {
       var response = await http.get(Uri.parse(uri), headers: headers);
       if (response.statusCode == 200) {
-        print("Health Check Response: ${response.body.toString()}");
         return response.body.toString();
       }else{
         _logger.e("Error doing health check: ${response.statusCode} ${response.body.toString()}");
@@ -44,14 +43,13 @@ class IssSigningApi extends GetxService {
     try {
       var response = await http.post(Uri.parse(uri), headers: headers, body: body);
       if (response.statusCode == 200) {
-        print("Validate Response: ${response.body.toString()}");
         return enumFromString(response.body.toString(), ValidateStatus.values, ValidateStatus.FAILURE);
       }else{
         _logger.e("Error validating: ${response.statusCode} ${response.body.toString()}");
         return ValidateStatus.FAILURE;
       }
     } catch (e) {
-      _logger.e("Error doing health check: $e");
+      _logger.e("Error validating: $e");
       return ValidateStatus.FAILURE;
     }
   }
@@ -68,7 +66,6 @@ class IssSigningApi extends GetxService {
     try {
       var response = await http.post(Uri.parse(uri), headers: headers, body: body);
       if (response.statusCode == 200) {
-
         Map<String, dynamic> json = jsonDecode(response.body);
         String signedList = json['signedMessageHex'];
         return hexToBytes(signedList);
@@ -160,7 +157,7 @@ class IssSigningApi extends GetxService {
     try {
       return values.firstWhere((e) => e.name == value);
     } catch (_) {
-      return def; // return null if no match
+      return def;
     }
   }
 
@@ -178,12 +175,11 @@ class IssSigningApi extends GetxService {
     return bytes.toList();
   }
 
-  // Bytes to Hex Function makes
   static String bytesToHex(List<int> bytes) {
     final StringBuffer buffer = StringBuffer();
     for (int byte in bytes) {
       buffer.write(byte.toRadixString(16).padLeft(2, '0'));
     }
-    return buffer.toString().toUpperCase(); // Convert to uppercase if needed
+    return buffer.toString().toUpperCase(); 
   }
 }

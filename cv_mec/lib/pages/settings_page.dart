@@ -97,6 +97,12 @@ class SettingsPage extends StatelessWidget {
   }
 
   configurationSection() {
+    if (Platform.isLinux) {
+      bool hasMobile = controller.gpsTypes.contains(GPSType.mobile);
+      if (hasMobile) {
+        controller.gpsTypes.remove(GPSType.mobile);
+      }
+    }
     return Column(
       children: [
         headerElement("Configuration", Icons.settings),

@@ -89,7 +89,6 @@ class SettingsController extends GetxController {
 
   // Automatically enable PC5 if the environment variable is configured
   Rx<bool> enablePC5 = dotenv.env['PC5_MQTT_BROKER'] != null ? true.obs : false.obs;
-  Rx<bool> enableIssScmsSigning = (dotenv.env['ISS_SCMS_TOKEN'] != null && dotenv.env['ISS_SCMS_TOKEN']!.isNotEmpty) ? true.obs : false.obs;
 
   RxString deviceID = ''.obs;
   RxString s3AccessKey = (dotenv.env['S3_ACCESS_KEY'] ?? "").obs;
@@ -99,6 +98,8 @@ class SettingsController extends GetxController {
   RxString s3DestDir = (dotenv.env['S3_DESTINATION'] ?? "").obs;
 
   RxBool changedBrokerSettings = false.obs; 
+
+  Rx<bool> enableIssScmsSigning = false.obs;
 
   initialize() async {    
     baseUri.value = await secureStorage.getBaseURI();
@@ -184,6 +185,8 @@ class SettingsController extends GetxController {
       s3Region.value = await secureStorage.getS3Region();
       s3DestDir.value = await secureStorage.getS3DestDir();
     }
+
+    enableIssScmsSigning.value = issScmsToken.value.isNotEmpty;
 
     availablePaths.value = pathService.getPathNames();
     if(!availablePaths.contains(pathToFollow.value)){
