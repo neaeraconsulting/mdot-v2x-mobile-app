@@ -2,7 +2,7 @@ import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/models/mqtt/mqtt_agent.dart';
 import 'package:cv_mec/models/msg_types.dart';
 import 'package:get/get.dart';
-import 'package:iss_scms/models/psid.dart';
+import 'package:iss_scms/models/dsrc_msg_id.dart';
 import 'package:typed_data/typed_data.dart';
 import 'package:dart_geohash/dart_geohash.dart';
 
@@ -12,9 +12,19 @@ class IssMqttAgent extends MqttAgent{
   GeoHasher geohasher = GeoHasher();
   String currentGeohash = "";
   List<String> surroundingGeohashes = [];
-  List<int> subscribedPSIDs = [PSID.PSM.code, PSID.BSM.code, PSID.SPAT.code];
-  final int bsmPSID = PSID.BSM.code;
-  final int psmPSID = PSID.PSM.code;
+
+  final List<int> subscribedPSIDs = [
+    DsrcMsgId.basicSafetyMessage.code,
+    DsrcMsgId.personalSafetyMessage.code,
+    DsrcMsgId.signalPhaseAndTimingMessage.code,
+    DsrcMsgId.mapData.code,
+    DsrcMsgId.travelerInformation.code,
+    DsrcMsgId.signalStatusMessage.code,
+    DsrcMsgId.signalRequestMessage.code
+  ];
+
+  final int bsmPSID = DsrcMsgId.basicSafetyMessage.code;
+  final int psmPSID = DsrcMsgId.personalSafetyMessage.code;
   SettingsController settingsController = Get.find<SettingsController>();
 
   @override
