@@ -59,9 +59,7 @@ class MqttAgentManager{
   void setPosition(Position? pos){
     for(MqttAgent agent in agents){
       agent.setPosition(pos);
-      if (agent.agentName == "ISS" && agent.isConnected()) {
-        agent.updateSubscribers();
-      }
+      agent.updateSubscribers();
     }
   }
 

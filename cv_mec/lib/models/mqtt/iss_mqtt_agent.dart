@@ -61,29 +61,31 @@ class IssMqttAgent extends MqttAgent{
 
   @override
   Future<int> updateSubscribers() async{
-    String newGeohash = geohashInBaseThirtyTwo(currentPosition?.latitude ?? 0.0, currentPosition?.longitude ?? 0.0);
-    if(newGeohash != currentGeohash){
-      currentGeohash = newGeohash;
-      List<String> newGeohashes = getGeohashAndNeighbors(newGeohash);
-      for(int i = surroundingGeohashes.length - 1; i >= 0; i--){
-        String neighbor = surroundingGeohashes[i];
-        if(neighbor.length >= 7 && !newGeohashes.contains(neighbor)){
-          for (int psid in subscribedPSIDs){
-            mqttService.unsubscribe("/v1/g32/${neighbor[0]}/${neighbor[1]}/${neighbor[2]}/${neighbor[3]}/${neighbor[4]}/${neighbor[5]}/${neighbor[6]}/$psid");
+    if (isConnected()) {
+      String newGeohash = geohashInBaseThirtyTwo(currentPosition?.latitude ?? 0.0, currentPosition?.longitude ?? 0.0);
+      if(newGeohash != currentGeohash){
+        currentGeohash = newGeohash;
+        List<String> newGeohashes = getGeohashAndNeighbors(newGeohash);
+        for(int i = surroundingGeohashes.length - 1; i >= 0; i--){
+          String neighbor = surroundingGeohashes[i];
+          if(neighbor.length >= 7 && !newGeohashes.contains(neighbor)){
+            for (int psid in subscribedPSIDs){
+              mqttService.unsubscribe("/v1/g32/${neighbor[0]}/${neighbor[1]}/${neighbor[2]}/${neighbor[3]}/${neighbor[4]}/${neighbor[5]}/${neighbor[6]}/$psid");
+            }
+            surroundingGeohashes.removeWhere((value) => value == neighbor);
+          } else if (neighbor.length >= 7){
+            newGeohashes.removeWhere((value) => value == neighbor);
+          } else {
+            logger.e( "Geohash is too short: $neighbor");
+            return 1;
           }
-          surroundingGeohashes.removeWhere((value) => value == neighbor);
-        } else if (neighbor.length >= 7){
-          newGeohashes.removeWhere((value) => value == neighbor);
-        } else {
-          logger.e( "Geohash is too short: $neighbor");
-          return 1;
         }
-      }
-      for(String neighbor in newGeohashes){
-        if(neighbor.length >= 7){
-          surroundingGeohashes.add(neighbor);
-          for (int psid in subscribedPSIDs){
-            mqttService.subscribe("/v1/g32/${neighbor[0]}/${neighbor[1]}/${neighbor[2]}/${neighbor[3]}/${neighbor[4]}/${neighbor[5]}/${neighbor[6]}/$psid",callback);
+        for(String neighbor in newGeohashes){
+          if(neighbor.length >= 7){
+            surroundingGeohashes.add(neighbor);
+            for (int psid in subscribedPSIDs){
+              mqttService.subscribe("/v1/g32/${neighbor[0]}/${neighbor[1]}/${neighbor[2]}/${neighbor[3]}/${neighbor[4]}/${neighbor[5]}/${neighbor[6]}/$psid",callback);
+            }
           }
         }
       }

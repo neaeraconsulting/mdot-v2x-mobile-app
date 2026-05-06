@@ -342,5 +342,10 @@ class EtxMqttAgent extends MqttAgent{
     return messageTypes;
   }
 
+  @override
+  Future<int> updateSubscribers() async{
+    return 0;
+  }
+
 }
 
