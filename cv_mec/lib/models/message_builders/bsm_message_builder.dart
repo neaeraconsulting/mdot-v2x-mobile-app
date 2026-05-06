@@ -21,6 +21,8 @@ class BsmMessageBuilder extends MessageBuilder {
   Pointer<C.BSMpartIIExtension> vehicleSafetyExtension = nullptr;
   Pointer<C.BSMpartIIExtension> specialVehicleExtension = nullptr;
 
+  String vehicleId = "";
+
   ASNService asnService = Get.find<ASNService>();
 
   BsmMessageBuilder(List<int> randomId) {
@@ -129,6 +131,7 @@ class BsmMessageBuilder extends MessageBuilder {
     Uint8List dataBuffer = bsm.coreData.id.buf.asTypedList(randomNumbers.length);
     bsm.coreData.id.size = 4;
     dataBuffer.setAll(0, randomNumbers);
+    vehicleId = ASNService.bytesToHex(randomNumbers);
   }
 
   void clearVehicleExtensions() {}

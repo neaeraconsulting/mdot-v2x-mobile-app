@@ -66,6 +66,7 @@ class SettingsController extends GetxController {
   RxString cradleGPSPassword = (dotenv.env['GPS_PASSWORD'] ?? "").obs;
   RxString cradleGPSIP = (dotenv.env['GPS_IP'] ?? "").obs;
   RxString obuIP = (dotenv.env['OBU_IP'] ?? "").obs;
+  RxString issMqttBrokerUrl = (dotenv.env['ISS_MQTT_BROKER'] ?? "").obs;
   RxString pathToFollow = ''.obs;
   RxString appVersion = ''.obs;
   Rx<bool> vzMode = false.obs;
@@ -124,6 +125,7 @@ class SettingsController extends GetxController {
     staticGPSLongitude.value = await secureStorage.getStaticGPSLongitude();
     enablePC5.value = await secureStorage.getPC5Enabled();
     enableIssMqtt.value = await secureStorage.getISSMqttEnabled();
+    issMqttBrokerUrl.value = await secureStorage.getISSMqttBrokerUrl();
     enableEtxMqtt.value = await secureStorage.getEtxMqttEnabled();
     enableIssScmsSigning.value = await secureStorage.getIssScmsSigningEnabled();
     broadcastRate.value = await secureStorage.getBroadcastRate();

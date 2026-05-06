@@ -26,4 +26,9 @@ class Pc5MqttAgent extends MqttAgent{
   String sendMessage(List<int> message, MsgType messageType, DateTime sendTime){
     return "";
   }
+
+  @override
+  Future<int> updateSubscribers() async{
+    return 0;
+  }
 }
