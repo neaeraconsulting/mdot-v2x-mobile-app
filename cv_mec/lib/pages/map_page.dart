@@ -43,6 +43,7 @@ import 'package:asn1_plugin/j3217/2022/toll_usage_message/toll_usage_message.dar
 import 'package:bluetooth_classic/models/device.dart';
 import 'package:cv_mec/controllers/obd_controller.dart';
 import 'package:cv_mec/controllers/settings_controller.dart';
+import 'package:cv_mec/main.dart';
 import 'package:cv_mec/models/api_responses/path_response/vehicle_path.dart';
 import 'package:cv_mec/models/data_queue.dart';
 import 'package:cv_mec/models/geometry_direction.dart';
@@ -123,7 +124,7 @@ class MapPage extends StatefulWidget {
   MapState createState() => MapState();
 }
 
-class MapState extends State<MapPage> {
+class MapState extends State<MapPage> with RouteAware {
   late MapController _mapController;
 
   ParamController paramController = Get.find<ParamController>();
@@ -133,6 +134,7 @@ class MapState extends State<MapPage> {
   RemoteGPSService gpsService = Get.find<RemoteGPSService>();
   GPSDService gpsdService = Get.find<GPSDService>();
   PathService pathService = Get.find<PathService>();
+  StreamSubscription<Position>? positionSubscription;
 
   Timing timingService = Get.find<Timing>();
 
@@ -165,7 +167,6 @@ class MapState extends State<MapPage> {
   Timer? uploadTimer;
 
   Color connectedButtonColor = Colors.red;
-  StreamSubscription<Position>? positionStream;
 
   List<ItisSequence> showTims = [];
   List<Polygon<HitValue>> drawnPolygons = [];
@@ -322,6 +323,39 @@ class MapState extends State<MapPage> {
     obdController.checkRootStatus();
   }
 
+  @override
+  void didPopNext() {
+    updateGPSStreamType();
+    SettingsController settingsController = Get.find<SettingsController>();
+    if (settingsController.changedBrokerSettings.value) {
+      connectMqttAgents();
+      settingsController.changedBrokerSettings.value = false;
+    }
+  }
+
+
+  @override
+  void didPush() {
+    if (positionSubscription != null) {
+      positionSubscription!.cancel();
+      positionSubscription = null;
+    } 
+  }
+
+  @override
+  void didPushNext() {
+    if (positionSubscription != null) {
+      positionSubscription!.cancel();
+      positionSubscription = null;
+    } 
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)! as PageRoute);
+  }
+
   List<int> randomizeId() {
     Random random = Random();
     List<int> randomNumbers = List.generate(16, (_) => random.nextInt(255));
@@ -356,11 +390,14 @@ class MapState extends State<MapPage> {
     var success = await mqttAgents.connectAll();
     if(success != 0){
       showError("Unable to connect all configured MQTT Agents");
+      return;
     }
     success = await mqttAgents.subscribeAll();
     if(success != 0){
       showError("Unable to Subscribe all configured MQTT Agents");
+      return;
     }
+    updateConnectedStatus(ConnectedStatus.CONNECTED);
     setState(() {
       showLoadingIcon = false;
     });
@@ -389,7 +426,7 @@ class MapState extends State<MapPage> {
       stream = locationService.locationStream;
     }
 
-    stream.listen(updatePosition);
+    positionSubscription = stream.listen(updatePosition);
     if(currentPosition == null){
       try{
         await stream.first;
@@ -397,8 +434,12 @@ class MapState extends State<MapPage> {
         // Catch exception in case stream has already been listened to.
         _logger.w("caught error with stream.first called on existing stream");
       }
-      
-    }     
+    }  
+  }
+
+  void updateGPSStreamType(){
+    positionSubscription?.cancel();
+    createGPSStream();
   }
   
 
@@ -1274,7 +1315,7 @@ class MapState extends State<MapPage> {
         point: getUserLocation(),
         width: 60,
         height: 60,
-        child: iconBase(getSenderIcon(), Colors.blue[900]!,
+        child: iconBase(getSenderIcon(), Theme.of(context).primaryColor,
             sirensOn: configController.isIceCreamSongOn.value || configController.isSirenOn.value,
             busWarningOn: configController.isBusWarningOn.value),
       );
@@ -1619,8 +1660,7 @@ class MapState extends State<MapPage> {
         leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () {
-              sendMessageTimer?.cancel();
-              positionStream?.cancel();
+              sendMessageTimer?.cancel(); 
               uploadTimer?.cancel();
               mqttAgents.disconnectAll();
 
@@ -1994,6 +2034,7 @@ class MapState extends State<MapPage> {
               showProgressBar: false,
               dragToClose: true,
               icon: Icon(IconManager.getIconForBSM(configController.selectedVehicle.value.classification)), 
+              primaryColor: Theme.of(context).primaryColor,
             );
           },
           child: Container(

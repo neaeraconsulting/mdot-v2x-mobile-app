@@ -59,6 +59,8 @@ cp sample.env .env
 | ISS_SCMS_TOKEN | Token for SCMS if signing is enabled. Will automatically enable signing if set | | No | Yes |
 | BROADCAST_RATE | Number of messages to broadcast each second. Value must be between 1 and 10 (inclusive) | 10 | No | Yes |
 
+The following variables can be set to true or false. Setting them to true will make that setting appear on the settings menu in the application. 
+SHOW_BASE_URI, SHOW_DEVICE-ID, MOBILE_GPS_ALLOWED, CRADLE_GPS_ALLOWED, OBU_GPS_ALLOWED, PATH_GPS_ALLOWED, SHOW_BROADCAST_RATE, SHOW_PC5_BROKER, SHOW_ISS_BROKER, SHOW_ETX_BROKER, SHOW_MANUAL_REGISTRATION, SHOW_VZ_MODE, SHOW_DEMO_MODE, SHOW_SIGNING, SHOW_DISABLE_TUM_RETRY, SHOW_TOLLING_SETTINGS, SHOW_TIMS_SETTINGS
 
 The NOAA_GEOMAG_API_TOKEN included in the sample.env file is currently set to the publically available token specified on the NOAA site. This doesn't need to be changed at this time. For more information on this service please see the NOAA site here:
 https://www.ncei.noaa.gov/maps/historical-declination/
@@ -154,3 +156,43 @@ pod deintegrate
 
 Additionally, the IOS SCMS package stores additional dependencies locally. Delete the cached versions by removing the cv_mec/package/iss_scms/ios/Frameworks folder
 
+## Changing App Name and Branding
+
+### 1. Add Assets
+- Go to `assets/images/Custom` or create a new directory under `assets/images`
+- Add a `logo.png` (500x500px) `app_icon.png` (500x500px) and `load_page.png` (900x1800px).
+- If you use a directory under assets/images that isn't 'Custom' or 'Default',   add the asset to the `pubspec.yaml`:
+  ```yaml
+  assets:
+    - assets/images/[directory name]/
+  ```
+
+### 2. Edit .env
+- Set the colors, app name, and asset references (logo_path and load_page_path)  in the `.env` file.
+
+| Variable                 | Purpose                                                          | Default Value                       | Required |
+| :----------------------- | :--------------------------------------------------------------- | :---------------------------------- | :------- |
+| APP_NAME                 | Sets the name of the application.                                | V2X Mobile App                      | No       |
+| LOGO_PATH                | Sets the path where the app logo is located                      | assets/images/Default/logo.png      | No       |
+| APP_ICON_PATH            | Sets the path where the app icon image is located                | assets/images/Defaulst/app_icon.png | No       |
+| LOAD_PAGE_PATH           | Sets the path where the load page image is located               | assets/images/Default/load_page.png | No       |
+| LIGHT_BACKGROUND_COLOR   | Sets the app background color when the app is in light mode      | 0xFFF0F3F7                          | No       |
+| DARK_BACKGROUND_COLOR    | Sets the app background color when the app is in dark mode       | 0xFF010E1F                          | No       |
+| PRIMARY_COLOR            | Color used for the appbar and buttons in light mode              | 0xFF0F2F76                          | No       |
+| DARK_PRIMARY_COLOR       | Color used for the appbar and buttons in dark mode               | 0xFF0F2F76                          | No       |
+| SELECTED_COLOR           | Color used when a widget is tapped in light mode                 | 0xFF2D4A8A                          | No       |
+| DARK_SELECTED_COLOR      | Color used when a widget is tapped in dark mode                  | 0xFF2D4A8A                          | No       |
+| DISABLED_COLOR           | Color used when a widget is disabled/inactive in light mode      | 0xFF868686                          | No       |
+| DARK_DISABLED_COLOR      | Color used when a widget is disables/inactive in dark mode       | 0xFF333333                          | No       |
+| TEXT_PRIMARY_COLOR       | Color used for text when the text is over a light background     | 0xFF000000                          | No       |
+| DARK_TEXT_PRIMARY_COLOR  | Color used for text when the text is over a dark background      | 0xFFFFFFFF                          | No       |
+| LIGHT_GREY               | Light grey color used for cards and as a secondary widget color  | 0xFFD1D7E0                          | No       |
+| MEDIUM_GREY              | Medium grey color used for cards and as a secondary widget color | 0xFF909EB0                          | No       |
+| DARK_GREY                | Dark grey color used for cards and as a secondary widget color   | 0xFF4B5D75                          | No       |
+
+
+### 3. Run update_branding script
+- In the cv_mec directory, run `dart run update_branding.dart`
+
+### 4. Change the application name for deployment
+- For varying deployments, change the applicationId in `android/app/build.gradle` and the CFBundleDisplay Name in 'ios/Runner/Info.plist'

@@ -160,7 +160,7 @@ class LocationService extends GetxService {
               'This application requires location permissions for accurate timing and data collection. Without it, timing and other components will not work correctly.'),
           actions: <Widget>[
             TextButton(
-              child: Text('Continue', style: TextStyle(color: Theme.of(Get.context!).colorScheme.onPrimary)),
+              child: Text('Continue', style: TextStyle(color: Theme.of(Get.context!).colorScheme.onSurface)),
               onPressed: () {
                 Get.back();
               },

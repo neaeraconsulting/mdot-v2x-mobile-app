@@ -7,8 +7,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class SecureStorage {
   static const _storage = FlutterSecureStorage();
 
-  static const _keyUsername = 'username';
-  static const _keyPassword = 'password';
   static const _keyBaseURI = 'baseuri';
   static const _keyVzMode = "vzMode";
   static const _keyDeviceID = "deviceid";
@@ -51,8 +49,6 @@ class SecureStorage {
 
   static const _keyDisableTUMRetry = "disableTUMRetry";
 
-  static final _startUsername = dotenv.env['USERNAME']!;
-  static final _startPassword = dotenv.env['PASSWORD']!;
   static final _startBaseURI = dotenv.env['API_ENDPOINT']!;
   static final _startISSMqttBrokerUrl = dotenv.env['ISS_MQTT_BROKER'] ?? "";
   static final _startDeviceID = "";
@@ -92,9 +88,6 @@ class SecureStorage {
   static final _pc5BrokerUrl = dotenv.env['PC5_MQTT_BROKER'] ?? "";
   static final _issScmsToken = dotenv.env['ISS_SCMS_TOKEN'] ?? "";
 
-
-  Future<String> getUsername() async => await _storage.read(key: _keyUsername) ?? _startUsername;
-  Future<String> getPassword() async => await _storage.read(key: _keyPassword) ?? _startPassword;
   Future<String> getBaseURI() async => await _storage.read(key: _keyBaseURI) ?? _startBaseURI;
   Future<String> getDeviceID() async => await _storage.read(key: _keyDeviceID) ?? _startDeviceID;
   Future<String> getPC5BrokerUrl() async => await _storage.read(key: _keyPC5BrokerUrl) ?? _pc5BrokerUrl;
@@ -130,8 +123,6 @@ class SecureStorage {
   Future<bool> getShowTims() async => (await _storage.read(key: _keyShowTims) ?? _startShowTims.toString()) == "true";
   Future<bool> getDisableTUMRetry() async => (await _storage.read(key: _keyDisableTUMRetry) ?? _startDisableTUMRetry.toString()) == "true";
 
-  Future<void> setUsername(String username) async => await _storage.write(key: _keyUsername, value: username);
-  Future<void> setPassword(String password) async => await _storage.write(key: _keyPassword, value: password);
   Future<void> setBaseURI(String baseURI) async => await _storage.write(key: _keyBaseURI, value: baseURI);
   Future<void> setDeviceID(String deviceID) async => await _storage.write(key: _keyDeviceID, value: deviceID);
   Future<void> setPC5BrokerUrl(String pc5BrokerUrl) async => await _storage.write(key: _keyPC5BrokerUrl, value: pc5BrokerUrl);
@@ -281,19 +272,4 @@ class SecureStorage {
   Future setS3Region(String s3Region) async => await _storage.write(key: _keyS3Region, value: s3Region);
   Future setS3DestDir(String s3DestDir) async => await _storage.write(key: _keyS3DestDir, value: s3DestDir);
 
-  //might not need this method
-  Future loadSecureStorageData() async {
-    if (await _storage.read(key: _keyUsername) == null) {
-      await setUsername(_startUsername);
-    }
-    if (await _storage.read(key: _keyPassword) == null) {
-      await setPassword(_startPassword);
-    }
-  }
-
-  // if adding logout functionality
-  Future clear() async {
-    await _storage.delete(key: _keyUsername);
-    await _storage.delete(key: _keyPassword);
-  }
 }

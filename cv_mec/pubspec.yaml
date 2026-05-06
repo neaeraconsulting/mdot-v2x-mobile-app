@@ -68,6 +68,7 @@ dependencies:
   connectivity_plus: ^7.0.0
   app_tracking_transparency: ^2.0.6+1
   dart_geohash: ^2.1.0
+  yaml_edit: ^2.2.4
 
 dev_dependencies:
   flutter_test:
@@ -75,23 +76,25 @@ dev_dependencies:
   flutter_lints: ^3.0.0
   build_runner: ^2.3.3
   json_serializable: ^6.8.0
+  image: ^4.2.0
 
 flutter:
+  # default-flavor: v2x_mobile_app
   uses-material-design: true
   assets:
-    - .env
-    - assets/images/cvmec_logo.png
-    - assets/images/load_page.png
-    - assets/images/cv_mec_notification_icon.png
-    - assets/images/generic/
-    - assets/fonts/
-    - assets/images/Lights/
-    - assets/images/Vehicle_config_icons/
-    - assets/images/Siren/
+    - assets/images/Default/
+    - assets/images/Custom/
     - assets/images/Bus/
-    - assets/audio/
+    - assets/images/generic/
+    - assets/images/ITIS/
+    - assets/images/Lights/
+    - assets/images/Siren/
     - assets/images/tims/
+    - assets/images/Vehicle_config_icons/
+    - assets/fonts/
+    - assets/audio/
     - assets/tims.json
+    - .env
 
   # fonts:
   #   - family: HighwayGothic
