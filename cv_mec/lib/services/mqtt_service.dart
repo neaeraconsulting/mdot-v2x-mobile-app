@@ -24,11 +24,9 @@ class MqttService extends GetxService {
   Future<int> connect(String connectionURL, Registration? registration) async {
     try {
       String clientId = 'cv-mec-${const Uuid().v4().substring(0, 16)}';
-
       if (registration != null) {
         clientId = registration.deviceID;
       }
-
       final uri = Uri.tryParse(connectionURL);
       if (uri == null || uri.scheme != 'mqtt') {
         throw const FormatException('Invalid MQTT URL');
@@ -176,10 +174,12 @@ class MqttService extends GetxService {
 
   void unsubscribe(String topicName) {
     _logger.i('CV_MEC::Unsubscribing');
-    if (client != null) {
+    if (client != null && subscriberList.containsKey(topicName)) {
       client!.unsubscribe(topicName);
+      subscriberList.remove(topicName);
+    } else {
+      _logger.w('Tried to unsubscribe from $topicName, but no active subscription exists.');
     }
-    subscriberList.remove(topicName);
   }
 
   int publish(String message, String topicName) {

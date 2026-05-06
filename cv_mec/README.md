@@ -193,3 +193,6 @@ Additionally, the IOS SCMS package stores additional dependencies locally. Delet
 
 ### 3. Run update_branding script
 - In the cv_mec directory, run `dart run update_branding.dart`
+
+### 4. Change the application name for deployment
+- For varying deployments, change the applicationId in `android/app/build.gradle` and the CFBundleDisplay Name in 'ios/Runner/Info.plist'
