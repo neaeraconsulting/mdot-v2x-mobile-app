@@ -73,7 +73,7 @@ class SettingsController extends GetxController {
   Rx<bool> notificationsEnabled = false.obs;
   Rx<bool> demoMode = false.obs;
   Rx<bool> readMessages = false.obs;
-  Rx<bool> enableIssMqtt = false.obs;
+  Rx<bool> enableIssMqtt = true.obs;
   Rx<bool> enableEtxMqtt = true.obs;
   RxInt broadcastRate = 10.obs;
 
