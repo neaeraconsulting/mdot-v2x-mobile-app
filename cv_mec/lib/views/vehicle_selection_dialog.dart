@@ -3,6 +3,7 @@ import 'package:cv_mec/models/vehicle.dart';
 import 'package:cv_mec/pages/map_page.dart';
 import 'package:cv_mec/styles/screen_size.dart';
 import 'package:cv_mec/styles/spacing.dart';
+import 'package:cv_mec/styles/theme_setting.dart';
 import 'package:cv_mec/styles/widgets/text.dart';
 import 'package:cv_mec/views/create_vehicle_config_dialog.dart';
 import 'package:flutter/material.dart';
@@ -83,7 +84,7 @@ class VehicleConfigSelectionDialog extends StatelessWidget {
                             ListTile(
                               leading: CircleAvatar(
                                 backgroundColor: Theme.of(context).primaryColor,
-                                child: Icon(Icons.add),
+                                child: Icon(Icons.add, color: isDark(Theme.of(context).primaryColor) ? Colors.white : Colors.black),
                               ),
                               title: Text("Add New"),
                               onTap: () {

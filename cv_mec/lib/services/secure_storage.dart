@@ -7,8 +7,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class SecureStorage {
   static const _storage = FlutterSecureStorage();
 
-  static const _keyUsername = 'username';
-  static const _keyPassword = 'password';
   static const _keyBaseURI = 'baseuri';
   static const _keyVzMode = "vzMode";
   static const _keyDeviceID = "deviceid";
@@ -23,10 +21,13 @@ class SecureStorage {
   static const _keyGPSType = 'gpsType';
   static const _keyOBUIP = 'obuIP';
   static const _keyPathToFollow = 'pathToFollow';
+  static const _keyStaticGPSLatitude = 'staticGPSLatitude';
+  static const _keyStaticGPSLongitude = 'staticGPSLongitude';
   static const _keyManualRegistrationMode = "manualRegistrationMode";
   static const _keyRegistrationLatitude = "registrationLatitude";
   static const _keyRegistrationLongitude = "registrationLongitude";
   static const _keyBroadcastRate = "broadcastRate";
+  static const _keyISSMqttBrokerUrl = "issMqttBrokerUrl";
 
   static const _keyS3Accesskey = "s3AccessKey";
   static const _keyS3SecretKey = "s3SecretKey";
@@ -48,9 +49,8 @@ class SecureStorage {
 
   static const _keyDisableTUMRetry = "disableTUMRetry";
 
-  static final _startUsername = dotenv.env['USERNAME']!;
-  static final _startPassword = dotenv.env['PASSWORD']!;
   static final _startBaseURI = dotenv.env['API_ENDPOINT']!;
+  static final _startISSMqttBrokerUrl = dotenv.env['ISS_MQTT_BROKER'] ?? "";
   static final _startDeviceID = "";
 
   static final _startVzMode = false;
@@ -66,6 +66,8 @@ class SecureStorage {
   static final _startBroadcastRate = dotenv.env["BROADCAST_RATE"] != null ? min(10, max(1, int.tryParse(dotenv.env['BROADCAST_RATE']!)??10)) : 10;
 
   static final _startGPSType = dotenv.env['GPS_TYPE'] ?? '';
+  static final _startStaticGPSLatitude = dotenv.env['STATIC_GPS_LATITUDE'] ?? '0.0';
+  static final _startStaticGPSLongitude = dotenv.env['STATIC_GPS_LONGITUDE'] ?? '0.0';
   static final _startGPSUsername = dotenv.env['GPS_USERNAME'] ?? '';
   static final _startGPSPassword = dotenv.env['GPS_PASSWORD'] ?? '';
   static final _startGPSIP = dotenv.env['GPS_IP'] ?? '';
@@ -86,13 +88,11 @@ class SecureStorage {
   static final _pc5BrokerUrl = dotenv.env['PC5_MQTT_BROKER'] ?? "";
   static final _issScmsToken = dotenv.env['ISS_SCMS_TOKEN'] ?? "";
 
-
-  Future<String> getUsername() async => await _storage.read(key: _keyUsername) ?? _startUsername;
-  Future<String> getPassword() async => await _storage.read(key: _keyPassword) ?? _startPassword;
   Future<String> getBaseURI() async => await _storage.read(key: _keyBaseURI) ?? _startBaseURI;
   Future<String> getDeviceID() async => await _storage.read(key: _keyDeviceID) ?? _startDeviceID;
   Future<String> getPC5BrokerUrl() async => await _storage.read(key: _keyPC5BrokerUrl) ?? _pc5BrokerUrl;
   Future<String> getIssScmsToken() async => await _storage.read(key: _keyIssScmsToken) ?? _issScmsToken;
+  Future<String> getISSMqttBrokerUrl() async => await _storage.read(key: _keyISSMqttBrokerUrl) ?? _startISSMqttBrokerUrl;
   Future<bool> getVZMode() async => (await _storage.read(key: _keyVzMode) ?? _startVzMode.toString()) == "true";
   Future<bool> getNotificationsEnabled() async => (await _storage.read(key: _keyNotificationsEnabled)?? _startNotificationsEnabled.toString()) == "true";
   Future<bool> getReadMessages() async => (await _storage.read(key: _keyReadMessages)?? _startReadMessages.toString()) == "true";
@@ -107,7 +107,9 @@ class SecureStorage {
   Future<String> getGPSPassword() async => (await _storage.read(key: _keyGPSPassword)) ?? _startGPSPassword;
   Future<String> getGPSIP() async => (await _storage.read(key: _keyGPSIP)) ?? _startGPSIP;
   Future<String> getOBUIP() async => (await _storage.read(key: _keyOBUIP)) ?? _startOBUIP;
-  Future<String> getPathToFollow() async => (await _storage.read(key: _keyPathToFollow)) ?? _startPathToFollow; 
+  Future<String> getPathToFollow() async => (await _storage.read(key: _keyPathToFollow)) ?? _startPathToFollow;
+  Future<double> getStaticGPSLatitude() async => double.tryParse(await _storage.read(key: _keyStaticGPSLatitude) ?? _startStaticGPSLatitude) ?? 0.0;
+  Future<double> getStaticGPSLongitude() async => double.tryParse(await _storage.read(key: _keyStaticGPSLongitude) ?? _startStaticGPSLongitude) ?? 0.0;
   Future<String> getGPSType() async => (await _storage.read(key: _keyGPSType)) ?? _startGPSType;
   Future<bool> getManualRegistrationMode() async =>
       (await _storage.read(key: _keyManualRegistrationMode)) == 'true';
@@ -121,17 +123,18 @@ class SecureStorage {
   Future<bool> getShowTims() async => (await _storage.read(key: _keyShowTims) ?? _startShowTims.toString()) == "true";
   Future<bool> getDisableTUMRetry() async => (await _storage.read(key: _keyDisableTUMRetry) ?? _startDisableTUMRetry.toString()) == "true";
 
-  Future<void> setUsername(String username) async => await _storage.write(key: _keyUsername, value: username);
-  Future<void> setPassword(String password) async => await _storage.write(key: _keyPassword, value: password);
   Future<void> setBaseURI(String baseURI) async => await _storage.write(key: _keyBaseURI, value: baseURI);
   Future<void> setDeviceID(String deviceID) async => await _storage.write(key: _keyDeviceID, value: deviceID);
   Future<void> setPC5BrokerUrl(String pc5BrokerUrl) async => await _storage.write(key: _keyPC5BrokerUrl, value: pc5BrokerUrl);
+  Future<void> setISSMqttBrokerUrl(String issMqttBrokerUrl) async => await _storage.write(key: _keyISSMqttBrokerUrl, value: issMqttBrokerUrl);
   Future<void> setIssScmsToken(String issScmsToken) async => await _storage.write(key: _keyIssScmsToken, value: issScmsToken);
   Future<void> setGPSUsername(String v) => _storage.write(key: _keyGPSUsername, value: v);
   Future<void> setGPSPassword(String v) => _storage.write(key: _keyGPSPassword, value: v);
   Future<void> setGPSIP(String v) => _storage.write(key: _keyGPSIP, value: v);
   Future<void> setOBUIP(String v) => _storage.write(key: _keyOBUIP, value: v);
   Future<void> setPathToFollow(String v) => _storage.write(key: _keyPathToFollow, value: v);
+  Future<void> setStaticGPSLatitude(double latitude) async => await _storage.write(key: _keyStaticGPSLatitude, value: latitude.toString());
+  Future<void> setStaticGPSLongitude(double longitude) async => await _storage.write(key: _keyStaticGPSLongitude, value: longitude.toString());
   Future<void> setGPSType(GPSType gpsType) async => 
       await _storage.write(key: _keyGPSType, value: gpsType.toString().split('.').last);
   Future<void> setBroadcastRate(int broadcastRate) async => await _storage.write(key: _keyBroadcastRate, value: broadcastRate.toString());
@@ -269,19 +272,4 @@ class SecureStorage {
   Future setS3Region(String s3Region) async => await _storage.write(key: _keyS3Region, value: s3Region);
   Future setS3DestDir(String s3DestDir) async => await _storage.write(key: _keyS3DestDir, value: s3DestDir);
 
-  //might not need this method
-  Future loadSecureStorageData() async {
-    if (await _storage.read(key: _keyUsername) == null) {
-      await setUsername(_startUsername);
-    }
-    if (await _storage.read(key: _keyPassword) == null) {
-      await setPassword(_startPassword);
-    }
-  }
-
-  // if adding logout functionality
-  Future clear() async {
-    await _storage.delete(key: _keyUsername);
-    await _storage.delete(key: _keyPassword);
-  }
 }

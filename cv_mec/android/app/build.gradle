@@ -28,7 +28,7 @@ def keystoreProperties = new Properties()
        keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
    }
 android {
-    namespace = "com.neaera.cv_mec"
+    namespace = "com.neaera.cv_mec" 
     compileSdk = flutter.compileSdkVersion 
     ndkVersion = flutter.ndkVersion
 
@@ -67,6 +67,7 @@ android {
         }
     }
 }
+
 
 flutter {
     source = "../.."

@@ -63,8 +63,8 @@ void main() async {
   
   runApp(
     Platform.isAndroid || Platform.isIOS
-        ? NativeDeviceOrientationReader(builder: (context) => const MainApp())
-        : const MainApp(),
+        ? NativeDeviceOrientationReader(builder: (context) => MainApp())
+        : MainApp(),
   );
 }
 
@@ -103,16 +103,19 @@ Future<void> clearKeychainValues() async {
     }
   }
 
+final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
+
 class MainApp extends StatelessWidget {
   const MainApp({super.key});
   @override
   Widget build(BuildContext context) {
     return ToastificationWrapper(
       child: GetMaterialApp(
-        title: 'CV-MEC',
+        title: 'V2X Mobile App',
         theme: lightTheme,
         darkTheme: darkTheme,
         home: const Load(),
+        navigatorObservers: [routeObserver],
       ),
     );
   }

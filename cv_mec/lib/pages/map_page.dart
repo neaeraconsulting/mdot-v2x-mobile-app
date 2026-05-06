@@ -43,6 +43,7 @@ import 'package:asn1_plugin/j3217/2022/toll_usage_message/toll_usage_message.dar
 import 'package:bluetooth_classic/models/device.dart';
 import 'package:cv_mec/controllers/obd_controller.dart';
 import 'package:cv_mec/controllers/settings_controller.dart';
+import 'package:cv_mec/main.dart';
 import 'package:cv_mec/models/api_responses/path_response/vehicle_path.dart';
 import 'package:cv_mec/models/data_queue.dart';
 import 'package:cv_mec/models/geometry_direction.dart';
@@ -123,7 +124,7 @@ class MapPage extends StatefulWidget {
   MapState createState() => MapState();
 }
 
-class MapState extends State<MapPage> {
+class MapState extends State<MapPage> with RouteAware {
   late MapController _mapController;
 
   ParamController paramController = Get.find<ParamController>();
@@ -133,6 +134,7 @@ class MapState extends State<MapPage> {
   RemoteGPSService gpsService = Get.find<RemoteGPSService>();
   GPSDService gpsdService = Get.find<GPSDService>();
   PathService pathService = Get.find<PathService>();
+  StreamSubscription<Position>? positionSubscription;
 
   Timing timingService = Get.find<Timing>();
 
@@ -165,7 +167,6 @@ class MapState extends State<MapPage> {
   Timer? uploadTimer;
 
   Color connectedButtonColor = Colors.red;
-  StreamSubscription<Position>? positionStream;
 
   List<ItisSequence> showTims = [];
   List<Polygon<HitValue>> drawnPolygons = [];
@@ -325,6 +326,39 @@ class MapState extends State<MapPage> {
     obdController.checkRootStatus();
   }
 
+  @override
+  void didPopNext() {
+    updateGPSStreamType();
+    SettingsController settingsController = Get.find<SettingsController>();
+    if (settingsController.changedBrokerSettings.value) {
+      connectMqttAgents();
+      settingsController.changedBrokerSettings.value = false;
+    }
+  }
+
+
+  @override
+  void didPush() {
+    if (positionSubscription != null) {
+      positionSubscription!.cancel();
+      positionSubscription = null;
+    } 
+  }
+
+  @override
+  void didPushNext() {
+    if (positionSubscription != null) {
+      positionSubscription!.cancel();
+      positionSubscription = null;
+    } 
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)! as PageRoute);
+  }
+
   List<int> randomizeId() {
     Random random = Random();
     List<int> randomNumbers = List.generate(16, (_) => random.nextInt(255));
@@ -359,11 +393,14 @@ class MapState extends State<MapPage> {
     var success = await mqttAgents.connectAll();
     if(success != 0){
       showError("Unable to connect all configured MQTT Agents");
+      return;
     }
     success = await mqttAgents.subscribeAll();
     if(success != 0){
       showError("Unable to Subscribe all configured MQTT Agents");
+      return;
     }
+    updateConnectedStatus(ConnectedStatus.CONNECTED);
     setState(() {
       showLoadingIcon = false;
     });
@@ -372,8 +409,10 @@ class MapState extends State<MapPage> {
   Future<void> createGPSStream() async{
     Stream<Position> stream;
     if (debugMode) {
-      // stream = fakePosition(TestData.detroitStaticPosition);
       stream = fakePosition(TestData.mdotTestTimPosition);
+    } else if (settingsController.gpsType.value == GPSType.static) {
+      List<List<double>> pos = [[settingsController.staticGPSLongitude.value, settingsController.staticGPSLatitude.value]];
+      stream = fakePosition(pos);
     } else if (settingsController.gpsType.value == GPSType.path) {
       VehiclePath? path = pathService.getPathByName(settingsController.pathToFollow.value);
       if(path!=null){
@@ -390,7 +429,7 @@ class MapState extends State<MapPage> {
       stream = locationService.locationStream;
     }
 
-    stream.listen(updatePosition);
+    positionSubscription = stream.listen(updatePosition);
     if(currentPosition == null){
       try{
         await stream.first;
@@ -398,8 +437,12 @@ class MapState extends State<MapPage> {
         // Catch exception in case stream has already been listened to.
         _logger.w("caught error with stream.first called on existing stream");
       }
-      
-    }     
+    }  
+  }
+
+  void updateGPSStreamType(){
+    positionSubscription?.cancel();
+    createGPSStream();
   }
   
 
@@ -562,11 +605,11 @@ class MapState extends State<MapPage> {
         processNewPsm(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.SPAT:
-        addToAppLog("Identified Message as SPaT");
+        addToAppLog("Identified Message as SPaT $hex");
         processNewSpat(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.MAP:
-        addToAppLog("Identified Message as MAP");
+        addToAppLog("Identified Message as MAP $hex");
         processNewMap(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.TIM:
@@ -596,9 +639,13 @@ class MapState extends State<MapPage> {
 
   void processNewBsm(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
     VehicleClass vehicleClass = VehicleClass.unknownVehicleClass;
-
     String trimmedHex = asnService.trimMessageHeaders(hex, asnService.BSM_START_FLAG)!;
     BasicSafetyMessage bsm = asnService.decodeBsm(trimmedHex);
+    String vehicleID = ASNService.bytesToHex(bsm.coreData.id.temporaryID);
+
+    if (vehicleID == bsmBuilder.vehicleId) {
+      return;
+    }
 
     LightbarInUse lights = LightbarInUse.unavailable;
     SirenInUse sirens = SirenInUse.unavailable;
@@ -617,8 +664,6 @@ class MapState extends State<MapPage> {
       }
     }
     LatLng position = LatLng(bsm.coreData.lat.getDecimalLatitude(), bsm.coreData.long.getDecimalLongitude());
-    String vehicleID = ASNService.bytesToHex(bsm.coreData.id.temporaryID);
-
     DateTime bsmTime = bsm.coreData.secMark.getDateTime(recTime);
 
     ReceivedMsg msg = ReceivedBsm(vehicleID, bsmTime, position, vehicleClass, lights, sirens);
@@ -661,11 +706,24 @@ class MapState extends State<MapPage> {
         hex, asnService.MAP_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
     MapData map = asnService.decodeMap(trimmedHex);
 
+
+    // print("Decoded MAP ${map.intersections!.intersectionGeometryList.first.id.id.intersectionID} with $hex");
+    printLongMessage("Decoded MAP with ${map.intersections!.intersectionGeometryList.first.id.id.intersectionID} intersections: $hex");
+
+
     mapManager.addOrUpdate(map);
 
     updateGraphics();
 
     addToReceiveLog(broker, topic, "MAP", recTime, sendTime, LeidosDateExtraction.extractDateFromMap(map), trimmedHex, source, validity);
+  }
+
+  void printLongMessage(String message){
+    int chunkSize = 1000;
+    for (int i = 0; i < message.length; i += chunkSize) {
+      int endIndex = (i + chunkSize < message.length) ? i + chunkSize : message.length;
+      print(message.substring(i, endIndex));
+    }
   }
 
   void processNewTim(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
@@ -1273,7 +1331,7 @@ class MapState extends State<MapPage> {
         point: getUserLocation(),
         width: 60,
         height: 60,
-        child: iconBase(getSenderIcon(), Colors.blue[900]!,
+        child: iconBase(getSenderIcon(), Theme.of(context).primaryColor,
             sirensOn: configController.isIceCreamSongOn.value || configController.isSirenOn.value,
             busWarningOn: configController.isBusWarningOn.value),
       );
@@ -1618,8 +1676,7 @@ class MapState extends State<MapPage> {
         leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () {
-              sendMessageTimer?.cancel();
-              positionStream?.cancel();
+              sendMessageTimer?.cancel(); 
               uploadTimer?.cancel();
               mqttAgents.disconnectAll();
 
@@ -1993,6 +2050,7 @@ class MapState extends State<MapPage> {
               showProgressBar: false,
               dragToClose: true,
               icon: Icon(IconManager.getIconForBSM(configController.selectedVehicle.value.classification)), 
+              primaryColor: Theme.of(context).primaryColor,
             );
           },
           child: Container(
