@@ -307,7 +307,6 @@ class SettingsPage extends StatelessWidget {
           onChanged: (value) async {
             if (value != controller.issMqttBrokerUrl.value) {
               controller.issMqttBrokerUrl.value = value;
-              print("Saving ISS MQTT Broker URL: $value");
               await controller.secureStorage.setISSMqttBrokerUrl(value);
             }
           },
