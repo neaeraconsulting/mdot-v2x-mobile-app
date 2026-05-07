@@ -40,6 +40,7 @@ class SettingsController extends GetxController {
 
   bool showPc5 = (dotenv.env['SHOW_PC5_BROKER'] ?? 'false').toLowerCase() == 'true';
   bool showIss = (dotenv.env['SHOW_ISS_BROKER'] ?? 'false').toLowerCase() == 'true';
+  bool showIssBrokerUrl = (dotenv.env['SHOW_ISS_BROKER_URL'] ?? 'false').toLowerCase() == 'true';
   bool showEtx = (dotenv.env['SHOW_ETX_BROKER'] ?? 'false').toLowerCase() == 'true';
 
   bool showManualRegistration = (dotenv.env['SHOW_MANUAL_REGISTRATION'] ?? 'false').toLowerCase() == 'true';

@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/services/file_service.dart';
 import 'package:cv_mec/services/param_controller.dart';
-import 'package:cv_mec/services/path_service.dart';
 import 'package:cv_mec/services/vehicle_notification_manager.dart';
 import 'package:cv_mec/styles/app_colors.dart';
 import 'package:cv_mec/styles/spacing.dart';
@@ -59,7 +58,6 @@ class SettingsPage extends StatelessWidget {
     broadcastRateController.text = controller.broadcastRate.value.toString();
     registrationLatitudeController.text = paramController.manualLatitude.toString();
     registrationLongitudeController.text = paramController.manualLongitude.toString();
-
     staticGPSLatitudeController.text = controller.staticGPSLatitude.value.toString();
     staticGPSLongitudeController.text = controller.staticGPSLongitude.value.toString();
     issMqttBrokerUrlController.text = controller.issMqttBrokerUrl.value;
@@ -248,6 +246,7 @@ class SettingsPage extends StatelessWidget {
             : const SizedBox.shrink(),
         ),
         verticalSpaceSmall,
+        controller.showPathGPSType ? verticalSpaceSmall : Container(),
         controller.showBroadcastRate ? TextField(
           decoration: const InputDecoration(labelText: 'Broadcast Rate'),
           controller: broadcastRateController,
@@ -301,7 +300,7 @@ class SettingsPage extends StatelessWidget {
             }
           ) : Container(),
         verticalSpaceSmall,
-        controller.enableIssMqtt.value ? TextField(
+        (controller.showIssBrokerUrl && controller.enableIssMqtt.value) ? TextField(
           decoration: const InputDecoration(labelText: 'ISS MQTT Broker URL'),
           controller: issMqttBrokerUrlController,
           onChanged: (value) async {
@@ -311,7 +310,7 @@ class SettingsPage extends StatelessWidget {
             }
           },
         ) : Container(),
-        verticalSpaceSmall,
+        controller.showIssBrokerUrl ? verticalSpaceSmall : Container(),
         controller.showIss ? verticalSpaceSmall : Container(),
         controller.showEtx ? SwitchListTile(
             title: const Text("Enable ETX MQTT Broker"),
@@ -500,7 +499,8 @@ class SettingsPage extends StatelessWidget {
     return Column(
       children: [
         Row(children: [
-          Icon(icon),
+            Icon(icon,
+              color: controller.darkModeState.value ? darkPrimaryColor : primaryColor),
           const SizedBox(width: 10),
           Text(sectionTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
         ]),
