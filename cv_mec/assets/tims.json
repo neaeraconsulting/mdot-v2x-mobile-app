@@ -79,10 +79,10 @@
             "graphic":"wind_closure.png",
             "overlays":[
                 {
-                    "majorFontSize": 30,
-                    "minorFontSize": 24,
-                    "xPos": 20,
-                    "yPos": 220
+                    "majorFontSize": 20,
+                    "minorFontSize": 20,
+                    "xPos": 25,
+                    "yPos": 225
                 }
             ]
         },
@@ -95,9 +95,9 @@
             "overlays":[
                 {
                     "majorFontSize": 30,
-                    "minorFontSize": 24,
+                    "minorFontSize": 26,
                     "xPos": 20,
-                    "yPos": 200
+                    "yPos": 172
                 }
             ]
         },
@@ -105,14 +105,14 @@
             "name": "truck-restriction, length limit, <number>, feet",
             "source": "guidance",
             "type": "advisory",
-            "codes": ["2563", "2577", "#", "[8739]"],
+            "codes": ["2563", "2577", "#", "[8710]"],
             "graphic":"truck_length_limit.png",
             "overlays":[
                 {
-                    "majorFontSize": 30,
-                    "minorFontSize": 24,
-                    "xPos": 30,
-                    "yPos": 200
+                    "majorFontSize": 36,
+                    "minorFontSize": 32,
+                    "xPos": 135,
+                    "yPos": 135
                 }
             ]
         },
@@ -202,7 +202,7 @@
             "overlays":[
                 {
                     "majorFontSize": 32,
-                    "minorFontSize": 28,
+                    "minorFontSize": 24,
                     "xPos": 64,
                     "yPos": 192
                 }
@@ -217,7 +217,7 @@
             "overlays":[
                 {
                     "majorFontSize": 32,
-                    "minorFontSize": 28,
+                    "minorFontSize": 24,
                     "xPos": 64,
                     "yPos": 192
                 }
@@ -232,7 +232,7 @@
             "overlays":[
                 {
                     "majorFontSize": 32,
-                    "minorFontSize": 28,
+                    "minorFontSize": 24,
                     "xPos": 64,
                     "yPos": 192
                 }
@@ -247,7 +247,7 @@
             "overlays":[
                 {
                     "majorFontSize": 32,
-                    "minorFontSize": 28,
+                    "minorFontSize": 24,
                     "xPos": 64,
                     "yPos": 192
                 }
@@ -262,9 +262,9 @@
             "overlays":[
                 {
                     "majorFontSize": 32,
-                    "minorFontSize": 28,
+                    "minorFontSize": 24,
                     "xPos": 64,
-                    "yPos": 192
+                    "yPos": 196
                 }
             ]
         },
@@ -277,9 +277,9 @@
             "overlays":[
                 {
                     "majorFontSize": 32,
-                    "minorFontSize": 28,
-                    "xPos": 64,
-                    "yPos": 192
+                    "minorFontSize": 24,
+                    "xPos": 62,
+                    "yPos": 196
                 }
             ]
         },
@@ -292,9 +292,9 @@
             "overlays":[
                 {
                     "majorFontSize": 32,
-                    "minorFontSize": 28,
+                    "minorFontSize": 24,
                     "xPos": 64,
-                    "yPos": 192
+                    "yPos": 196
                 }
             ]
         },
@@ -307,9 +307,9 @@
             "overlays":[
                 {
                     "majorFontSize": 32,
-                    "minorFontSize": 28,
+                    "minorFontSize": 24,
                     "xPos": 64,
-                    "yPos": 192
+                    "yPos": 196
                 }
             ]
         },
@@ -381,7 +381,7 @@
             "source": "guidance",
             "type": "advisory",
             "codes": ["6925"],
-            "graphic":"emergency_vehicles_at_scene.png"
+            "graphic":"emergency_vehicles_on_roadway.png"
         },
         {
             "name": "road-construction/construction-work",
@@ -543,7 +543,7 @@
             "overlays":[
                 {
                     "majorFontSize": 72,
-                    "minorFontSize": 40,
+                    "minorFontSize": 56,
                     "xPos": 45,
                     "yPos": 150
                 }
@@ -560,7 +560,7 @@
                     "majorFontSize": 44,
                     "minorFontSize": 32,
                     "xPos": 96,
-                    "yPos": 144
+                    "yPos": 148
                 }
             ]
         },
@@ -575,7 +575,7 @@
                     "majorFontSize": 44,
                     "minorFontSize": 32,
                     "xPos": 96,
-                    "yPos": 144
+                    "yPos": 148
                 }
             ]
         },
@@ -588,13 +588,13 @@
             "overlays":[
                 {
                     "majorFontSize": 48,
-                    "minorFontSize": 36,
+                    "minorFontSize": 44,
                     "xPos": 20,
                     "yPos": 95
                 },
                 {
                     "majorFontSize": 48,
-                    "minorFontSize": 36,
+                    "minorFontSize": 44,
                     "xPos": 20,
                     "yPos": 190
                 }
@@ -609,13 +609,13 @@
             "overlays":[
                 {
                     "majorFontSize": 48,
-                    "minorFontSize": 36,
+                    "minorFontSize": 44,
                     "xPos": 20,
                     "yPos": 95
                 },
                 {
                     "majorFontSize": 48,
-                    "minorFontSize": 36,
+                    "minorFontSize": 44,
                     "xPos": 20,
                     "yPos": 190
                 }
@@ -657,10 +657,10 @@
             "graphic":"runaway_vehicle_escape_ramp_right.png",
             "overlays":[
                 {
-                    "majorFontSize": 44,
-                    "minorFontSize": 32,
-                    "xPos": 96,
-                    "yPos": 144
+                    "majorFontSize": 36,
+                    "minorFontSize": 36,
+                    "xPos": 24,
+                    "yPos": 108
                 }
             ]
         },
@@ -668,14 +668,14 @@
             "name": "runaway-vehicle, escape-ramp, <number> miles, ahead, on the left",
             "source": "guidance",
             "type": "advisory",
-            "codes": ["9256", "8234", "#", "8712", "13569","7989"],
+            "codes": ["9256", "8234", "#", "8712", "13569","7990"],
             "graphic":"runaway_vehicle_escape_ramp_left.png",
             "overlays":[
                 {
-                    "majorFontSize": 44,
-                    "minorFontSize": 32,
-                    "xPos": 96,
-                    "yPos": 144
+                    "majorFontSize": 28,
+                    "minorFontSize": 24,
+                    "xPos": 56,
+                    "yPos": 116
                 }
             ]
         },
@@ -919,7 +919,7 @@
             "overlays":[
                 {
                     "majorFontSize": 80,
-                    "minorFontSize": 48,
+                    "minorFontSize": 72,
                     "xPos": 60,
                     "yPos": 60
                 }
@@ -934,7 +934,7 @@
             "overlays":[
                 {
                     "majorFontSize": 80,
-                    "minorFontSize": 48,
+                    "minorFontSize": 72,
                     "xPos": 60,
                     "yPos": 60
                 }
@@ -949,7 +949,7 @@
             "overlays":[
                 {
                     "majorFontSize": 72,
-                    "minorFontSize": 40,
+                    "minorFontSize": 56,
                     "xPos": 45,
                     "yPos": 150
                 }
