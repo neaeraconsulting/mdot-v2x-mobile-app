@@ -698,14 +698,14 @@
             "source": "guidance",
             "type": "advisory",
             "codes": ["[11016,11015]", "13569"],
-            "graphic":"gas_diesel_ahead.png"
+            "graphic":"gas_ahead.png"
         },
         {
             "name": "gas, diesel, ahead",
             "source": "guidance-deprecated",
             "type": "exitService",
             "codes": ["[11016,11015]", "13569"],
-            "graphic":"gas_diesel_ahead.png"
+            "graphic":"gas_ahead.png"
         },
         {
             "name": "test-your-brakes, parking-area, ahead",
@@ -797,13 +797,6 @@
             "type": "advisory",
             "codes": ["6916", "[5123,5124,5126,5127,5128,5129,5131]"],
             "graphic":"caution_high_winds.png"
-        },
-         {
-            "name": "road-construction, traffic-congestion, ahead ",
-            "source": "guidance-deprecated",
-            "type": "workZone",
-            "codes": ["1025", "263", "13569"],
-            "graphic":"slow_traffic_ahead.png"
         },
         {
             "name": "alert, <traffic condition> be-prepared-to-stop",
@@ -966,7 +959,7 @@
                     "majorFontSize": 44,
                     "minorFontSize": 32,
                     "xPos": 96,
-                    "yPos": 136
+                    "yPos": 140
                 }
             ]
         },
@@ -979,7 +972,7 @@
             "overlays":[
                 {
                     "majorFontSize": 72,
-                    "minorFontSize": 40,
+                    "minorFontSize": 56,
                     "xPos": 45,
                     "yPos": 150
                 }
