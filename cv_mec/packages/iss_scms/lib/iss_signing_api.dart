@@ -55,7 +55,7 @@ class IssSigningApi extends GetxService {
   }
 
   Future<List<int>?> sign(int psid, List<int> tbsOer, int? jIndex, bool? digestSigner) async {
-    String uri = "http://localhost:8088/sign";
+    String uri = "$baseUrl/sign";
     final Map<String, String> headers = {"Content-Type": "application/json"};
     String body = jsonEncode({ 
       "psid": psid,
@@ -84,7 +84,8 @@ class IssSigningApi extends GetxService {
     final Map<String, String> headers = {"Content-Type": "application/json"};
     String body = jsonEncode({
       "token": token,
-      "tokenType": tokenType.name.toLowerCase().replaceAll("_", "-")
+      "tokenType": tokenType.name.toLowerCase().replaceAll("_", "-"),
+      "deviceId": "obu"
     });
     try {
       var response = await http.post(Uri.parse(uri), headers: headers, body: body);
