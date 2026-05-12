@@ -59,6 +59,7 @@ class MqttAgentManager{
   void setPosition(Position? pos){
     for(MqttAgent agent in agents){
       agent.setPosition(pos);
+      agent.updateSubscribers();
     }
   }
 

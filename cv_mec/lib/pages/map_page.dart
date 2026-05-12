@@ -259,6 +259,9 @@ class MapState extends State<MapPage> with RouteAware {
       TravelerInformation plugfest6 = asnService.decodeTim(TestData.plugfestWorkZoneTim);
       timManager.addOrUpdate(plugfest6,TestData.plugfestWorkZoneTim);
 
+      TravelerInformation mdotTim = asnService.decodeTim(TestData.mdotTestTim);
+      timManager.addOrUpdate(mdotTim, TestData.mdotTestTim);
+
     } else if (settingsController.demoMode.value) {
       TravelerInformation weatherTimDemo = asnService.decodeTim(TestData.tfhrcWeatherTIMDemo);
       timManager.addOrUpdate(weatherTimDemo, TestData.tfhrcWeatherTIMDemo);
@@ -406,7 +409,7 @@ class MapState extends State<MapPage> with RouteAware {
   Future<void> createGPSStream() async{
     Stream<Position> stream;
     if (debugMode) {
-      stream = fakePosition(TestData.plugfestFakePosition);
+      stream = fakePosition(TestData.mdotTestTimPosition);
     } else if (settingsController.gpsType.value == GPSType.static) {
       List<List<double>> pos = [[settingsController.staticGPSLongitude.value, settingsController.staticGPSLatitude.value]];
       stream = fakePosition(pos);
@@ -598,11 +601,11 @@ class MapState extends State<MapPage> with RouteAware {
         processNewPsm(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.SPAT:
-        addToAppLog("Identified Message as SPaT");
+        addToAppLog("Identified Message as SPaT $hex");
         processNewSpat(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.MAP:
-        addToAppLog("Identified Message as MAP");
+        addToAppLog("Identified Message as MAP $hex");
         processNewMap(broker, topic, hex, recTime, sendTime, source, validity);
         break;
       case MsgType.TIM:
@@ -632,9 +635,13 @@ class MapState extends State<MapPage> with RouteAware {
 
   void processNewBsm(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
     VehicleClass vehicleClass = VehicleClass.unknownVehicleClass;
-
     String trimmedHex = asnService.trimMessageHeaders(hex, asnService.BSM_START_FLAG)!;
     BasicSafetyMessage bsm = asnService.decodeBsm(trimmedHex);
+    String vehicleID = ASNService.bytesToHex(bsm.coreData.id.temporaryID);
+
+    if (vehicleID == bsmBuilder.vehicleId) {
+      return;
+    }
 
     String id = ASNService.bytesToHex(bsm.coreData.id.temporaryID);
     if (id == ASNService.bytesToHex(vehicleId.sublist(0, 4))) {
@@ -700,11 +707,24 @@ class MapState extends State<MapPage> with RouteAware {
         hex, asnService.MAP_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
     MapData map = asnService.decodeMap(trimmedHex);
 
+
+    // print("Decoded MAP ${map.intersections!.intersectionGeometryList.first.id.id.intersectionID} with $hex");
+    printLongMessage("Decoded MAP with ${map.intersections!.intersectionGeometryList.first.id.id.intersectionID} intersections: $hex");
+
+
     mapManager.addOrUpdate(map);
 
     updateGraphics();
 
     addToReceiveLog(broker, topic, "MAP", recTime, sendTime, LeidosDateExtraction.extractDateFromMap(map), trimmedHex, source, validity);
+  }
+
+  void printLongMessage(String message){
+    int chunkSize = 1000;
+    for (int i = 0; i < message.length; i += chunkSize) {
+      int endIndex = (i + chunkSize < message.length) ? i + chunkSize : message.length;
+      print(message.substring(i, endIndex));
+    }
   }
 
   void processNewTim(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {

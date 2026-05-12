@@ -120,7 +120,8 @@ class GeoMap {
         LatLng lastPoint = laneSegments[secondLaneId]!.first;
         return [firstPoint, lastPoint];
       }else{
-        _logger.w("Unable to build lane connections for MAP message. Missing lane segment for lane id $secondLaneId");
+        LatLng firstPoint = laneSegments[firstLaneId]!.first;
+        return [firstPoint];
       }
     }else{
       _logger.w("Unable to build lane connections for MAP message. Missing lane segment for lane id $firstLaneId");

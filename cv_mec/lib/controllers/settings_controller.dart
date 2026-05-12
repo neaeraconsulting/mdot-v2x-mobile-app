@@ -16,7 +16,7 @@ enum GPSType {
   path,
   static,
   obu,
-  cradle,
+  cradle
 }
 
 class SettingsController extends GetxController {
@@ -34,6 +34,7 @@ class SettingsController extends GetxController {
   bool showCradleGPSType = (dotenv.env['CRADLE_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
   bool showOBUGPSType = (dotenv.env['OBU_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
   bool showPathGPSType = (dotenv.env['PATH_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
+  bool showStaticGPSType = (dotenv.env['STATIC_GPS_ALLOWED'] ?? 'false').toLowerCase() == 'true';
   
   bool showBroadcastRate = (dotenv.env['SHOW_BROADCAST_RATE'] ?? 'false').toLowerCase() == 'true';
 
@@ -65,6 +66,7 @@ class SettingsController extends GetxController {
   RxString cradleGPSPassword = (dotenv.env['GPS_PASSWORD'] ?? "").obs;
   RxString cradleGPSIP = (dotenv.env['GPS_IP'] ?? "").obs;
   RxString obuIP = (dotenv.env['OBU_IP'] ?? "").obs;
+  RxString issMqttBrokerUrl = (dotenv.env['ISS_MQTT_BROKER'] ?? "").obs;
   RxString pathToFollow = ''.obs;
   RxString appVersion = ''.obs;
   Rx<bool> vzMode = false.obs;
@@ -122,6 +124,7 @@ class SettingsController extends GetxController {
     staticGPSLongitude.value = await secureStorage.getStaticGPSLongitude();
     enablePC5.value = await secureStorage.getPC5Enabled();
     enableIssMqtt.value = await secureStorage.getISSMqttEnabled();
+    issMqttBrokerUrl.value = await secureStorage.getISSMqttBrokerUrl();
     enableEtxMqtt.value = await secureStorage.getEtxMqttEnabled();
     enableIssScmsSigning.value = await secureStorage.getIssScmsSigningEnabled();
     broadcastRate.value = await secureStorage.getBroadcastRate();
@@ -137,6 +140,7 @@ class SettingsController extends GetxController {
     if(showCradleGPSType) filteredGPSTypes.add(GPSType.cradle);
     if(showOBUGPSType) filteredGPSTypes.add(GPSType.obu);
     if(showPathGPSType) filteredGPSTypes.add(GPSType.path);
+    if(showStaticGPSType) filteredGPSTypes.add(GPSType.static);
     gpsTypes = filteredGPSTypes;
 
     //check if the current gps type is in the filtered list, if not set to first available
