@@ -465,7 +465,6 @@ class SettingsPage extends StatelessWidget {
                   controller.switchModeState();
                 }),
             verticalSpaceSmall,
-            //dinosaur
             Platform.isLinux ? Obx(() => Row(
               children: [
                 const SizedBox(width: 14),

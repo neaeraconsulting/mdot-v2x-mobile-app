@@ -2056,8 +2056,7 @@ class MapState extends State<MapPage> with RouteAware {
                 icon: const Icon(Icons.add),
                 onPressed: () {
                   zoomLevel += 1;
-                  _mapController.move(getUserLocation(), zoomLevel);//dinosaur 
-                  //_mapController.moveAndZoom(getUserLocation(), _mapController.camera.zoom + 1);
+                  _mapController.move(getUserLocation(), zoomLevel); 
                 },
               ),
             ),
@@ -2084,7 +2083,6 @@ class MapState extends State<MapPage> with RouteAware {
                 onPressed: () {
                   zoomLevel -= 1;
                   _mapController.move(getUserLocation(), zoomLevel);
-                  //_mapController.moveAndZoom(getUserLocation(), _mapController.camera.zoom - 1);
                 },
               ),
             )
