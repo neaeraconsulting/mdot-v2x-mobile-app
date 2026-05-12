@@ -1,7 +1,10 @@
 library iss_scms;
 
 import 'dart:async';
+import 'dart:io';
 
+import 'package:get/get.dart';
+import 'package:iss_scms/iss_signing_api_service.dart';
 import 'package:iss_scms/models/expiration_information.dart';
 import 'package:iss_scms/models/signing_api_state.dart';
 import 'package:iss_scms/models/token_type.dart';
@@ -10,7 +13,9 @@ import 'package:iss_scms/models/validate_status.dart';
 import 'iss_scms_platform_interface.dart';
 
 class IssScms {
-  
+
+  late IssSigningApiService apiService;
+
   IssScms(){
     init();
   }
@@ -57,28 +62,53 @@ class IssScms {
   }
 
   // Message Definition Matches ISS Library
-  void init(){
-    return IssScmsPlatform.instance.init();
+  void init() async {
+    if (Platform.isAndroid || Platform.isIOS) {
+      print("Initializing SCMS for Mobile");
+      return IssScmsPlatform.instance.init();
+    } else {
+      apiService = Get.put(IssSigningApiService());
+    } 
   }
 
   void clearCache(int clearBeforeUnixTimeSeconds){
-    IssScmsPlatform.instance.clearCache(clearBeforeUnixTimeSeconds);
+    if (Platform.isAndroid || Platform.isIOS) {
+      IssScmsPlatform.instance.clearCache(clearBeforeUnixTimeSeconds);
+    } else {
+      apiService.clearCache(clearBeforeUnixTimeSeconds);
+    }
   }
 
   Future<ValidateStatus> validate(List<int> bytes){
-    return IssScmsPlatform.instance.validate(bytes, true);
+    if (Platform.isAndroid || Platform.isIOS) {
+      return IssScmsPlatform.instance.validate(bytes, true);
+    } else {
+      return apiService.validate(bytes);
+    }
   }
 
   void getDeviceCerts(String token){
-    IssScmsPlatform.instance.getDeviceCerts(token, TokenType.DM_DASHBOARD);
+    if (Platform.isAndroid || Platform.isIOS) {
+      IssScmsPlatform.instance.getDeviceCerts(token, TokenType.DM_DASHBOARD);
+    } else {
+      apiService.getDeviceCerts(token, TokenType.DM_DASHBOARD);
+    }
   }
 
   Future<SigningApiState> getState(){
-    return IssScmsPlatform.instance.getState();
+    if (Platform.isAndroid || Platform.isIOS) {
+      return IssScmsPlatform.instance.getState();
+    } else {
+      return apiService.getState();
+    }
   }
 
   Future<List<int>?> sign(int psid, List<int> bytes){
-    return IssScmsPlatform.instance.sign(psid, bytes, null, null);
+    if (Platform.isAndroid || Platform.isIOS) {
+      return IssScmsPlatform.instance.sign(psid, bytes, null, null);
+    } else {
+      return apiService.sign(psid, bytes, null, null);
+    }
   }
 
   Future<ExpirationInformation> getExpirationInfo(){
@@ -86,7 +116,11 @@ class IssScms {
   }
 
   void topOffCerts(String token){
-    IssScmsPlatform.instance.topOffCerts(token, TokenType.DM_DASHBOARD);
+    if (Platform.isAndroid || Platform.isIOS) {
+      IssScmsPlatform.instance.topOffCerts(token, TokenType.DM_DASHBOARD);
+    } else {
+      apiService.topOffCerts(token, TokenType.DM_DASHBOARD);
+    }
   }
   
 }
