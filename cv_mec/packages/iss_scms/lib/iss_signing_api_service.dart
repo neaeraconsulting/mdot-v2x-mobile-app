@@ -11,7 +11,7 @@ import 'package:logger/logger.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 
-class IssSigningApi extends GetxService {
+class IssSigningApiService extends GetxService {
   final Logger _logger = Logger();
   String baseUrl = dotenv.env['LINUX_ISS_SIGNING_URL'] ?? "";
 

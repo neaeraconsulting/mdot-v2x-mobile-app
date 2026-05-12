@@ -97,7 +97,7 @@ class SettingsPage extends StatelessWidget {
   }
 
   configurationSection() {
-    if (Platform.isLinux) {
+    if (Platform.isLinux) { //don't show mobile GPS option on Linux since it's not supported
       bool hasMobile = controller.gpsTypes.contains(GPSType.mobile);
       if (hasMobile) {
         controller.gpsTypes.remove(GPSType.mobile);

@@ -4,7 +4,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:get/get.dart';
-import 'package:iss_scms/iss_signing_api.dart';
+import 'package:iss_scms/iss_signing_api_service.dart';
 import 'package:iss_scms/models/expiration_information.dart';
 import 'package:iss_scms/models/signing_api_state.dart';
 import 'package:iss_scms/models/token_type.dart';
@@ -14,13 +14,10 @@ import 'iss_scms_platform_interface.dart';
 
 class IssScms {
 
-  late IssSigningApi apiService;
+  late IssSigningApiService apiService;
 
   IssScms(){
     init();
-    if (!(Platform.isAndroid || Platform.isIOS)) {
-      apiService = Get.put(IssSigningApi());
-    } 
   }
 
 
@@ -69,7 +66,9 @@ class IssScms {
     if (Platform.isAndroid || Platform.isIOS) {
       print("Initializing SCMS for Mobile");
       return IssScmsPlatform.instance.init();
-    }
+    } else {
+      apiService = Get.put(IssSigningApiService());
+    } 
   }
 
   void clearCache(int clearBeforeUnixTimeSeconds){
