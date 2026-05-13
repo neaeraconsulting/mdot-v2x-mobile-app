@@ -15,6 +15,7 @@ import 'iss_scms_platform_interface.dart';
 class IssScms {
 
   late IssSigningApiService apiService;
+  bool isMobile = Platform.isAndroid || Platform.isIOS;
 
   IssScms(){
     init();
@@ -63,7 +64,7 @@ class IssScms {
 
   // Message Definition Matches ISS Library
   void init() async {
-    if (Platform.isAndroid || Platform.isIOS) {
+    if (isMobile) {
       print("Initializing SCMS for Mobile");
       return IssScmsPlatform.instance.init();
     } else {
@@ -72,42 +73,42 @@ class IssScms {
   }
 
   void clearCache(int clearBeforeUnixTimeSeconds){
-    if (Platform.isAndroid || Platform.isIOS) {
+    if (isMobile) {
       IssScmsPlatform.instance.clearCache(clearBeforeUnixTimeSeconds);
     } else {
-      apiService.clearCache(clearBeforeUnixTimeSeconds);
+      apiService.clearCache(clearBeforeUnixTimeSeconds); // For Linux users
     }
   }
 
   Future<ValidateStatus> validate(List<int> bytes){
-    if (Platform.isAndroid || Platform.isIOS) {
+    if (isMobile) {
       return IssScmsPlatform.instance.validate(bytes, true);
     } else {
-      return apiService.validate(bytes);
+      return apiService.validate(bytes); // For Linux users
     }
   }
 
   void getDeviceCerts(String token){
-    if (Platform.isAndroid || Platform.isIOS) {
+    if (isMobile) {
       IssScmsPlatform.instance.getDeviceCerts(token, TokenType.DM_DASHBOARD);
     } else {
-      apiService.getDeviceCerts(token, TokenType.DM_DASHBOARD);
+      apiService.getDeviceCerts(token, TokenType.DM_DASHBOARD); // For Linux users
     }
   }
 
   Future<SigningApiState> getState(){
-    if (Platform.isAndroid || Platform.isIOS) {
+    if (isMobile) {
       return IssScmsPlatform.instance.getState();
     } else {
-      return apiService.getState();
+      return apiService.getState(); // For Linux users
     }
   }
 
   Future<List<int>?> sign(int psid, List<int> bytes){
-    if (Platform.isAndroid || Platform.isIOS) {
+    if (isMobile) {
       return IssScmsPlatform.instance.sign(psid, bytes, null, null);
     } else {
-      return apiService.sign(psid, bytes, null, null);
+      return apiService.sign(psid, bytes, null, null); // For Linux users
     }
   }
 
@@ -116,10 +117,10 @@ class IssScms {
   }
 
   void topOffCerts(String token){
-    if (Platform.isAndroid || Platform.isIOS) {
+    if (isMobile) {
       IssScmsPlatform.instance.topOffCerts(token, TokenType.DM_DASHBOARD);
     } else {
-      apiService.topOffCerts(token, TokenType.DM_DASHBOARD);
+      apiService.topOffCerts(token, TokenType.DM_DASHBOARD); // For Linux users
     }
   }
   

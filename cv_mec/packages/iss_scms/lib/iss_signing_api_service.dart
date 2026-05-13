@@ -10,6 +10,9 @@ import 'package:iss_scms/models/validate_status.dart';
 import 'package:logger/logger.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+/// IssSigningApiService is a GetX service that provides methods to interact with an external ISS Signing API.
+/// It handles health checks, message validation, digital signing, device certificate management, state queries,
+/// certificate top-off, and cache clearing. This service is currently used by Linux users.
 
 class IssSigningApiService extends GetxService {
   final Logger _logger = Logger();

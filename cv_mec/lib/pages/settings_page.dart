@@ -251,7 +251,7 @@ class SettingsPage extends StatelessWidget {
               ])
             : const SizedBox.shrink(),
         ),
-        controller.showPathGPSType ? verticalSpaceSmall : Container(),
+        controller.gpsType.value == GPSType.path ? verticalSpaceMedium : Container(), //add spacing if path GPS type is selected to keep spacing consistent
         controller.showBroadcastRate ? TextField(
           decoration: const InputDecoration(labelText: 'Broadcast Rate'),
           controller: broadcastRateController,
