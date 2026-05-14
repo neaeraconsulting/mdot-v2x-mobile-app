@@ -233,7 +233,7 @@ class MapState extends State<MapPage> with RouteAware {
     _mapController = MapController();
     timingService.startAllUpdates();
     bsmBuilder = BsmMessageBuilder(vehicleId.sublist(0, 4));
-    psmBuilder = PsmMessageBuilder();
+    psmBuilder = PsmMessageBuilder(vehicleId.sublist(0, 4));
 
     tumBuilder = TumMessageBuilder();
 
@@ -674,6 +674,12 @@ class MapState extends State<MapPage> with RouteAware {
   void processNewPsm(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
     String trimmedHex = asnService.trimMessageHeaders(hex, asnService.PSM_START_FLAG)!;
     PersonalSafetyMessage psm = asnService.decodePsm(trimmedHex);
+
+    String remoteDeviceId = ASNService.bytesToHex(psm.id.temporaryID);
+
+    if(remoteDeviceId == psmBuilder.deviceId){
+      return;
+    }
 
     LatLng position = LatLng(psm.position.lat.getDecimalLatitude(), psm.position.long.getDecimalLongitude());
     String pedestrianID = ASNService.bytesToHex(psm.id.temporaryID);
