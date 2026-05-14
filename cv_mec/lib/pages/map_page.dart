@@ -589,11 +589,7 @@ class MapState extends State<MapPage> with RouteAware {
     String hex = ASNService.bytesToHex(bytes);
     MsgType msgType = asnService.determineHexMessageType(hex);
     ValidateStatus validity;
-    if(Platform.isAndroid || Platform.isIOS){
-      validity= await scms.validate(bytes);
-    }else{
-      validity = ValidateStatus.FAILURE;
-    }
+    validity= await scms.validate(bytes);
 
     switch (msgType) {
       case MsgType.BSM:
@@ -647,28 +643,33 @@ class MapState extends State<MapPage> with RouteAware {
       return;
     }
 
-    LightbarInUse lights = LightbarInUse.unavailable;
-    SirenInUse sirens = SirenInUse.unavailable;
-    if (bsm.partII != null) {
-      for (BSMpartIIExtension ext in bsm.partII!) {
-        if (ext is SupplementalVehicleExtensions) {
-          if (ext.classification != null) {
-            vehicleClass = ext.classification!.getVehicleClass();
-          }
-        } else if (ext is SpecialVehicleExtensions) {
-          if (ext.vehicleAlerts != null) {
-            lights = ext.vehicleAlerts!.lightsUse;
-            sirens = ext.vehicleAlerts!.sirenUse;
+    String id = ASNService.bytesToHex(bsm.coreData.id.temporaryID);
+    if (id == ASNService.bytesToHex(vehicleId.sublist(0, 4))) {
+      LightbarInUse lights = LightbarInUse.unavailable;
+      SirenInUse sirens = SirenInUse.unavailable;
+      if (bsm.partII != null) {
+        for (BSMpartIIExtension ext in bsm.partII!) {
+          if (ext is SupplementalVehicleExtensions) {
+            if (ext.classification != null) {
+              vehicleClass = ext.classification!.getVehicleClass();
+            }
+          } else if (ext is SpecialVehicleExtensions) {
+            if (ext.vehicleAlerts != null) {
+              lights = ext.vehicleAlerts!.lightsUse;
+              sirens = ext.vehicleAlerts!.sirenUse;
+            }
           }
         }
       }
-    }
-    LatLng position = LatLng(bsm.coreData.lat.getDecimalLatitude(), bsm.coreData.long.getDecimalLongitude());
-    DateTime bsmTime = bsm.coreData.secMark.getDateTime(recTime);
+      LatLng position = LatLng(bsm.coreData.lat.getDecimalLatitude(), bsm.coreData.long.getDecimalLongitude());
+      String vehicleID = ASNService.bytesToHex(bsm.coreData.id.temporaryID);
 
-    ReceivedMsg msg = ReceivedBsm(vehicleID, bsmTime, position, vehicleClass, lights, sirens);
-    messageManager.addOrUpdate(msg);
-    addToReceiveLog(broker, topic, "BSM", recTime, sendTime, bsmTime, trimmedHex, source, validity);
+      DateTime bsmTime = bsm.coreData.secMark.getDateTime(recTime);
+
+      ReceivedMsg msg = ReceivedBsm(vehicleID, bsmTime, position, vehicleClass, lights, sirens);
+      messageManager.addOrUpdate(msg);
+      addToReceiveLog(broker, topic, "BSM", recTime, sendTime, bsmTime, trimmedHex, source, validity);
+    }
   }
 
   void processNewPsm(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {

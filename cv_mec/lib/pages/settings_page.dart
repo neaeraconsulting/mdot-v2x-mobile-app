@@ -98,6 +98,12 @@ class SettingsPage extends StatelessWidget {
   }
 
   configurationSection() {
+    if (Platform.isLinux) { //don't show mobile GPS option on Linux since it's not supported
+      bool hasMobile = controller.gpsTypes.contains(GPSType.mobile);
+      if (hasMobile) {
+        controller.gpsTypes.remove(GPSType.mobile);
+      }
+    }
     return Column(
       children: [
         headerElement("Configuration", Icons.settings),
@@ -111,9 +117,7 @@ class SettingsPage extends StatelessWidget {
               dropdownColor: Theme.of(Get.context!).scaffoldBackgroundColor,
               borderRadius: BorderRadius.circular(8),
               value: controller.gpsType.value,
-              items: (Platform.isLinux
-                ? controller.gpsTypes.sublist(1, controller.gpsTypes.length)
-                : controller.gpsTypes
+              items: (controller.gpsTypes
               ).map((GPSType type) {
                 return DropdownMenuItem<GPSType>(
                   value: type,
@@ -247,7 +251,7 @@ class SettingsPage extends StatelessWidget {
               ])
             : const SizedBox.shrink(),
         ),
-        verticalSpaceSmall,
+        controller.gpsType.value == GPSType.path ? verticalSpaceMedium : Container(), //add spacing if path GPS type is selected to keep spacing consistent
         controller.showBroadcastRate ? TextField(
           decoration: const InputDecoration(labelText: 'Broadcast Rate'),
           controller: broadcastRateController,
