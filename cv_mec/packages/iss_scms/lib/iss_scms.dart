@@ -1,7 +1,10 @@
 library iss_scms;
 
 import 'dart:async';
+import 'dart:io';
 
+import 'package:get/get.dart';
+import 'package:iss_scms/iss_signing_api_service.dart';
 import 'package:iss_scms/models/expiration_information.dart';
 import 'package:iss_scms/models/signing_api_state.dart';
 import 'package:iss_scms/models/token_type.dart';
@@ -10,7 +13,10 @@ import 'package:iss_scms/models/validate_status.dart';
 import 'iss_scms_platform_interface.dart';
 
 class IssScms {
-  
+
+  late IssSigningApiService apiService;
+  bool isMobile = Platform.isAndroid || Platform.isIOS;
+
   IssScms(){
     init();
   }
@@ -57,28 +63,53 @@ class IssScms {
   }
 
   // Message Definition Matches ISS Library
-  void init(){
-    return IssScmsPlatform.instance.init();
+  void init() async {
+    if (isMobile) {
+      print("Initializing SCMS for Mobile");
+      return IssScmsPlatform.instance.init();
+    } else {
+      apiService = Get.put(IssSigningApiService());
+    } 
   }
 
   void clearCache(int clearBeforeUnixTimeSeconds){
-    IssScmsPlatform.instance.clearCache(clearBeforeUnixTimeSeconds);
+    if (isMobile) {
+      IssScmsPlatform.instance.clearCache(clearBeforeUnixTimeSeconds);
+    } else {
+      apiService.clearCache(clearBeforeUnixTimeSeconds); // For Linux users
+    }
   }
 
   Future<ValidateStatus> validate(List<int> bytes){
-    return IssScmsPlatform.instance.validate(bytes, true);
+    if (isMobile) {
+      return IssScmsPlatform.instance.validate(bytes, true);
+    } else {
+      return apiService.validate(bytes); // For Linux users
+    }
   }
 
   void getDeviceCerts(String token){
-    IssScmsPlatform.instance.getDeviceCerts(token, TokenType.DM_DASHBOARD);
+    if (isMobile) {
+      IssScmsPlatform.instance.getDeviceCerts(token, TokenType.DM_DASHBOARD);
+    } else {
+      apiService.getDeviceCerts(token, TokenType.DM_DASHBOARD); // For Linux users
+    }
   }
 
   Future<SigningApiState> getState(){
-    return IssScmsPlatform.instance.getState();
+    if (isMobile) {
+      return IssScmsPlatform.instance.getState();
+    } else {
+      return apiService.getState(); // For Linux users
+    }
   }
 
   Future<List<int>?> sign(int psid, List<int> bytes){
-    return IssScmsPlatform.instance.sign(psid, bytes, null, null);
+    if (isMobile) {
+      return IssScmsPlatform.instance.sign(psid, bytes, null, null);
+    } else {
+      return apiService.sign(psid, bytes, null, null); // For Linux users
+    }
   }
 
   Future<ExpirationInformation> getExpirationInfo(){
@@ -86,7 +117,11 @@ class IssScms {
   }
 
   void topOffCerts(String token){
-    IssScmsPlatform.instance.topOffCerts(token, TokenType.DM_DASHBOARD);
+    if (isMobile) {
+      IssScmsPlatform.instance.topOffCerts(token, TokenType.DM_DASHBOARD);
+    } else {
+      apiService.topOffCerts(token, TokenType.DM_DASHBOARD); // For Linux users
+    }
   }
   
 }
