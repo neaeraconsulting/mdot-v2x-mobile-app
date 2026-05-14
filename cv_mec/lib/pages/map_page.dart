@@ -222,6 +222,10 @@ class MapState extends State<MapPage> with RouteAware {
 
   List<int> vehicleId = [];
 
+  double heightBottomDisplay = 0.0;
+  double markerSize = 60.0;
+  double zoomLevel = 16.0;
+
   @override
   void initState() {
     super.initState();
@@ -334,6 +338,7 @@ class MapState extends State<MapPage> with RouteAware {
       connectMqttAgents();
       settingsController.changedBrokerSettings.value = false;
     }
+    heightBottomDisplay = getHeightBottomDisplay(MediaQuery.of(context).size.height);
   }
 
 
@@ -1237,6 +1242,7 @@ class MapState extends State<MapPage> with RouteAware {
   }
 
   List<Marker> getMarkerList() {
+
     List<Marker> markerList = [];
 
     Position? pos = currentPosition;
@@ -1253,8 +1259,8 @@ class MapState extends State<MapPage> with RouteAware {
         if (msg is ReceivedBsm) {
           Marker remoteMarker = Marker(
             point: msg.position,
-            width: 60,
-            height: 60,
+            width: markerSize,
+            height: markerSize,
             child: iconBase(IconManager.getReceivedMessageIcon(msg), Colors.grey[700]!,
                 sirensOn: msg.sirens == SirenInUse.inUse, busWarningOn: msg.lights == LightbarInUse.inUse),
           );
@@ -1262,8 +1268,8 @@ class MapState extends State<MapPage> with RouteAware {
         } else {
           Marker remoteMarker = Marker(
             point: msg.position,
-            width: 60,
-            height: 60,
+            width: markerSize,
+            height: markerSize,
             child: iconBase(IconManager.getReceivedMessageIcon(msg), Colors.grey[700]!),
           );
           markerList.add(remoteMarker);
@@ -1283,8 +1289,8 @@ class MapState extends State<MapPage> with RouteAware {
     for (MappableTam mappableTam in tamManager.storedTams.values) {
       for (LatLng coord in mappableTam.markerPoints) {
         markerList.add(Marker(
-          width: 40.0,
-          height: 40.0,
+          width: markerSize * 0.8,
+          height: markerSize * 0.8,
           point: coord,
           rotate: true,
           child: GestureDetector(
@@ -1311,8 +1317,8 @@ class MapState extends State<MapPage> with RouteAware {
       }
       for (LatLng coord in mappableTam.approachMarkerPoints) {
         markerList.add(Marker(
-          width: 40.0,
-          height: 40.0,
+          width: markerSize * 0.8,
+          height: markerSize * 0.8,
           point: coord,
           rotate: false,
           child: Transform.rotate(
@@ -1330,8 +1336,8 @@ class MapState extends State<MapPage> with RouteAware {
     if (pos != null) {
       Marker userMarker = Marker(
         point: getUserLocation(),
-        width: 60,
-        height: 60,
+        width: markerSize,
+        height: markerSize,
         child: iconBase(getSenderIcon(), Theme.of(context).primaryColor,
             sirensOn: configController.isIceCreamSongOn.value || configController.isSirenOn.value,
             busWarningOn: configController.isBusWarningOn.value),
@@ -1363,8 +1369,8 @@ class MapState extends State<MapPage> with RouteAware {
                 }
               }
               markerList.add(Marker(
-                width: 20.0,
-                height: 40.0,
+                width: markerSize * 0.8 * 0.5,
+                height: markerSize * 0.8,
                 point: lightLocation.coordinate,
                 child: lightStateMap[dominantState] ??
                     const Icon(
@@ -1404,7 +1410,7 @@ class MapState extends State<MapPage> with RouteAware {
             ),
             child: Icon(
               icon,
-              size: 25,
+              size: markerSize * 0.4,
               color: color,
             ),
           )
@@ -1420,7 +1426,7 @@ class MapState extends State<MapPage> with RouteAware {
                 ),
                 child: Icon(
                   icon,
-                  size: 25,
+                  size: markerSize * 0.4,
                   color: color,
                 ),
               )
@@ -1437,7 +1443,7 @@ class MapState extends State<MapPage> with RouteAware {
                   ),
                   child: Icon(
                     icon,
-                    size: 25,
+                    size: markerSize * 0.4,
                     color: color,
                   ),
                 ),
@@ -1665,11 +1671,46 @@ class MapState extends State<MapPage> with RouteAware {
 
   String enumToString(Object o) => o.toString().split('.').last;
 
+  double getHeightBottomDisplay(double screenHeight) {
+    if (Platform.isAndroid || Platform.isIOS) {
+      return screenHeight * 0.18;
+    } else {
+      switch (settingsController.iconSize.value) {
+        case IconSize.small:
+          return screenHeight * 0.12;
+        case IconSize.medium:
+          return screenHeight * 0.18;
+        case IconSize.large:
+          return screenHeight * 0.25;
+        case IconSize.extraLarge:
+          return screenHeight * 0.30;
+      }
+    }
+  }
+
+  double getMarkerSize() {
+    if (Platform.isAndroid || Platform.isIOS) {
+      return 60;
+    } else {
+      switch (settingsController.iconSize.value) {
+        case IconSize.small:
+          return 60;
+        case IconSize.medium:
+          return 80;
+        case IconSize.large:
+          return 100;
+        case IconSize.extraLarge:
+          return 130;
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    final heightBottomDisplay = screenHeight * 0.18;
+    heightBottomDisplay = getHeightBottomDisplay(MediaQuery.of(context).size.height);
+    markerSize = getMarkerSize();
 
     const String appTitle = "MAP";
     return Scaffold(
@@ -1727,21 +1768,23 @@ class MapState extends State<MapPage> with RouteAware {
                                 color: Colors.grey.shade800, // Optional: Background color
                               ),
                               child: Column(mainAxisSize: MainAxisSize.min, children: [
-                                const Text("Current Light State",
-                                    textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                                Text("Current Light State",
+                                    textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: (settingsController.iconSize.value == IconSize.extraLarge || settingsController.iconSize.value == IconSize.large) ? 32 : 14)),
                                 SizedBox(
                                     width: screenWidth * 0.15, height: screenHeight * 0.15, child: currentLightState),
-                                Text(nextLightText, textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                                Text(nextLightText, textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: (settingsController.iconSize.value == IconSize.extraLarge || settingsController.iconSize.value == IconSize.large) ? 32 : 14)),
                               ])))
                       : (!showLightText && nextLightText.isNotEmpty)
-                          ? SizedBox(width: screenWidth * 0.15, height: screenHeight * 0.15, child: currentLightState)
+                          ? SizedBox(width: (Platform.isAndroid || Platform.isIOS) ? screenWidth * 0.15 : screenWidth * 0.12, height: (Platform.isAndroid || Platform.isIOS) ? screenHeight * 0.15 : screenHeight * 0.4, child: currentLightState)
                           : Container(),
                 ),
                 Positioned(
                     top: configController.isVehicleConfig.value ? 60 : 0,
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),
-                      child: Column(children: [
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                         managementButtons(),
                         verticalSpaceSmall,
                         settingsController.tollingEnabled.value ? fourTireButton() : Container(),
@@ -1761,7 +1804,7 @@ class MapState extends State<MapPage> with RouteAware {
                 Align(
                     alignment: Alignment.bottomLeft,
                     child: SizedBox(
-                      height: screenHeight * 0.2,
+                      height: heightBottomDisplay + 20,
                       child: Row(children: [
                         Expanded(
                           child: timsDisplay(heightBottomDisplay, screenWidth),
@@ -1792,7 +1835,7 @@ class MapState extends State<MapPage> with RouteAware {
             options: MapOptions(
               initialCenter: LatLng(paramController.registrationLatitude.value,
                   paramController.registrationLongitude.value), //LatLng(, paramController.fakeLongitude.value),
-              initialZoom: 16,
+              initialZoom: zoomLevel,
               onMapReady: () {
                 // controller.mapController = mapController;
               },
@@ -1919,74 +1962,135 @@ class MapState extends State<MapPage> with RouteAware {
   }
 
   Widget managementButtons() {
-    return Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(35.0),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.8),
-              spreadRadius: 1,
-              blurRadius: 5,
-              offset: const Offset(-1, 3), // changes position of shadow
+    return Row(
+      children: [
+        Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(35.0),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.8),
+                  spreadRadius: 1,
+                  blurRadius: 5,
+                  offset: const Offset(-1, 3), // changes position of shadow
+                ),
+              ],
             ),
-          ],
+            child: Column(children: [
+              verticalSpaceSmall,
+              ElevatedButton(
+                onPressed: () {
+                  updateConnectedStatus(ConnectedStatus.DISCONNECTED);
+                  stopSendingBSM();
+                  connectMqttAgents();
+                  startSendingBSM();
+                },
+                style: ElevatedButton.styleFrom(
+                  shape: const CircleBorder(),
+                  padding: const EdgeInsets.all(10),
+                  backgroundColor: connectedButtonColor, // <-- Button color
+                  foregroundColor: Colors.black, // <-- Splash color
+                  shadowColor: Colors.black,
+                  elevation: 4,
+                ),
+                // child: Icon(Icons.menu, color: Colors.white),
+                child: const Icon(Icons.connect_without_contact_rounded, color: Colors.white),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  followUser = true;
+                  _mapController.moveAndRotate(
+                      getUserLocation(), _mapController.camera.zoom, _mapController.camera.rotation);
+                },
+                style: ElevatedButton.styleFrom(
+                  shape: const CircleBorder(),
+                  padding: const EdgeInsets.all(10),
+                  backgroundColor: followUser ? Colors.green : Colors.blue, // <-- Button color
+                  foregroundColor: Colors.black, // <-- Splash color
+                  shadowColor: Colors.black,
+                  elevation: 4,
+                ),
+                // child: Icon(Icons.menu, color: Colors.white),
+                child: const Icon(Icons.directions_car, color: Colors.white),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  addToAppLog("Upload Log Files");
+                  rotateAndUploadLogs();
+                },
+                style: ElevatedButton.styleFrom(
+                  shape: const CircleBorder(),
+                  padding: const EdgeInsets.all(10),
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.black, // <-- Splash color
+                  shadowColor: Colors.black,
+                  elevation: 4,
+                ),
+                // child: Icon(Icons.menu, color: Colors.white),
+                child: const Icon(Icons.upload, color: Colors.white),
+              ),
+              verticalSpaceSmall,
+            ])
         ),
-        child: Column(children: [
-          verticalSpaceSmall,
-          ElevatedButton(
-            onPressed: () {
-              updateConnectedStatus(ConnectedStatus.DISCONNECTED);
-              stopSendingBSM();
-              connectMqttAgents();
-              startSendingBSM();
-            },
-            style: ElevatedButton.styleFrom(
-              shape: const CircleBorder(),
-              padding: const EdgeInsets.all(10),
-              backgroundColor: connectedButtonColor, // <-- Button color
-              foregroundColor: Colors.black, // <-- Splash color
-              shadowColor: Colors.black,
-              elevation: 4,
+        horizontalSpaceSmall,
+        !(Platform.isAndroid || Platform.isIOS) ? Column(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: primaryColor,
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.8),
+                    spreadRadius: 1,
+                    blurRadius: 5,
+                    offset: const Offset(-1, 3), // changes position of shadow
+                  ),
+                ],
+              ),
+              child: IconButton(  
+                icon: const Icon(Icons.add),
+                onPressed: () {
+                  zoomLevel += 1;
+                  _mapController.move(getUserLocation(), zoomLevel); 
+                },
+              ),
             ),
-            // child: Icon(Icons.menu, color: Colors.white),
-            child: const Icon(Icons.connect_without_contact_rounded, color: Colors.white),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              followUser = true;
-              _mapController.moveAndRotate(
-                  getUserLocation(), _mapController.camera.zoom, _mapController.camera.rotation);
-            },
-            style: ElevatedButton.styleFrom(
-              shape: const CircleBorder(),
-              padding: const EdgeInsets.all(10),
-              backgroundColor: followUser ? Colors.green : Colors.blue, // <-- Button color
-              foregroundColor: Colors.black, // <-- Splash color
-              shadowColor: Colors.black,
-              elevation: 4,
-            ),
-            // child: Icon(Icons.menu, color: Colors.white),
-            child: const Icon(Icons.directions_car, color: Colors.white),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              addToAppLog("Upload Log Files");
-              rotateAndUploadLogs();
-            },
-            style: ElevatedButton.styleFrom(
-              shape: const CircleBorder(),
-              padding: const EdgeInsets.all(10),
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.black, // <-- Splash color
-              shadowColor: Colors.black,
-              elevation: 4,
-            ),
-            // child: Icon(Icons.menu, color: Colors.white),
-            child: const Icon(Icons.upload, color: Colors.white),
-          ),
-          verticalSpaceSmall,
-        ]));
+            verticalSpaceSmall,
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: primaryColor,
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.8),
+                    spreadRadius: 1,
+                    blurRadius: 5,
+                    offset: const Offset(-1, 3), // changes position of shadow
+                  ),
+                ],
+              ),
+              child: IconButton(  
+                icon: const Icon(Icons.remove),
+                onPressed: () {
+                  zoomLevel -= 1;
+                  _mapController.move(getUserLocation(), zoomLevel);
+                },
+              ),
+            )
+          ],
+        ) : Container(),
+      ],
+    );
   }
 
   Widget sirenButton() {

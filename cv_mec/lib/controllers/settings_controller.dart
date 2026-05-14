@@ -19,6 +19,13 @@ enum GPSType {
   cradle
 }
 
+enum IconSize {
+  small,
+  medium,
+  large,
+  extraLarge
+}
+
 class SettingsController extends GetxController {
   SettingsController();
   SharedPrefs sharedPrefs = SharedPrefs();
@@ -103,6 +110,7 @@ class SettingsController extends GetxController {
   RxBool changedBrokerSettings = false.obs; 
 
   Rx<bool> enableIssScmsSigning = false.obs;
+  Rx<IconSize> iconSize = IconSize.small.obs;
 
   initialize() async {    
     baseUri.value = await secureStorage.getBaseURI();
@@ -165,6 +173,8 @@ class SettingsController extends GetxController {
       darkModeState.value = isSystemDarkMode;
     }
 
+    iconSize = (await sharedPrefs.getIconSizeFromPrefs() ?? IconSize.small).obs;
+
 
     PackageInfo packageInfo = await PackageInfo.fromPlatform(); // Fetch the app version
     appVersion.value = '${packageInfo.version} (${packageInfo.buildNumber})';
@@ -221,6 +231,10 @@ class SettingsController extends GetxController {
       Get.changeThemeMode(ThemeMode.light);
       await sharedPrefs.saveDarkModeToPrefs(darkModeState.value);
     }
+  }
+
+  void setIconSize() async {
+    await sharedPrefs.saveIconSizeToPrefs(iconSize.value);
   }
 
   GPSType toGPSType(String type) {
