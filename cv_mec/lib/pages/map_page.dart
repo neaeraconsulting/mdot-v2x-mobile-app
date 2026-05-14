@@ -710,9 +710,7 @@ class MapState extends State<MapPage> with RouteAware {
         hex, asnService.MAP_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
     MapData map = asnService.decodeMap(trimmedHex);
 
-
-    // print("Decoded MAP ${map.intersections!.intersectionGeometryList.first.id.id.intersectionID} with $hex");
-    printLongMessage("Decoded MAP with ${map.intersections!.intersectionGeometryList.first.id.id.intersectionID} intersections: $hex");
+    //printLongMessage("Decoded MAP with ${map.intersections!.intersectionGeometryList.first.id.id.intersectionID} intersections: $hex");
 
 
     mapManager.addOrUpdate(map);
@@ -1594,7 +1592,7 @@ class MapState extends State<MapPage> with RouteAware {
   List<Polygon<HitValue>> getPolygons() {
     List<Polygon<HitValue>> polygons = [];
 
-    List<DataFrameGeometry> dataFrames = timManager.getActiveTimGeometry(true);
+    List<DataFrameGeometry> dataFrames = timManager.getActiveTimGeometry(false);
     for (DataFrameGeometry frame in dataFrames) {
       TravelerDataFrame tdFrame = frame.frame;
 
