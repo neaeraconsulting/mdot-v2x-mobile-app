@@ -23,6 +23,7 @@ import 'package:asn1_plugin/j2735/2024/common/msg_count.dart';
 import 'package:asn1_plugin/j2735/2024/common/node_set_xy.dart';
 import 'package:asn1_plugin/j2735/2024/common/siren_in_use.dart';
 import 'package:asn1_plugin/j2735/2024/map_data/generic_lane.dart';
+import 'package:asn1_plugin/j2735/2024/map_data/lane_attributes_crosswalk.dart';
 import 'package:asn1_plugin/j2735/2024/map_data/map_data.dart';
 import 'package:asn1_plugin/j2735/2024/personal_safety_message/personal_device_user_type.dart';
 import 'package:asn1_plugin/j2735/2024/personal_safety_message/personal_safety_message.dart';
@@ -1545,7 +1546,9 @@ class MapState extends State<MapPage> with RouteAware {
 
           // Adds Ingress and Egress Map Lanes
           Color laneColor = Colors.blue.shade900;
-          if (lane.ingressApproach != null) {
+          if(lane.laneAttributes.laneType is LaneAttributesCrosswalk){
+            laneColor = Colors.purple.shade900;
+          } else if (lane.ingressApproach != null) {
             laneColor = Colors.pink.shade300;
           }
 
