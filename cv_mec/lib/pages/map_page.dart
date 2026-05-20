@@ -223,6 +223,12 @@ class MapState extends State<MapPage> with RouteAware {
 
   List<int> vehicleId = [];
 
+  void _safeSetState(VoidCallback fn) {
+    if (mounted) {
+      setState(fn);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -238,11 +244,9 @@ class MapState extends State<MapPage> with RouteAware {
 
     tumBuilder = TumMessageBuilder();
 
-    if (mounted) {
-      setState(() {
-        showLoadingIcon = true;
-      });
-    }
+    _safeSetState(() {
+      showLoadingIcon = true;
+    });
 
     updateConnectedStatus(ConnectedStatus.PARTIAL);
 
@@ -281,6 +285,10 @@ class MapState extends State<MapPage> with RouteAware {
         return;
       }
 
+      if (!mounted) {
+        return;
+      }
+
       if (Platform.isIOS) {
         await flutterTts.setSharedInstance(true);
 
@@ -306,7 +314,14 @@ class MapState extends State<MapPage> with RouteAware {
       }
 
       await createGPSStream();
+      if (!mounted) {
+        return;
+      }
+
       await connectMqttAgents();
+      if (!mounted) {
+        return;
+      }
       
       startSendingBSM();
       
@@ -315,7 +330,7 @@ class MapState extends State<MapPage> with RouteAware {
       }
 
       updateConnectedStatus(ConnectedStatus.CONNECTED);
-      setState(() {
+      _safeSetState(() {
         showLoadingIcon = false;
       });
 
@@ -368,7 +383,7 @@ class MapState extends State<MapPage> with RouteAware {
 
   // Helper function to disconnect and reconnect all mqtt agents
   Future<void> connectMqttAgents() async {
-    setState(() {
+    _safeSetState(() {
       showLoadingIcon = true;
     });
     mqttAgents.disconnectAll();
@@ -402,7 +417,7 @@ class MapState extends State<MapPage> with RouteAware {
       return;
     }
     updateConnectedStatus(ConnectedStatus.CONNECTED);
-    setState(() {
+    _safeSetState(() {
       showLoadingIcon = false;
     });
   }
@@ -469,6 +484,10 @@ class MapState extends State<MapPage> with RouteAware {
 
   @override
   void dispose() {
+    positionSubscription?.cancel();
+    sendMessageTimer?.cancel();
+    uploadTimer?.cancel();
+    routeObserver.unsubscribe(this);
     configController.stopSiren();
     configController.isBusWarningOn.value = false;
     configController.isIceCreamSongOn.value = false;
@@ -1684,10 +1703,7 @@ class MapState extends State<MapPage> with RouteAware {
               sendMessageTimer?.cancel(); 
               uploadTimer?.cancel();
               mqttAgents.disconnectAll();
-
-              Future.delayed(const Duration(milliseconds: 100), () async {
-                Get.back();
-              });
+              Get.back();
             }),
         title: const Text(appTitle),
         actions: <Widget>[
