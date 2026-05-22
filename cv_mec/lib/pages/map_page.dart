@@ -1965,7 +1965,12 @@ class MapState extends State<MapPage> with RouteAware {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: Row(children: [
-            const Text("Vehicle Stats", style: TextStyle(color: Colors.black, fontSize: 20)),
+            SizedBox(
+              width: screenWidth(Get.context!) * 0.6,
+              child: const AutoSizeTextWidget(
+                text: "Vehicle Stats", style: TextStyle(color: Colors.black, fontSize: 20), maxLines: 1
+              ),
+            ),
             const Spacer(),
             IconButton(
                 padding: EdgeInsets.zero,

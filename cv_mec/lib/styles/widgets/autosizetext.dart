@@ -29,8 +29,9 @@ class AutoSizeTextWidget extends StatelessWidget {
       style: style,
       maxLines: maxLines,
       overflow: overflow,
-      wrapWords: false,
-      minFontSize: boldText ? 3.0 : minFontSize.toDouble(),
+      wrapWords: boldText ? true : false,
+      maxFontSize: boldText ? (style!.fontSize! * 0.6).toInt().toDouble() : double.infinity,
+      minFontSize: minFontSize.toDouble(),
     );
   }
 }
