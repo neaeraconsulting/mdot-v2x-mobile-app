@@ -85,6 +85,7 @@ flutter:
   assets:
     - assets/images/Default/
     - assets/images/Custom/
+    - assets/images/MDOT/
     - assets/images/Bus/
     - assets/images/generic/
     - assets/images/ITIS/
