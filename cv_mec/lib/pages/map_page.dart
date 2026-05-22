@@ -448,7 +448,16 @@ class MapState extends State<MapPage> with RouteAware {
       stream = locationService.locationStream;
     }
 
-    positionSubscription = stream.listen(updatePosition);
+    positionSubscription = stream.listen(
+      (position) {
+        updatePosition(position).catchError((error, stackTrace) {
+          showError("Position update failed: $error");
+        });
+      },
+      onError: (error, stackTrace) {
+        showError("GPS stream error: $error");
+      },
+    );
     if(currentPosition == null){
       try{
         await stream.first;
@@ -611,8 +620,12 @@ class MapState extends State<MapPage> with RouteAware {
   void processIncomingMessage(String? broker, String topic, List<int> bytes, DateTime recTime, DateTime? sendTime, String source) async {
     String hex = ASNService.bytesToHex(bytes);
     MsgType msgType = asnService.determineHexMessageType(hex);
-    ValidateStatus validity;
-    validity= await scms.validate(bytes);
+    ValidateStatus validity = ValidateStatus.FAILURE;
+    try {
+      validity = await scms.validate(bytes);
+    } catch (e) {
+      showError("SCMS validation failed: $e");
+    }
 
     switch (msgType) {
       case MsgType.BSM:
@@ -936,12 +949,16 @@ class MapState extends State<MapPage> with RouteAware {
       List<int> messageBytes = ASNService.hexToBytes(hex);
       
       if(scmsActive){
-        List<int>? signedMessageBytes = await scms.sign(psid, messageBytes);
-        if(signedMessageBytes != null && signedMessageBytes.isNotEmpty){
-          messageBytes = signedMessageBytes;
-          signed = true;
-        }else{
-          showError("Result of Message Signing was Null or Empty");
+        try {
+          List<int>? signedMessageBytes = await scms.sign(psid, messageBytes);
+          if(signedMessageBytes != null && signedMessageBytes.isNotEmpty){
+            messageBytes = signedMessageBytes;
+            signed = true;
+          }else{
+            showError("Result of Message Signing was Null or Empty");
+          }
+        } catch (e) {
+          showError("SCMS signing failed: $e");
         }
       }
       
