@@ -26,7 +26,7 @@ class VehicleConfigSelectionDialog extends StatelessWidget {
         height: screenHeight(context) * 0.5,
         child: Center(
           child: Obx(() => Padding(
-                padding: const EdgeInsets.only(left:8, right: 8, top: 24, bottom: 24),
+                padding: const EdgeInsets.only(left:16, right: 8, top: 24, bottom: 24),
                 child: Column(
                   children: [
                     SizedBox(
