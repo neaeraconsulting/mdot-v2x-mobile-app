@@ -23,6 +23,9 @@ class AutoSizeTextWidget extends StatelessWidget {
     // font size so AutoSizeText has more room to shrink and fit without
     // wrapping or clipping.
     final bool boldText = MediaQuery.boldTextOf(context);
+    final TextScaler textScaler = MediaQuery.textScalerOf(context);
+    final double scale = textScaler.scale(1.0);
+    final double adjustedMaxFontSize = style?.fontSize != null ? style!.fontSize! / scale : double.infinity;
 
     return AutoSizeText(
       text,
@@ -30,7 +33,7 @@ class AutoSizeTextWidget extends StatelessWidget {
       maxLines: maxLines,
       overflow: overflow,
       wrapWords: boldText ? true : false,
-      maxFontSize: boldText ? (style!.fontSize! * 0.6).toInt().toDouble() : double.infinity,
+      maxFontSize: boldText ? adjustedMaxFontSize : double.infinity,
       minFontSize: minFontSize.toDouble(),
     );
   }
