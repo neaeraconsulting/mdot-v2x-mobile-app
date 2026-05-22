@@ -79,7 +79,7 @@ class LocationService extends GetxService {
     // This method starts the location stream. This can be called multiple times, but only one stream will be active at a time.
     try {
       await requestPermission();
-      if (await isPermissionGranted() && await isTrackingGranted() && _serviceEnabled) {
+      if (await isPermissionGranted() && _serviceEnabled) {
         _startLocationUpdates();
       }
     } catch (e) {

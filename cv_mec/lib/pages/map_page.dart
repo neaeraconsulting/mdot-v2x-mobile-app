@@ -23,6 +23,7 @@ import 'package:asn1_plugin/j2735/2024/common/msg_count.dart';
 import 'package:asn1_plugin/j2735/2024/common/node_set_xy.dart';
 import 'package:asn1_plugin/j2735/2024/common/siren_in_use.dart';
 import 'package:asn1_plugin/j2735/2024/map_data/generic_lane.dart';
+import 'package:asn1_plugin/j2735/2024/map_data/lane_attributes_crosswalk.dart';
 import 'package:asn1_plugin/j2735/2024/map_data/map_data.dart';
 import 'package:asn1_plugin/j2735/2024/personal_safety_message/personal_device_user_type.dart';
 import 'package:asn1_plugin/j2735/2024/personal_safety_message/personal_safety_message.dart';
@@ -222,6 +223,12 @@ class MapState extends State<MapPage> with RouteAware {
 
   List<int> vehicleId = [];
 
+  void _safeSetState(VoidCallback fn) {
+    if (mounted) {
+      setState(fn);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -233,15 +240,13 @@ class MapState extends State<MapPage> with RouteAware {
     _mapController = MapController();
     timingService.startAllUpdates();
     bsmBuilder = BsmMessageBuilder(vehicleId.sublist(0, 4));
-    psmBuilder = PsmMessageBuilder();
+    psmBuilder = PsmMessageBuilder(vehicleId.sublist(0, 4));
 
     tumBuilder = TumMessageBuilder();
 
-    if (mounted) {
-      setState(() {
-        showLoadingIcon = true;
-      });
-    }
+    _safeSetState(() {
+      showLoadingIcon = true;
+    });
 
     updateConnectedStatus(ConnectedStatus.PARTIAL);
 
@@ -280,6 +285,10 @@ class MapState extends State<MapPage> with RouteAware {
         return;
       }
 
+      if (!mounted) {
+        return;
+      }
+
       if (Platform.isIOS) {
         await flutterTts.setSharedInstance(true);
 
@@ -294,10 +303,12 @@ class MapState extends State<MapPage> with RouteAware {
       }
 
       if(settingsController.enableIssScmsSigning.value){
-        scms.activateScms(settingsController.issScmsToken.value).then((result) {
+        scms.activateScms(settingsController.issScmsToken.value, "obu").then((result) {
           scmsActive = result;
           if(!scmsActive){
             showError("Unable to Activate SCMS Signing");
+          }else{
+            addToAppLog("SCMS Signing Activated");
           }
         });
       }else{
@@ -305,7 +316,14 @@ class MapState extends State<MapPage> with RouteAware {
       }
 
       await createGPSStream();
+      if (!mounted) {
+        return;
+      }
+
       await connectMqttAgents();
+      if (!mounted) {
+        return;
+      }
       
       startSendingBSM();
       
@@ -314,7 +332,7 @@ class MapState extends State<MapPage> with RouteAware {
       }
 
       updateConnectedStatus(ConnectedStatus.CONNECTED);
-      setState(() {
+      _safeSetState(() {
         showLoadingIcon = false;
       });
 
@@ -367,7 +385,7 @@ class MapState extends State<MapPage> with RouteAware {
 
   // Helper function to disconnect and reconnect all mqtt agents
   Future<void> connectMqttAgents() async {
-    setState(() {
+    _safeSetState(() {
       showLoadingIcon = true;
     });
     mqttAgents.disconnectAll();
@@ -401,7 +419,7 @@ class MapState extends State<MapPage> with RouteAware {
       return;
     }
     updateConnectedStatus(ConnectedStatus.CONNECTED);
-    setState(() {
+    _safeSetState(() {
       showLoadingIcon = false;
     });
   }
@@ -426,6 +444,7 @@ class MapState extends State<MapPage> with RouteAware {
       gpsdService.connectToGPSD(settingsController.obuIP.value, 2947);
       stream = gpsdService.locationStream.stream;
     } else {
+      addToAppLog("Using Standard Location Service for GPS Data Location Permissions: ${locationService.isPermissionGranted()} Tracking Status: ${locationService.areLocationUpdatesActive()}");
       stream = locationService.locationStream;
     }
 
@@ -468,6 +487,10 @@ class MapState extends State<MapPage> with RouteAware {
 
   @override
   void dispose() {
+    positionSubscription?.cancel();
+    sendMessageTimer?.cancel();
+    uploadTimer?.cancel();
+    routeObserver.unsubscribe(this);
     configController.stopSiren();
     configController.isBusWarningOn.value = false;
     configController.isIceCreamSongOn.value = false;
@@ -643,8 +666,6 @@ class MapState extends State<MapPage> with RouteAware {
       return;
     }
 
-    String id = ASNService.bytesToHex(bsm.coreData.id.temporaryID);
-    if (id == ASNService.bytesToHex(vehicleId.sublist(0, 4))) {
       LightbarInUse lights = LightbarInUse.unavailable;
       SirenInUse sirens = SirenInUse.unavailable;
       if (bsm.partII != null) {
@@ -662,19 +683,24 @@ class MapState extends State<MapPage> with RouteAware {
         }
       }
       LatLng position = LatLng(bsm.coreData.lat.getDecimalLatitude(), bsm.coreData.long.getDecimalLongitude());
-      String vehicleID = ASNService.bytesToHex(bsm.coreData.id.temporaryID);
 
       DateTime bsmTime = bsm.coreData.secMark.getDateTime(recTime);
 
       ReceivedMsg msg = ReceivedBsm(vehicleID, bsmTime, position, vehicleClass, lights, sirens);
       messageManager.addOrUpdate(msg);
       addToReceiveLog(broker, topic, "BSM", recTime, sendTime, bsmTime, trimmedHex, source, validity);
-    }
+    
   }
 
   void processNewPsm(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
     String trimmedHex = asnService.trimMessageHeaders(hex, asnService.PSM_START_FLAG)!;
     PersonalSafetyMessage psm = asnService.decodePsm(trimmedHex);
+
+    String remoteDeviceId = ASNService.bytesToHex(psm.id.temporaryID);
+
+    if(remoteDeviceId == psmBuilder.deviceId){
+      return;
+    }
 
     LatLng position = LatLng(psm.position.lat.getDecimalLatitude(), psm.position.long.getDecimalLongitude());
     String pedestrianID = ASNService.bytesToHex(psm.id.temporaryID);
@@ -707,24 +733,11 @@ class MapState extends State<MapPage> with RouteAware {
         hex, asnService.MAP_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
     MapData map = asnService.decodeMap(trimmedHex);
 
-
-    // print("Decoded MAP ${map.intersections!.intersectionGeometryList.first.id.id.intersectionID} with $hex");
-    printLongMessage("Decoded MAP with ${map.intersections!.intersectionGeometryList.first.id.id.intersectionID} intersections: $hex");
-
-
     mapManager.addOrUpdate(map);
 
     updateGraphics();
 
     addToReceiveLog(broker, topic, "MAP", recTime, sendTime, LeidosDateExtraction.extractDateFromMap(map), trimmedHex, source, validity);
-  }
-
-  void printLongMessage(String message){
-    int chunkSize = 1000;
-    for (int i = 0; i < message.length; i += chunkSize) {
-      int endIndex = (i + chunkSize < message.length) ? i + chunkSize : message.length;
-      print(message.substring(i, endIndex));
-    }
   }
 
   void processNewTim(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {
@@ -1009,6 +1022,9 @@ class MapState extends State<MapPage> with RouteAware {
   DateTime prevSystemTime = DateTime.now();
 
   Future<void> updatePosition(Position position) async {
+
+    // processNewBsm("", "", "00142f4ae75a7c68528e277fa9691c7a63378d8d0a0a7ffff0483840fdfa1fa1007fff8000000001040d0024002034007800", DateTime.now(), DateTime.now(), "", ValidateStatus.VALID);
+
     currentPosition = position;
     mqttAgents.setPosition(currentPosition);
 
@@ -1544,7 +1560,9 @@ class MapState extends State<MapPage> with RouteAware {
 
           // Adds Ingress and Egress Map Lanes
           Color laneColor = Colors.blue.shade900;
-          if (lane.ingressApproach != null) {
+          if(lane.laneAttributes.laneType is LaneAttributesCrosswalk){
+            laneColor = Colors.purple.shade900;
+          } else if (lane.ingressApproach != null) {
             laneColor = Colors.pink.shade300;
           }
 
@@ -1591,7 +1609,7 @@ class MapState extends State<MapPage> with RouteAware {
   List<Polygon<HitValue>> getPolygons() {
     List<Polygon<HitValue>> polygons = [];
 
-    List<DataFrameGeometry> dataFrames = timManager.getActiveTimGeometry(true);
+    List<DataFrameGeometry> dataFrames = timManager.getActiveTimGeometry(false);
     for (DataFrameGeometry frame in dataFrames) {
       TravelerDataFrame tdFrame = frame.frame;
 
@@ -1680,10 +1698,7 @@ class MapState extends State<MapPage> with RouteAware {
               sendMessageTimer?.cancel(); 
               uploadTimer?.cancel();
               mqttAgents.disconnectAll();
-
-              Future.delayed(const Duration(milliseconds: 100), () async {
-                Get.back();
-              });
+              Get.back();
             }),
         title: const Text(appTitle),
         actions: <Widget>[
