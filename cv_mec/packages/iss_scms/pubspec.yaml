@@ -1,6 +1,6 @@
 name: iss_scms
 description: "A new Flutter plugin project."
-version: 0.0.1
+version: 1.0.0
 homepage:
 
 environment:
@@ -10,6 +10,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_dotenv: ^5.1.0
+  get: ^4.7.3
+  http: ^1.6.0
+  logger: ^2.7.0
   plugin_platform_interface: ^2.0.2
 
 dev_dependencies:

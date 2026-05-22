@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:cv_mec/controllers/settings_controller.dart';
 import 'package:cv_mec/services/file_service.dart';
 import 'package:cv_mec/services/param_controller.dart';
-import 'package:cv_mec/services/path_service.dart';
 import 'package:cv_mec/services/vehicle_notification_manager.dart';
 import 'package:cv_mec/styles/app_colors.dart';
 import 'package:cv_mec/styles/spacing.dart';
@@ -59,7 +58,6 @@ class SettingsPage extends StatelessWidget {
     broadcastRateController.text = controller.broadcastRate.value.toString();
     registrationLatitudeController.text = paramController.manualLatitude.toString();
     registrationLongitudeController.text = paramController.manualLongitude.toString();
-
     staticGPSLatitudeController.text = controller.staticGPSLatitude.value.toString();
     staticGPSLongitudeController.text = controller.staticGPSLongitude.value.toString();
     issMqttBrokerUrlController.text = controller.issMqttBrokerUrl.value;
@@ -98,6 +96,12 @@ class SettingsPage extends StatelessWidget {
   }
 
   configurationSection() {
+    if (Platform.isLinux) { //don't show mobile GPS option on Linux since it's not supported
+      bool hasMobile = controller.gpsTypes.contains(GPSType.mobile);
+      if (hasMobile) {
+        controller.gpsTypes.remove(GPSType.mobile);
+      }
+    }
     return Column(
       children: [
         headerElement("Configuration", Icons.settings),
@@ -111,9 +115,7 @@ class SettingsPage extends StatelessWidget {
               dropdownColor: Theme.of(Get.context!).scaffoldBackgroundColor,
               borderRadius: BorderRadius.circular(8),
               value: controller.gpsType.value,
-              items: (Platform.isLinux
-                ? controller.gpsTypes.sublist(1, controller.gpsTypes.length)
-                : controller.gpsTypes
+              items: (controller.gpsTypes
               ).map((GPSType type) {
                 return DropdownMenuItem<GPSType>(
                   value: type,
@@ -248,6 +250,8 @@ class SettingsPage extends StatelessWidget {
             : const SizedBox.shrink(),
         ),
         verticalSpaceSmall,
+        controller.showPathGPSType ? verticalSpaceSmall : Container(),
+        controller.gpsType.value == GPSType.path ? verticalSpaceMedium : Container(), //add spacing if path GPS type is selected to keep spacing consistent
         controller.showBroadcastRate ? TextField(
           decoration: const InputDecoration(labelText: 'Broadcast Rate'),
           controller: broadcastRateController,
@@ -301,18 +305,17 @@ class SettingsPage extends StatelessWidget {
             }
           ) : Container(),
         verticalSpaceSmall,
-        controller.enableIssMqtt.value ? TextField(
+        (controller.showIssBrokerUrl && controller.enableIssMqtt.value) ? TextField(
           decoration: const InputDecoration(labelText: 'ISS MQTT Broker URL'),
           controller: issMqttBrokerUrlController,
           onChanged: (value) async {
             if (value != controller.issMqttBrokerUrl.value) {
               controller.issMqttBrokerUrl.value = value;
-              print("Saving ISS MQTT Broker URL: $value");
               await controller.secureStorage.setISSMqttBrokerUrl(value);
             }
           },
         ) : Container(),
-        verticalSpaceSmall,
+        controller.showIssBrokerUrl ? verticalSpaceSmall : Container(),
         controller.showIss ? verticalSpaceSmall : Container(),
         controller.showEtx ? SwitchListTile(
             title: const Text("Enable ETX MQTT Broker"),
@@ -525,7 +528,8 @@ class SettingsPage extends StatelessWidget {
     return Column(
       children: [
         Row(children: [
-          Icon(icon),
+            Icon(icon,
+              color: controller.darkModeState.value ? darkPrimaryColor : primaryColor),
           const SizedBox(width: 10),
           Text(sectionTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
         ]),
