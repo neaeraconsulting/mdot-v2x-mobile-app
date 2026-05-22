@@ -19,13 +19,18 @@ class AutoSizeTextWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // When iOS "Bold Text" is on, words render wider. Lower the minimum
+    // font size so AutoSizeText has more room to shrink and fit without
+    // wrapping or clipping.
+    final bool boldText = MediaQuery.boldTextOf(context);
+
     return AutoSizeText(
       text,
       style: style,
       maxLines: maxLines,
       overflow: overflow,
       wrapWords: false,
-      minFontSize: minFontSize.toDouble(),
+      minFontSize: boldText ? 3.0 : minFontSize.toDouble(),
     );
   }
 }
