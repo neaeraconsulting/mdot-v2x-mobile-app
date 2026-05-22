@@ -303,10 +303,12 @@ class MapState extends State<MapPage> with RouteAware {
       }
 
       if(settingsController.enableIssScmsSigning.value){
-        scms.activateScms(settingsController.issScmsToken.value).then((result) {
+        scms.activateScms(settingsController.issScmsToken.value, "obu").then((result) {
           scmsActive = result;
           if(!scmsActive){
             showError("Unable to Activate SCMS Signing");
+          }else{
+            addToAppLog("SCMS Signing Activated");
           }
         });
       }else{
@@ -442,6 +444,7 @@ class MapState extends State<MapPage> with RouteAware {
       gpsdService.connectToGPSD(settingsController.obuIP.value, 2947);
       stream = gpsdService.locationStream.stream;
     } else {
+      addToAppLog("Using Standard Location Service for GPS Data Location Permissions: ${locationService.isPermissionGranted()} Tracking Status: ${locationService.areLocationUpdatesActive()}");
       stream = locationService.locationStream;
     }
 
@@ -1030,6 +1033,9 @@ class MapState extends State<MapPage> with RouteAware {
   DateTime prevSystemTime = DateTime.now();
 
   Future<void> updatePosition(Position position) async {
+
+    // processNewBsm("", "", "00142f4ae75a7c68528e277fa9691c7a63378d8d0a0a7ffff0483840fdfa1fa1007fff8000000001040d0024002034007800", DateTime.now(), DateTime.now(), "", ValidateStatus.VALID);
+
     currentPosition = position;
     mqttAgents.setPosition(currentPosition);
 
