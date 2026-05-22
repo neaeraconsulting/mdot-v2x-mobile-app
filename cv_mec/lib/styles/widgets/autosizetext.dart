@@ -25,7 +25,7 @@ class AutoSizeTextWidget extends StatelessWidget {
     final bool boldText = MediaQuery.boldTextOf(context);
     final TextScaler textScaler = MediaQuery.textScalerOf(context);
     final double scale = textScaler.scale(1.0);
-    final double adjustedMaxFontSize = style?.fontSize != null ? style!.fontSize! / scale : double.infinity;
+    final double adjustedMaxFontSize = style?.fontSize != null ? style!.fontSize! / (scale * 1.1) : double.infinity;
 
     return AutoSizeText(
       text,
@@ -33,8 +33,8 @@ class AutoSizeTextWidget extends StatelessWidget {
       maxLines: maxLines,
       overflow: overflow,
       wrapWords: boldText ? true : false,
-      maxFontSize: boldText ? adjustedMaxFontSize : double.infinity,
-      minFontSize: minFontSize.toDouble(),
+      maxFontSize: boldText ? adjustedMaxFontSize.toInt().toDouble() : double.infinity,
+      minFontSize: boldText ? adjustedMaxFontSize.toInt() < minFontSize ? adjustedMaxFontSize.toInt().toDouble() : minFontSize.toDouble() : minFontSize.toDouble(),
     );
   }
 }
