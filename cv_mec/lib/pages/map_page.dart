@@ -2435,7 +2435,6 @@ class MapState extends State<MapPage> with RouteAware {
                         ),
                         verticalSpaceSmall,
                         SizedBox(
-                          width: double.infinity,
                           child: ConstrainedBox(
                             constraints: BoxConstraints(maxHeight: screenHeight(Get.context!) * 0.5),
                             child: const SingleChildScrollView(

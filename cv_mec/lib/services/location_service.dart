@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:cv_mec/models/position_with_declination.dart';
 import 'package:cv_mec/styles/screen_size.dart';
+import 'package:cv_mec/styles/spacing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
@@ -95,14 +96,14 @@ class LocationService extends GetxService {
               children: [
                 const Text('Location Permissions Required',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 16),
+                verticalSpaceMedium,
                 Flexible(
                   child: SingleChildScrollView(
                     child: Text(
                         'Location permissions are required to use this application. Without them, timing and other components will not work correctly. Please restart this application and grant location permissions. Error: $e'),
                   ),
                 ),
-                const SizedBox(height: 16),
+                verticalSpaceMedium,
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(

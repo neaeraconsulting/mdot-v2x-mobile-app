@@ -80,7 +80,6 @@ class CreateVehicleConfigDialog extends StatelessWidget {
                         Get.back();
                       },
                     ),
-                    //const CVMECText.styleTwo("Vehicle Configuration"),
                     const Flexible(  
                       child: AutoSizeTextWidget(
                         text: "Vehicle Configuration",
@@ -162,9 +161,6 @@ class CreateVehicleConfigDialog extends StatelessWidget {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  // SizedBox(
-                                  //   width: screenWidth(context) * 0.55,
-                                  //   child: const CVMECText.styleThree("OBD II Connection")),
                                   const Flexible(
                                     child: const AutoSizeTextWidget(
                                       text: "OBD II Connection",
