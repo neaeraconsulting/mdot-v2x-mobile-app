@@ -429,6 +429,7 @@ class MapState extends State<MapPage> with RouteAware {
       gpsdService.connectToGPSD(settingsController.obuIP.value, 2947);
       stream = gpsdService.locationStream.stream;
     } else {
+      addToAppLog("Using Standard Location Service for GPS Data Location Permissions: ${locationService.isPermissionGranted()} Tracking Status: ${locationService.areLocationUpdatesActive()}");
       stream = locationService.locationStream;
     }
 
