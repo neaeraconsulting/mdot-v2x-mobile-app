@@ -47,6 +47,7 @@ class SettingsController extends GetxController {
 
   bool showPc5 = (dotenv.env['SHOW_PC5_BROKER'] ?? 'false').toLowerCase() == 'true';
   bool showIss = (dotenv.env['SHOW_ISS_BROKER'] ?? 'false').toLowerCase() == 'true';
+  bool showIssBrokerUrl = (dotenv.env['SHOW_ISS_BROKER_URL'] ?? 'false').toLowerCase() == 'true';
   bool showEtx = (dotenv.env['SHOW_ETX_BROKER'] ?? 'false').toLowerCase() == 'true';
 
   bool showManualRegistration = (dotenv.env['SHOW_MANUAL_REGISTRATION'] ?? 'false').toLowerCase() == 'true';
@@ -80,7 +81,7 @@ class SettingsController extends GetxController {
   Rx<bool> notificationsEnabled = false.obs;
   Rx<bool> demoMode = false.obs;
   Rx<bool> readMessages = false.obs;
-  Rx<bool> enableIssMqtt = false.obs;
+  Rx<bool> enableIssMqtt = true.obs;
   Rx<bool> enableEtxMqtt = true.obs;
   RxInt broadcastRate = 10.obs;
 
@@ -99,9 +100,6 @@ class SettingsController extends GetxController {
   // Automatically enable PC5 if the environment variable is configured
   Rx<bool> enablePC5 = dotenv.env['PC5_MQTT_BROKER'] != null ? true.obs : false.obs;
 
-  // Automatically enable Signing if the environment variable is configured
-  Rx<bool> enableIssScmsSigning = dotenv.env['ISS_SCMS_TOKEN'] != null ? true.obs : false.obs;
-
   RxString deviceID = ''.obs;
   RxString s3AccessKey = (dotenv.env['S3_ACCESS_KEY'] ?? "").obs;
   RxString s3SecretKey = (dotenv.env['S3_SECRET_KEY'] ?? "").obs;
@@ -112,6 +110,7 @@ class SettingsController extends GetxController {
   RxBool changedBrokerSettings = false.obs; 
 
   Rx<IconSize> iconSize = IconSize.small.obs;
+  Rx<bool> enableIssScmsSigning = false.obs;
 
   initialize() async {    
     baseUri.value = await secureStorage.getBaseURI();
@@ -201,6 +200,8 @@ class SettingsController extends GetxController {
       s3Region.value = await secureStorage.getS3Region();
       s3DestDir.value = await secureStorage.getS3DestDir();
     }
+
+    enableIssScmsSigning.value = issScmsToken.value.isNotEmpty;
 
     availablePaths.value = pathService.getPathNames();
     if(!availablePaths.contains(pathToFollow.value)){
