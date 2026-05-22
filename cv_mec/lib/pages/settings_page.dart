@@ -5,7 +5,9 @@ import 'package:cv_mec/services/file_service.dart';
 import 'package:cv_mec/services/param_controller.dart';
 import 'package:cv_mec/services/vehicle_notification_manager.dart';
 import 'package:cv_mec/styles/app_colors.dart';
+import 'package:cv_mec/styles/screen_size.dart';
 import 'package:cv_mec/styles/spacing.dart';
+import 'package:cv_mec/styles/widgets/autosizetext.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -106,31 +108,60 @@ class SettingsPage extends StatelessWidget {
       children: [
         headerElement("Configuration", Icons.settings),
         verticalSpaceMedium,
-        controller.gpsTypes.isNotEmpty ? Obx(() => Row(
-          children: [
-            const SizedBox(width: 14),
-            const Text("GPS Mode: ", style: TextStyle(fontSize: 16)),
-            Expanded(child: Container()),
-            DropdownButton<GPSType>(  
-              dropdownColor: Theme.of(Get.context!).scaffoldBackgroundColor,
-              borderRadius: BorderRadius.circular(8),
-              value: controller.gpsType.value,
-              items: (controller.gpsTypes
-              ).map((GPSType type) {
-                return DropdownMenuItem<GPSType>(
-                  value: type,
-                  child: Text(type.toString().split('.').last.toUpperCase()),
-                );
-              }).toList(),
-              onChanged: (value) {
-                if (value != null) { 
-                  controller.gpsType.value = value;
-                  controller.secureStorage.setGPSType(value);
-                }
-              },
-            ),
-          ],
-        )) : Text('No GPS types available', style: TextStyle(color: Theme.of(Get.context!).textTheme.bodyMedium!.color!)),
+        controller.gpsTypes.isNotEmpty
+          ? Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: LayoutBuilder(builder: (context, constraints) {
+                    final bool useStackedLayout =
+                        MediaQuery.textScalerOf(context).scale(16) >= 20 || constraints.maxWidth < 420;
+
+                    Widget gpsTypeDropdown = DropdownButton<GPSType>(
+                      isExpanded: true,
+                      dropdownColor: Theme.of(Get.context!).scaffoldBackgroundColor,
+                      borderRadius: BorderRadius.circular(8),
+                      value: controller.gpsType.value,
+                      items: (controller.gpsTypes).map((GPSType type) {
+                        return DropdownMenuItem<GPSType>(
+                          value: type,
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: Text(
+                              type.toString().split('.').last.toUpperCase(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          controller.gpsType.value = value;
+                          controller.secureStorage.setGPSType(value);
+                        }
+                      },
+                    );
+
+                    if (useStackedLayout) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text("GPS Mode:", style: TextStyle(fontSize: 16)),
+                          const SizedBox(height: 8),
+                          gpsTypeDropdown,
+                        ],
+                      );
+                    }
+
+                    return Row(
+                      children: [
+                        const Text("GPS Mode:", style: TextStyle(fontSize: 16)),
+                        const SizedBox(width: 12),
+                        Expanded(child: gpsTypeDropdown),
+                      ],
+                    );
+                  }),
+                )
+            : Text('No GPS types available', style: TextStyle(color: Theme.of(Get.context!).textTheme.bodyMedium!.color!)),
         verticalSpaceSmall,
         Obx(() => controller.gpsType.value == GPSType.cradle
             ? Column(children: [
@@ -188,33 +219,77 @@ class SettingsPage extends StatelessWidget {
             : const SizedBox.shrink()),
         controller.showOBUGPSType ? verticalSpaceSmall : Container(),
         Obx(() => controller.gpsType.value == GPSType.path
-            ? Obx(() => Row(children: [
-                const SizedBox(width: 14),
-                const Text("Path Selection:", style: TextStyle(fontSize: 16)),
-                Expanded(child: Container()),
-                controller.availablePaths.isNotEmpty? DropdownButton<String>(
-                  value:  controller.pathToFollow.value,
-                  hint: const Text('Select an option'),
-                  dropdownColor: Theme.of(Get.context!).scaffoldBackgroundColor,
-                  borderRadius: BorderRadius.circular(8),
-                  items: controller.availablePaths.map((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
+            ? Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: LayoutBuilder(builder: (context, constraints) {
+                  final bool useStackedLayout =
+                      MediaQuery.textScalerOf(context).scale(16) >= 20 || constraints.maxWidth < 420;
+
+                  Widget pathSelector = controller.availablePaths.isNotEmpty
+                      ? DropdownButton<String>(
+                          isExpanded: true,
+                          value: controller.pathToFollow.value,
+                          hint: const Text('Select an option'),
+                          dropdownColor: Theme.of(Get.context!).scaffoldBackgroundColor,
+                          borderRadius: BorderRadius.circular(8),
+                          items: controller.availablePaths.map((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: SizedBox(
+                                width: double.infinity,
+                                child: Text(
+                                  value,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (String? newValue) {
+                            if (newValue != controller.pathToFollow.value) {
+                              if (newValue != null) {
+                                controller.pathToFollow.value = newValue;
+                                controller.secureStorage.setPathToFollow(newValue);
+                              }
+                            }
+                          },
+                        )
+                      : Text(
+                          'No paths available',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: Theme.of(Get.context!).textTheme.bodyMedium!.color!),
+                        );
+
+                  if (useStackedLayout) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text("Path Selection:", style: TextStyle(fontSize: 16)),
+                        const SizedBox(height: 8),
+                        pathSelector,
+                      ],
                     );
-                  }).toList(),
-                  onChanged: (String? newValue) {
-                    if(newValue != controller.pathToFollow.value){
-                      if(newValue != null) {
-                        controller.pathToFollow.value = newValue; 
-                        controller.secureStorage.setPathToFollow(newValue);
-                      }
-                    }
                   }
-                  ) : Text('No paths available', style: TextStyle(color: Theme.of(Get.context!).textTheme.bodyMedium!.color!)),
-              ]))
-            : const SizedBox.shrink(),
-        ),
+
+                  return Row(
+                    children: [
+                      const Expanded(
+                        flex: 4,
+                        child: Text(
+                          "Path Selection:",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(flex: 6, child: pathSelector),
+                    ],
+                  );
+                }),
+              )
+            : const SizedBox.shrink()),
         Obx(() => controller.gpsType.value == GPSType.static
             ? Column(children: [
                 TextField(

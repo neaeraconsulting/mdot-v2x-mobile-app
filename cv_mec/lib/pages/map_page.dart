@@ -96,6 +96,7 @@ import 'package:cv_mec/styles/arc_painter.dart';
 import 'package:cv_mec/styles/screen_size.dart';
 import 'package:cv_mec/styles/spacing.dart';
 import 'package:cv_mec/styles/widgets/appbar.dart';
+import 'package:cv_mec/styles/widgets/autosizetext.dart';
 import 'package:cv_mec/views/bluetooth_dialog.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cv_mec/services/timing.dart';
@@ -1955,7 +1956,6 @@ class MapState extends State<MapPage> with RouteAware {
 
   Widget vehicleStatsBar() {
     return Container(
-        height: 50,
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [mediumGrey, lightGrey, Colors.white],
@@ -1973,11 +1973,18 @@ class MapState extends State<MapPage> with RouteAware {
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: Row(children: [
-            const Text("Vehicle Stats", style: TextStyle(color: Colors.black, fontSize: 20)),
-            Expanded(child: Container()),
+            SizedBox(
+              width: screenWidth(Get.context!) * 0.6,
+              child: const AutoSizeTextWidget(
+                text: "Vehicle Stats", style: TextStyle(color: Colors.black, fontSize: 20), maxLines: 1
+              ),
+            ),
+            const Spacer(),
             IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                 icon: Icon(showVehicleStats ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, color: Colors.black),
                 onPressed: () {
                   showVehicleStats = !showVehicleStats;
@@ -2428,12 +2435,26 @@ class MapState extends State<MapPage> with RouteAware {
               : (obdController.isRunningAsRoot && Platform.isLinux) || !Platform.isLinux
                   ? Column(
                       children: [
-                        const Text("OBD-II Connection", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                        const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: AutoSizeTextWidget(
+                            text: "OBD-II Connection", 
+                            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                            maxLines: 1,
+                          ),
+                        ),
                         verticalSpaceSmall,
-                        const Text(
-                          "1. Ensure your OBD-II device is powered on and in range.\n"
-                          "2. Pair the OBD-II device with your computer or mobile device via the native Bluetooth menu.\n"
-                          "3. Click the button below to connect.",
+                        SizedBox(
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(maxHeight: screenHeight(Get.context!) * 0.5),
+                            child: const SingleChildScrollView(
+                              child: Text(
+                                "1. Ensure your OBD-II device is powered on and in range.\n"
+                                "2. Pair the OBD-II device with your computer or mobile device via the native Bluetooth menu.\n"
+                                "3. Click the button below to connect.",
+                              ),
+                            ),
+                          ),
                         ),
                         verticalSpaceSmall,
                         ElevatedButton(
