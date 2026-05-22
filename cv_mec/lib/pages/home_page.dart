@@ -91,10 +91,13 @@ class HomePage extends StatelessWidget {
                         verticalSpaceSmall,
                         Icon(Icons.directions_car, size: 60),
                         verticalSpaceSmall,
-                        AutoSizeTextWidget(
-                          text: "Vehicle",
-                          style: style_two,
-                          maxLines: 1,
+                        Padding(
+                          padding: EdgeInsets.all(4.0),
+                          child: AutoSizeTextWidget(
+                            text: "Vehicle",
+                            style: style_two,
+                            maxLines: 1,
+                          ),
                         ),
                       ],
                     ),
@@ -118,10 +121,13 @@ class HomePage extends StatelessWidget {
                         verticalSpaceSmall,
                         Icon(Icons.person, size: 60),
                         verticalSpaceSmall,
-                        AutoSizeTextWidget(
-                          text: "Pedestrian",
-                          style: style_two,
-                          maxLines: 1,
+                        Padding(
+                          padding: EdgeInsets.all(4.0),
+                          child: AutoSizeTextWidget(
+                            text: "Pedestrian",
+                            style: style_two,
+                            maxLines: 1,
+                          ),
                         ),
                       ],
                     ),

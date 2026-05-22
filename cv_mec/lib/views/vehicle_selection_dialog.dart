@@ -37,7 +37,7 @@ class VehicleConfigSelectionDialog extends StatelessWidget {
                             child: AutoSizeTextWidget(
                               text: "Choose a vehicle",
                               style: style_two,
-                              maxLines: 1,
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),

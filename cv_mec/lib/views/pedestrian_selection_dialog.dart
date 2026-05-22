@@ -19,22 +19,17 @@ class PedestrianConfigSelectionDialog extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
       ),
       child: SizedBox(
-        width: screenWidth(context) * 0.8,
-        height: screenHeight(context) * 0.5,
-        child: Center(
+        width: screenWidth(context) * 0.85,
+        height: screenHeight(context) * 0.65,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              verticalSpaceMedium,
-              SizedBox(
-                width: screenWidth(context) * 0.7,
-                child: CVMECText.styleTwo("Select a Config"),
-              ),
+              CVMECText.styleTwo("Select a Config"),
               verticalSpaceSmall,
-              SizedBox(
-                width: screenWidth(context) * 0.75,
-                height: screenHeight(context) * 0.3,
+              Expanded(
                 child: ListView(
-                  shrinkWrap: true,
                   children: [
                     ...PersonalDeviceUserType.values
                         .skip(1)
@@ -55,16 +50,18 @@ class PedestrianConfigSelectionDialog extends StatelessWidget {
                   ],
                 ),
               ),
-              Expanded(child: Container()),
-              ClickableText(
-                text: "Skip",
-                onTap: () {
-                  configController.selectedPedestrian = PersonalDeviceUserType.APEDESTRIAN; // Default to pedestrian
-                  configController.isVehicleConfig.value = false;
-                  Get.off(() => const MapPage());
-                },
+              verticalSpaceSmall,
+              Align(
+                alignment: Alignment.center,
+                child: ClickableText(
+                  text: "Skip",
+                  onTap: () {
+                    configController.selectedPedestrian = PersonalDeviceUserType.APEDESTRIAN; // Default to pedestrian
+                    configController.isVehicleConfig.value = false;
+                    Get.off(() => const MapPage());
+                  },
+                ),
               ),
-              verticalSpaceMedium,
             ],
           ),
         ),
