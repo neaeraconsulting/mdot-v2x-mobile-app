@@ -91,7 +91,11 @@ class HomePage extends StatelessWidget {
                         verticalSpaceSmall,
                         Icon(Icons.directions_car, size: 60),
                         verticalSpaceSmall,
-                        CVMECText.styleTwo("Vehicle"),
+                        AutoSizeTextWidget(
+                          text: "Vehicle",
+                          style: style_two,
+                          maxLines: 1,
+                        ),
                       ],
                     ),
                   ),

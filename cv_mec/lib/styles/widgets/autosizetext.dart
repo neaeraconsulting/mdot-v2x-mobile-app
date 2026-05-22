@@ -5,12 +5,16 @@ class AutoSizeTextWidget extends StatelessWidget {
   final String text;
   final TextStyle? style;
   final int maxLines;
+  final TextOverflow? overflow;
+  final int minFontSize;
 
   const AutoSizeTextWidget({
     Key? key,
     required this.text,
     this.style,
     this.maxLines = 1,
+    this.overflow,
+    this.minFontSize = 8,
   }) : super(key: key);
 
   @override
@@ -19,6 +23,9 @@ class AutoSizeTextWidget extends StatelessWidget {
       text,
       style: style,
       maxLines: maxLines,
+      overflow: overflow,
+      wrapWords: false,
+      minFontSize: minFontSize.toDouble(),
     );
   }
 }
