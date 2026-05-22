@@ -467,7 +467,31 @@ class SettingsPage extends StatelessWidget {
                 onChanged: (value) {
                   controller.switchModeState();
                 }),
-            verticalSpaceMedium,
+            verticalSpaceSmall,
+            Platform.isLinux ? Obx(() => Row(
+              children: [
+                const SizedBox(width: 14),
+                const Text("Icon Size: ", style: TextStyle(fontSize: 16)),
+                Expanded(child: Container()),
+                DropdownButton<IconSize>(  
+                  dropdownColor: Theme.of(Get.context!).scaffoldBackgroundColor,
+                  borderRadius: BorderRadius.circular(8),
+                  value: controller.iconSize.value,
+                  items: IconSize.values.map((IconSize size) {
+                    return DropdownMenuItem<IconSize>(
+                      value: size,
+                      child: Text(size.toString().split('.').last.toUpperCase()),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      controller.iconSize.value = value;
+                      controller.setIconSize();
+                    }
+                  },
+                ),
+              ],
+            )) : Container(),
             controller.showTollingSettings ? SwitchListTile(
                 title: const Text("Show Tolling"),
                 value: controller.tollingEnabled.value,
