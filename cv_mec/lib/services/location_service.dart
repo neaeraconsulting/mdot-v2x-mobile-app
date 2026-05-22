@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:cv_mec/models/position_with_declination.dart';
+import 'package:cv_mec/styles/screen_size.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
@@ -87,9 +88,12 @@ class LocationService extends GetxService {
       Get.dialog(
         AlertDialog(
           title: const Text('Location Permissions Required'),
-          content: SingleChildScrollView(
-            child: Text(
-                'Location permissions are required to use this application. Without them, timing and other components will not work correctly. Please restart this application and grant location permissions. Error: $e'),
+          content: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: screenHeight(Get.context!) * 0.5),
+            child: SingleChildScrollView(
+              child: Text(
+                  'Location permissions are required to use this application. Without them, timing and other components will not work correctly. Please restart this application and grant location permissions. Error: $e'),
+            ),
           ),
           actions: <Widget>[
             TextButton(

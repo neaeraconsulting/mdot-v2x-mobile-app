@@ -2437,7 +2437,7 @@ class MapState extends State<MapPage> with RouteAware {
                         SizedBox(
                           width: double.infinity,
                           child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxHeight: 110),
+                            constraints: BoxConstraints(maxHeight: screenHeight(Get.context!) * 0.5),
                             child: const SingleChildScrollView(
                               child: Text(
                                 "1. Ensure your OBD-II device is powered on and in range.\n"
