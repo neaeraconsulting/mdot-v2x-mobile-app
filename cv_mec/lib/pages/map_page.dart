@@ -1942,7 +1942,7 @@ class MapState extends State<MapPage> with RouteAware {
               color: Colors.black.withOpacity(0.8),
               spreadRadius: 1,
               blurRadius: 5,
-              offset: const Offset(-1, 3), // changes position of shadow
+              offset: const Offset(-1, 3), 
             ),
           ],
         ),
@@ -1972,7 +1972,7 @@ class MapState extends State<MapPage> with RouteAware {
                   color: Colors.black.withOpacity(0.8),
                   spreadRadius: 1,
                   blurRadius: 5,
-                  offset: const Offset(-1, 3), // changes position of shadow
+                  offset: const Offset(-1, 3),
                 ),
               ],
             ),
@@ -1988,12 +1988,11 @@ class MapState extends State<MapPage> with RouteAware {
                 style: ElevatedButton.styleFrom(
                   shape: const CircleBorder(),
                   padding: const EdgeInsets.all(10),
-                  backgroundColor: connectedButtonColor, // <-- Button color
-                  foregroundColor: Colors.black, // <-- Splash color
+                  backgroundColor: connectedButtonColor, 
+                  foregroundColor: Colors.black, 
                   shadowColor: Colors.black,
                   elevation: 4,
                 ),
-                // child: Icon(Icons.menu, color: Colors.white),
                 child: const Icon(Icons.connect_without_contact_rounded, color: Colors.white),
               ),
               ElevatedButton(
@@ -2005,12 +2004,11 @@ class MapState extends State<MapPage> with RouteAware {
                 style: ElevatedButton.styleFrom(
                   shape: const CircleBorder(),
                   padding: const EdgeInsets.all(10),
-                  backgroundColor: followUser ? Colors.green : Colors.blue, // <-- Button color
-                  foregroundColor: Colors.black, // <-- Splash color
+                  backgroundColor: followUser ? Colors.green : Colors.blue, 
+                  foregroundColor: Colors.black, 
                   shadowColor: Colors.black,
                   elevation: 4,
                 ),
-                // child: Icon(Icons.menu, color: Colors.white),
                 child: const Icon(Icons.directions_car, color: Colors.white),
               ),
               ElevatedButton(
@@ -2022,11 +2020,10 @@ class MapState extends State<MapPage> with RouteAware {
                   shape: const CircleBorder(),
                   padding: const EdgeInsets.all(10),
                   backgroundColor: Colors.green,
-                  foregroundColor: Colors.black, // <-- Splash color
+                  foregroundColor: Colors.black, 
                   shadowColor: Colors.black,
                   elevation: 4,
                 ),
-                // child: Icon(Icons.menu, color: Colors.white),
                 child: const Icon(Icons.upload, color: Colors.white),
               ),
               verticalSpaceSmall,
@@ -2048,7 +2045,7 @@ class MapState extends State<MapPage> with RouteAware {
                     color: Colors.black.withOpacity(0.8),
                     spreadRadius: 1,
                     blurRadius: 5,
-                    offset: const Offset(-1, 3), // changes position of shadow
+                    offset: const Offset(-1, 3), 
                   ),
                 ],
               ),
@@ -2074,7 +2071,7 @@ class MapState extends State<MapPage> with RouteAware {
                     color: Colors.black.withOpacity(0.8),
                     spreadRadius: 1,
                     blurRadius: 5,
-                    offset: const Offset(-1, 3), // changes position of shadow
+                    offset: const Offset(-1, 3), 
                   ),
                 ],
               ),
@@ -2116,7 +2113,7 @@ class MapState extends State<MapPage> with RouteAware {
                   color: Colors.black.withOpacity(0.8),
                   spreadRadius: 1,
                   blurRadius: 5,
-                  offset: const Offset(-1, 3), // changes position of shadow
+                  offset: const Offset(-1, 3), 
                 ),
               ],
             ),
@@ -2172,7 +2169,7 @@ class MapState extends State<MapPage> with RouteAware {
                   color: Colors.black.withValues(alpha: 0.8),
                   spreadRadius: 1,
                   blurRadius: 5,
-                  offset: const Offset(-1, 3), // changes position of shadow
+                  offset: const Offset(-1, 3), 
                 ),
               ],
             ),
