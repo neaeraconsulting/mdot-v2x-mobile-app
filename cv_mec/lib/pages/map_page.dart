@@ -876,10 +876,6 @@ class MapState extends State<MapPage> with RouteAware {
 
     sendMessageTimer = Timer.periodic(Duration(milliseconds: broadcastIntervalMilliseconds), (timer) {
       sendMessage();
-      if (!isConnected()) {
-        stopSendingBSM();
-        onMqttDisconnect();
-      }
     });
   }
 
@@ -1022,9 +1018,6 @@ class MapState extends State<MapPage> with RouteAware {
   DateTime prevSystemTime = DateTime.now();
 
   Future<void> updatePosition(Position position) async {
-
-    // processNewBsm("", "", "00142f4ae75a7c68528e277fa9691c7a63378d8d0a0a7ffff0483840fdfa1fa1007fff8000000001040d0024002034007800", DateTime.now(), DateTime.now(), "", ValidateStatus.VALID);
-
     currentPosition = position;
     mqttAgents.setPosition(currentPosition);
 
