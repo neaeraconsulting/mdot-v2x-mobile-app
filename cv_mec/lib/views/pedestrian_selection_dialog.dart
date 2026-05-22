@@ -4,6 +4,8 @@ import 'package:cv_mec/pages/map_page.dart';
 import 'package:cv_mec/styles/app_colors.dart';
 import 'package:cv_mec/styles/screen_size.dart';
 import 'package:cv_mec/styles/spacing.dart';
+import 'package:cv_mec/styles/text_styles.dart';
+import 'package:cv_mec/styles/widgets/autosizetext.dart';
 import 'package:cv_mec/styles/widgets/text.dart';
 import 'package:cv_mec/views/public_safety_worker_type.dart';
 import 'package:flutter/material.dart';
@@ -26,7 +28,11 @@ class PedestrianConfigSelectionDialog extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              CVMECText.styleTwo("Select a Config"),
+              const AutoSizeTextWidget(
+                text: "Select a Config",
+                style: style_two,
+                maxLines: 2,
+              ),
               verticalSpaceSmall,
               Expanded(
                 child: ListView(

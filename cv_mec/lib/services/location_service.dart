@@ -86,23 +86,35 @@ class LocationService extends GetxService {
     } catch (e) {
       _stopLocationUpdates();
       Get.dialog(
-        AlertDialog(
-          title: const Text('Location Permissions Required'),
-          content: ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: screenHeight(Get.context!) * 0.5),
-            child: SingleChildScrollView(
-              child: Text(
-                  'Location permissions are required to use this application. Without them, timing and other components will not work correctly. Please restart this application and grant location permissions. Error: $e'),
+        Dialog(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Location Permissions Required',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Text(
+                        'Location permissions are required to use this application. Without them, timing and other components will not work correctly. Please restart this application and grant location permissions. Error: $e'),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    child: Text('Continue', style: TextStyle(color: Theme.of(Get.context!).colorScheme.onPrimary)),
+                    onPressed: () {
+                      Get.back();
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
-          actions: <Widget>[
-            TextButton(
-              child: Text('Continue', style: TextStyle(color: Theme.of(Get.context!).colorScheme.onPrimary)),
-              onPressed: () {
-                Get.back();
-              },
-            ),
-          ],
         ),
       );
     }
