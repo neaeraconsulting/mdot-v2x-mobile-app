@@ -730,22 +730,11 @@ class MapState extends State<MapPage> with RouteAware {
         hex, asnService.MAP_START_FLAG)!; // Msg Type has already been identified, start flag guaranteed
     MapData map = asnService.decodeMap(trimmedHex);
 
-    //printLongMessage("Decoded MAP with ${map.intersections!.intersectionGeometryList.first.id.id.intersectionID} intersections: $hex");
-
-
     mapManager.addOrUpdate(map);
 
     updateGraphics();
 
     addToReceiveLog(broker, topic, "MAP", recTime, sendTime, LeidosDateExtraction.extractDateFromMap(map), trimmedHex, source, validity);
-  }
-
-  void printLongMessage(String message){
-    int chunkSize = 1000;
-    for (int i = 0; i < message.length; i += chunkSize) {
-      int endIndex = (i + chunkSize < message.length) ? i + chunkSize : message.length;
-      print(message.substring(i, endIndex));
-    }
   }
 
   void processNewTim(String? broker, String topic, String hex, DateTime recTime, DateTime? sendTime, String source, ValidateStatus validity) {

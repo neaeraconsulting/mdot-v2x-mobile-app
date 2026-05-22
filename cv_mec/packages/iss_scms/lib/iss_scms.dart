@@ -65,7 +65,6 @@ class IssScms {
   // Message Definition Matches ISS Library
   void init() async {
     if (isMobile) {
-      print("Initializing SCMS for Mobile");
       return IssScmsPlatform.instance.init();
     } else {
       apiService = Get.put(IssSigningApiService());
