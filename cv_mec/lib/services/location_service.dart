@@ -87,8 +87,10 @@ class LocationService extends GetxService {
       Get.dialog(
         AlertDialog(
           title: const Text('Location Permissions Required'),
-          content: Text(
-              'Location permissions are required to use this application. Without them, timing and other components will not work correctly. Please restart this application and grant location permissions. Error: $e'),
+          content: SingleChildScrollView(
+            child: Text(
+                'Location permissions are required to use this application. Without them, timing and other components will not work correctly. Please restart this application and grant location permissions. Error: $e'),
+          ),
           actions: <Widget>[
             TextButton(
               child: Text('Continue', style: TextStyle(color: Theme.of(Get.context!).colorScheme.onPrimary)),

@@ -2434,10 +2434,18 @@ class MapState extends State<MapPage> with RouteAware {
                           ),
                         ),
                         verticalSpaceSmall,
-                        const Text(
-                          "1. Ensure your OBD-II device is powered on and in range.\n"
-                          "2. Pair the OBD-II device with your computer or mobile device via the native Bluetooth menu.\n"
-                          "3. Click the button below to connect.",
+                        SizedBox(
+                          width: double.infinity,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxHeight: 110),
+                            child: const SingleChildScrollView(
+                              child: Text(
+                                "1. Ensure your OBD-II device is powered on and in range.\n"
+                                "2. Pair the OBD-II device with your computer or mobile device via the native Bluetooth menu.\n"
+                                "3. Click the button below to connect.",
+                              ),
+                            ),
+                          ),
                         ),
                         verticalSpaceSmall,
                         ElevatedButton(
