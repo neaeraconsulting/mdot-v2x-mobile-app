@@ -96,6 +96,7 @@ import 'package:cv_mec/styles/arc_painter.dart';
 import 'package:cv_mec/styles/screen_size.dart';
 import 'package:cv_mec/styles/spacing.dart';
 import 'package:cv_mec/styles/widgets/appbar.dart';
+import 'package:cv_mec/styles/widgets/autosizetext.dart';
 import 'package:cv_mec/views/bluetooth_dialog.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cv_mec/services/timing.dart';
@@ -453,7 +454,16 @@ class MapState extends State<MapPage> with RouteAware {
       stream = locationService.locationStream;
     }
 
-    positionSubscription = stream.listen(updatePosition);
+    positionSubscription = stream.listen(
+      (position) {
+        updatePosition(position).catchError((error, stackTrace) {
+          showError("Position update failed: $error");
+        });
+      },
+      onError: (error, stackTrace) {
+        showError("GPS stream error: $error");
+      },
+    );
     if(currentPosition == null){
       try{
         await stream.first;
@@ -620,8 +630,12 @@ class MapState extends State<MapPage> with RouteAware {
   void processIncomingMessage(String? broker, String topic, List<int> bytes, DateTime recTime, DateTime? sendTime, String source) async {
     String hex = ASNService.bytesToHex(bytes);
     MsgType msgType = asnService.determineHexMessageType(hex);
-    ValidateStatus validity;
-    validity= await scms.validate(bytes);
+    ValidateStatus validity = ValidateStatus.FAILURE;
+    try {
+      validity = await scms.validate(bytes);
+    } catch (e) {
+      showError("SCMS validation failed: $e");
+    }
 
     switch (msgType) {
       case MsgType.BSM:
@@ -885,10 +899,6 @@ class MapState extends State<MapPage> with RouteAware {
 
     sendMessageTimer = Timer.periodic(Duration(milliseconds: broadcastIntervalMilliseconds), (timer) {
       sendMessage();
-      if (!isConnected()) {
-        stopSendingBSM();
-        onMqttDisconnect();
-      }
     });
   }
 
@@ -949,12 +959,16 @@ class MapState extends State<MapPage> with RouteAware {
       List<int> messageBytes = ASNService.hexToBytes(hex);
       
       if(scmsActive){
-        List<int>? signedMessageBytes = await scms.sign(psid, messageBytes);
-        if(signedMessageBytes != null && signedMessageBytes.isNotEmpty){
-          messageBytes = signedMessageBytes;
-          signed = true;
-        }else{
-          showError("Result of Message Signing was Null or Empty");
+        try {
+          List<int>? signedMessageBytes = await scms.sign(psid, messageBytes);
+          if(signedMessageBytes != null && signedMessageBytes.isNotEmpty){
+            messageBytes = signedMessageBytes;
+            signed = true;
+          }else{
+            showError("Result of Message Signing was Null or Empty");
+          }
+        } catch (e) {
+          showError("SCMS signing failed: $e");
         }
       }
       
@@ -1031,9 +1045,6 @@ class MapState extends State<MapPage> with RouteAware {
   DateTime prevSystemTime = DateTime.now();
 
   Future<void> updatePosition(Position position) async {
-
-    // processNewBsm("", "", "00142f4ae75a7c68528e277fa9691c7a63378d8d0a0a7ffff0483840fdfa1fa1007fff8000000001040d0024002034007800", DateTime.now(), DateTime.now(), "", ValidateStatus.VALID);
-
     currentPosition = position;
     mqttAgents.setPosition(currentPosition);
 
@@ -1949,7 +1960,6 @@ class MapState extends State<MapPage> with RouteAware {
 
   Widget vehicleStatsBar() {
     return Container(
-        height: 50,
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [mediumGrey, lightGrey, Colors.white],
@@ -1967,11 +1977,18 @@ class MapState extends State<MapPage> with RouteAware {
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: Row(children: [
-            const Text("Vehicle Stats", style: TextStyle(color: Colors.black, fontSize: 20)),
-            Expanded(child: Container()),
+            SizedBox(
+              width: screenWidth(Get.context!) * 0.6,
+              child: const AutoSizeTextWidget(
+                text: "Vehicle Stats", style: TextStyle(color: Colors.black, fontSize: 20), maxLines: 1
+              ),
+            ),
+            const Spacer(),
             IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                 icon: Icon(showVehicleStats ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, color: Colors.black),
                 onPressed: () {
                   showVehicleStats = !showVehicleStats;
@@ -2422,12 +2439,26 @@ class MapState extends State<MapPage> with RouteAware {
               : (obdController.isRunningAsRoot && Platform.isLinux) || !Platform.isLinux
                   ? Column(
                       children: [
-                        const Text("OBD-II Connection", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                        const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: AutoSizeTextWidget(
+                            text: "OBD-II Connection", 
+                            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                            maxLines: 1,
+                          ),
+                        ),
                         verticalSpaceSmall,
-                        const Text(
-                          "1. Ensure your OBD-II device is powered on and in range.\n"
-                          "2. Pair the OBD-II device with your computer or mobile device via the native Bluetooth menu.\n"
-                          "3. Click the button below to connect.",
+                        SizedBox(
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(maxHeight: screenHeight(Get.context!) * 0.5),
+                            child: const SingleChildScrollView(
+                              child: Text(
+                                "1. Ensure your OBD-II device is powered on and in range.\n"
+                                "2. Pair the OBD-II device with your computer or mobile device via the native Bluetooth menu.\n"
+                                "3. Click the button below to connect.",
+                              ),
+                            ),
+                          ),
                         ),
                         verticalSpaceSmall,
                         ElevatedButton(
